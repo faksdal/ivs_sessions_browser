@@ -15,6 +15,12 @@ A terminal UI to browse IVS sessions by year, apply powerful filters, and open s
 - Stations rendered as `Active [Removed]` with removed highlighted
 - Case-sensitive filtering with AND/OR logic and multiple clauses
 - Open selected session in browser (Enter)
+- Supports both regular and intensive schedules
+  - Intensive sessions are tagged with `[I]` in the `Type` column
+- Sessions are always shown in chronological order (by `Start`)
+- Filter bar (`/`) supports multiple clauses and AND/OR in stations
+- Press `F` to clear filters
+
 
 ## Install
 ```bash
