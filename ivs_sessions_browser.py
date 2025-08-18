@@ -299,7 +299,8 @@ class SessionBrowser:
 
     def _draw_helpbar(self, stdscr) -> None:
         max_y, max_x = stdscr.getmaxyx()
-        help_text = "↑↓ Move  PgUp/PgDn  Home/End  Enter Open  '/' Filter  q Quit  stations: AND(&) OR(|)  active/removed/all  "
+        help_text = "↑↓ Move  PgUp/PgDn  Home/End  Enter Open  '/' Filter  F ClearFilter  q Quit  stations: AND(&) OR(|)  active/removed/all  "
+
         right = f"row {min(self.selected + 1, len(self.view_rows))}/{len(self.view_rows)}"
         bar = (help_text + (f"filter: {self.current_filter}" if self.current_filter else "") + "  " + right)[: max_x - 1]
         bar_attr = curses.color_pair(3) if self.has_colors else curses.A_REVERSE
@@ -354,6 +355,14 @@ class SessionBrowser:
                 q = self._get_input(stdscr, "/ ")
                 self.current_filter = q
                 self.view_rows = self.apply_filter(q)
+                self.selected = 0
+                self.offset = 0
+            # elif ch in (ord('f'), ord('F')):
+            # ignore lowercase 'f', and just catch 'F'
+            elif ch == ord('F'):
+                # Clear current filter and restore all rows
+                self.current_filter = ""
+                self.view_rows = self.rows
                 self.selected = 0
                 self.offset = 0
             elif ch in (ord('q'), 27):
