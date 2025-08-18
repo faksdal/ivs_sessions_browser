@@ -1,5 +1,4 @@
 # File: ivs_sessions_browser.py
-
 import argparse
 import curses
 import webbrowser
@@ -116,13 +115,9 @@ class SessionBrowser:
             if session_filter and session_filter not in values[1]:
                 continue
             if antenna_filter and antenna_filter not in active_str:
-                # IMPORTANT: CLI antenna filter now checks ACTIVE-ONLY
                 continue
 
-            meta = {
-                "active": active_str,     # concatenated, case-sensitive
-                "removed": removed_str,   # concatenated, case-sensitive
-            }
+            meta = {"active": active_str, "removed": removed_str}
             parsed.append((values, session_url, meta))
 
         return parsed
@@ -174,7 +169,7 @@ class SessionBrowser:
         Fielded clause: "field: value".
           - stations / stations_active: ACTIVE-only, supports '&'/'&&' and '|'/'||'.
           - stations_removed: REMOVED-only, supports '&'/'&&' and '|'/'||'.
-          - stations_all: active OR removed (legacy behavior), supports '&'/'&&' and '|'/'||'.
+          - stations_all: active OR removed, supports '&'/'&&' and '|'/'||'.
           - other fields: tokens split by space/comma/plus/pipe are OR.
         Plain clause: searched in any column.
         """
@@ -190,9 +185,8 @@ class SessionBrowser:
             if ':' in clause:
                 field, value = [p.strip() for p in clause.split(':', 1)]
                 fld = field.lower()
-                idx = self.FIELD_INDEX.get(fld)  # may be None if using stations_* pseudo-fields
+                idx = self.FIELD_INDEX.get(fld)  # may be None for stations_* pseudo-fields
 
-                # Stations family (active/removed/all)
                 if fld in ("stations", "stations_active", "stations-active"):
                     return self._match_stations(meta["active"], value)
                 if fld in ("stations_removed", "stations-removed"):
@@ -200,14 +194,12 @@ class SessionBrowser:
                 if fld in ("stations_all", "stations-all"):
                     return self._match_stations(meta["active"] + " " + meta["removed"], value)
 
-                # Other fields (including display "stations" column if user insists)
                 if idx is None:
                     return False
-                hay = values[idx]  # case-sensitive
-                tokens = self._split_tokens(value)  # OR semantics
+                hay = values[idx]
+                tokens = self._split_tokens(value)
                 return any(tok in hay for tok in tokens)
 
-            # Plain clause: any column contains (case-sensitive)
             return any(clause in col for col in values)
 
         return [r for r in self.rows if all(clause_match(r, c) for c in clauses)]
@@ -299,12 +291,47 @@ class SessionBrowser:
 
     def _draw_helpbar(self, stdscr) -> None:
         max_y, max_x = stdscr.getmaxyx()
-        help_text = "↑↓ Move  PgUp/PgDn  Home/End  Enter Open  '/' Filter  F ClearFilter  q Quit  stations: AND(&) OR(|)  active/removed/all  "
-
+        help_text = "↑↓ Move  PgUp/PgDn  Home/End  Enter Open  '/' Filter  F ClearFilter  ? Help  q Quit  stations: AND(&) OR(|)  active/removed/all  "
         right = f"row {min(self.selected + 1, len(self.view_rows))}/{len(self.view_rows)}"
         bar = (help_text + (f"filter: {self.current_filter}" if self.current_filter else "") + "  " + right)[: max_x - 1]
         bar_attr = curses.color_pair(3) if self.has_colors else curses.A_REVERSE
         self._addstr_clip(stdscr, max_y - 1, 0, bar, bar_attr)
+
+    # ------------------ Help popup ------------------
+
+    def _show_help(self, stdscr) -> None:
+        lines = [
+            "IVS Sessions TUI Browser — Help",
+            "",
+            "Keys:",
+            "  ↑/↓ Move    PgUp/PgDn Page    Home/End Jump",
+            "  Enter Open session URL",
+            "  / Filter     F Clear Filter    q/Esc Quit",
+            "",
+            "Filters (case-sensitive):",
+            "  Clauses separated by ';' are AND between clauses.",
+            "  Non-stations fields: tokens split by space/comma/plus/pipe are OR",
+            "    e.g. code: R1|R4",
+            "  Stations (active only):",
+            "    AND with '&' (or spaces), OR with '|'",
+            "    e.g. stations: Nn&Ns    stations: Nn|Ns",
+            "  Stations removed/any:",
+            "    stations_removed: Ft|Ur     stations_all: Hb|Ht",
+            "",
+            "Press any key to close.",
+        ]
+        h, w = stdscr.getmaxyx()
+        width = min(84, w - 4)
+        height = min(len(lines) + 4, h - 4)
+        y, x = (h - height)//2, (w - width)//2
+        win = curses.newwin(height, width, y, x)
+        win.box()
+        title_attr = curses.A_BOLD
+        for i, text in enumerate(lines, start=1):
+            attr = title_attr if i == 1 else 0
+            win.addnstr(i, 2, text, width - 4, attr)
+        win.refresh()
+        win.getch()  # wait for any key
 
     # ------------------ Main loop ------------------
 
@@ -357,14 +384,13 @@ class SessionBrowser:
                 self.view_rows = self.apply_filter(q)
                 self.selected = 0
                 self.offset = 0
-            # elif ch in (ord('f'), ord('F')):
-            # ignore lowercase 'f', and just catch 'F'
             elif ch == ord('F'):
-                # Clear current filter and restore all rows
                 self.current_filter = ""
                 self.view_rows = self.rows
                 self.selected = 0
                 self.offset = 0
+            elif ch == ord('?'):
+                self._show_help(stdscr)
             elif ch in (ord('q'), 27):
                 break
 
@@ -380,7 +406,17 @@ class SessionBrowser:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="IVS Sessions TUI Browser")
+    parser = argparse.ArgumentParser(
+        description="IVS Sessions TUI Browser",
+        epilog=(
+            "Filters (case-sensitive):\n"
+            "  Clauses separated by ';' are AND.\n"
+            "  Non-stations fields: tokens split by space/comma/plus/pipe are OR (e.g. code: R1|R4)\n"
+            "  Stations active: stations: Nn&Ns  or  stations: Nn|Ns\n"
+            "  Stations removed/any: stations_removed: Ft|Ur   stations_all: Hb|Ht\n"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     parser.add_argument("--year", type=int, default=datetime.now().year, help="Year (default: current year)")
     parser.add_argument("--session", type=str, help="Initial filter: session code (case-sensitive)")
     parser.add_argument("--antenna", type=str, help="Initial filter: ACTIVE station/antenna (case-sensitive)")

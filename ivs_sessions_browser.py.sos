@@ -4,13 +4,14 @@ import argparse
 import curses
 import webbrowser
 from datetime import datetime
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Dict, Any
 import re
 
 import requests
 from bs4 import BeautifulSoup
 
-Row = Tuple[List[str], Optional[str]]  # ([columns...], session_url)
+# Row = ([columns...], session_url, meta)
+Row = Tuple[List[str], Optional[str], Dict[str, Any]]
 
 
 class SessionBrowser:
@@ -28,7 +29,7 @@ class SessionBrowser:
         "start": 2,
         "doy": 3,
         "dur": 4,
-        "stations": 5,
+        "stations": 5,          # display column string (Active [Removed])
         "db code": 6,
         "db": 6,
         "ops center": 7,
@@ -49,7 +50,6 @@ class SessionBrowser:
         self.selected: int = 0
         self.offset: int = 0
 
-        # Curses/runtime bits
         self.has_colors: bool = False
 
     # ------------------ Data ------------------
@@ -109,17 +109,21 @@ class SessionBrowser:
                 tds[10].get_text(strip=True), # Analysis
             ]
 
-            # Session detail URL from Code column if present
             code_link = tds[1].find("a")
             session_url = f"https://ivscc.gsfc.nasa.gov{code_link['href']}" if code_link and code_link.has_attr("href") else None
 
             # Initial CLI filters (case-sensitive)
             if session_filter and session_filter not in values[1]:
                 continue
-            if antenna_filter and antenna_filter not in stations_str:
+            if antenna_filter and antenna_filter not in active_str:
+                # IMPORTANT: CLI antenna filter now checks ACTIVE-ONLY
                 continue
 
-            parsed.append((values, session_url))
+            meta = {
+                "active": active_str,     # concatenated, case-sensitive
+                "removed": removed_str,   # concatenated, case-sensitive
+            }
+            parsed.append((values, session_url, meta))
 
         return parsed
 
@@ -148,22 +152,18 @@ class SessionBrowser:
         has_and = '&' in text
 
         if has_or or has_and:
-            # OR groups
             or_parts = [p.strip() for p in re.split(r"\s*\|{1,2}\s*", text) if p.strip()]
             for part in or_parts:
-                # AND chunks
                 and_chunks = [c.strip() for c in re.split(r"\s*&{1,2}\s*", part) if c.strip()]
                 and_tokens: List[str] = []
                 for chunk in and_chunks:
                     and_tokens.extend([t for t in re.split(r"[ ,+]+", chunk) if t])
                 if and_tokens and all(tok in hay for tok in and_tokens):
                     return True
-                # allow single bare token case
                 if not and_tokens and part and part in hay:
                     return True
             return False
 
-        # No explicit operators → AND across tokens
         tokens = [t for t in re.split(r"[ ,+]+", text) if t]
         return all(tok in hay for tok in tokens)
 
@@ -172,7 +172,9 @@ class SessionBrowser:
         Filtering (case-sensitive).
         Clauses: separated by ';' (AND across clauses).
         Fielded clause: "field: value".
-          - stations: supports '&'/'&&' (AND) and '|'/'||' (OR). If no ops, default AND.
+          - stations / stations_active: ACTIVE-only, supports '&'/'&&' and '|'/'||'.
+          - stations_removed: REMOVED-only, supports '&'/'&&' and '|'/'||'.
+          - stations_all: active OR removed (legacy behavior), supports '&'/'&&' and '|'/'||'.
           - other fields: tokens split by space/comma/plus/pipe are OR.
         Plain clause: searched in any column.
         """
@@ -184,19 +186,28 @@ class SessionBrowser:
             return self.rows
 
         def clause_match(row: Row, clause: str) -> bool:
-            values = row[0]
+            values, _, meta = row
             if ':' in clause:
                 field, value = [p.strip() for p in clause.split(':', 1)]
-                idx = self.FIELD_INDEX.get(field.lower())
+                fld = field.lower()
+                idx = self.FIELD_INDEX.get(fld)  # may be None if using stations_* pseudo-fields
+
+                # Stations family (active/removed/all)
+                if fld in ("stations", "stations_active", "stations-active"):
+                    return self._match_stations(meta["active"], value)
+                if fld in ("stations_removed", "stations-removed"):
+                    return self._match_stations(meta["removed"], value)
+                if fld in ("stations_all", "stations-all"):
+                    return self._match_stations(meta["active"] + " " + meta["removed"], value)
+
+                # Other fields (including display "stations" column if user insists)
                 if idx is None:
                     return False
                 hay = values[idx]  # case-sensitive
-                if field.lower() == 'stations':
-                    return self._match_stations(hay, value)
-                else:
-                    tokens = self._split_tokens(value)  # OR
-                    return any(tok in hay for tok in tokens)
-            # Plain clause: any column contains
+                tokens = self._split_tokens(value)  # OR semantics
+                return any(tok in hay for tok in tokens)
+
+            # Plain clause: any column contains (case-sensitive)
             return any(clause in col for col in values)
 
         return [r for r in self.rows if all(clause_match(r, c) for c in clauses)]
@@ -205,7 +216,6 @@ class SessionBrowser:
 
     @staticmethod
     def _addstr_clip(stdscr, y: int, x: int, text: str, attr: int = 0) -> None:
-        """Safely draw text within screen bounds, clipping to width."""
         max_y, max_x = stdscr.getmaxyx()
         if y >= max_y or x >= max_x:
             return
@@ -213,7 +223,6 @@ class SessionBrowser:
 
     @staticmethod
     def _get_input(stdscr, prompt: str) -> str:
-        """Read a single-line input at the bottom bar; ESC cancels."""
         curses.curs_set(1)
         max_y, max_x = stdscr.getmaxyx()
         buf: List[str] = []
@@ -225,7 +234,7 @@ class SessionBrowser:
             ch = stdscr.getch()
             if ch in (10, curses.KEY_ENTER):
                 break
-            if ch == 27:  # ESC
+            if ch == 27:
                 buf = []
                 break
             if ch in (curses.KEY_BACKSPACE, 127, 8):
@@ -239,16 +248,15 @@ class SessionBrowser:
 
     @staticmethod
     def _status_color(has_colors: bool, status_text: str) -> int:
-        """Return curses color pair for whole-row based on status."""
         if not has_colors:
             return 0
         st_lower = status_text.lower()
         if "released" in st_lower:
-            return curses.color_pair(4)  # green
+            return curses.color_pair(4)
         if any(k in st_lower for k in ("waiting on media", "ready for processing", "cleaning up", "processing session")):
-            return curses.color_pair(5)  # yellow
+            return curses.color_pair(5)
         if status_text.strip() == "" or "cancelled" in st_lower:
-            return curses.color_pair(6)  # red
+            return curses.color_pair(6)
         return 0
 
     # ------------------ Curses UI drawing ------------------
@@ -260,7 +268,7 @@ class SessionBrowser:
 
     def _draw_rows(self, stdscr) -> None:
         max_y, _ = stdscr.getmaxyx()
-        view_height = max(1, max_y - 3)  # header(2) + help bar(1)
+        view_height = max(1, max_y - 3)
 
         if self.selected < self.offset:
             self.offset = self.selected
@@ -272,7 +280,7 @@ class SessionBrowser:
             return
 
         for i in range(self.offset, min(len(self.view_rows), self.offset + view_height)):
-            row_vals, _ = self.view_rows[i]
+            row_vals, _, _ = self.view_rows[i]
             parts = [f"{val:<{self.WIDTHS[c]}}" for c, val in enumerate(row_vals)]
             full_line = " | ".join(parts)
             y = i - self.offset + 2
@@ -291,7 +299,8 @@ class SessionBrowser:
 
     def _draw_helpbar(self, stdscr) -> None:
         max_y, max_x = stdscr.getmaxyx()
-        help_text = "↑↓ Move  PgUp/PgDn  Home/End  Enter Open  '/' Filter  q Quit  stations: AND(&) OR(|)  "
+        help_text = "↑↓ Move  PgUp/PgDn  Home/End  Enter Open  '/' Filter  F ClearFilter  q Quit  stations: AND(&) OR(|)  active/removed/all  "
+
         right = f"row {min(self.selected + 1, len(self.view_rows))}/{len(self.view_rows)}"
         bar = (help_text + (f"filter: {self.current_filter}" if self.current_filter else "") + "  " + right)[: max_x - 1]
         bar_attr = curses.color_pair(3) if self.has_colors else curses.A_REVERSE
@@ -303,19 +312,16 @@ class SessionBrowser:
         curses.curs_set(0)
         stdscr.clear()
 
-        # Colors
         self.has_colors = curses.has_colors()
         if self.has_colors:
             curses.start_color()
             curses.use_default_colors()
-            # 1: removed stations (YELLOW), 2: header, 3: help bar,
-            # 4: status released (GREEN), 5: status waiting/processing (YELLOW), 6: status none/cancelled (RED)
-            curses.init_pair(1, curses.COLOR_YELLOW, -1)
-            curses.init_pair(2, curses.COLOR_CYAN, -1)
-            curses.init_pair(3, curses.COLOR_BLACK, curses.COLOR_WHITE)
-            curses.init_pair(4, curses.COLOR_GREEN, -1)
-            curses.init_pair(5, curses.COLOR_YELLOW, -1)
-            curses.init_pair(6, curses.COLOR_RED, -1)
+            curses.init_pair(1, curses.COLOR_YELLOW, -1)  # removed stations
+            curses.init_pair(2, curses.COLOR_CYAN, -1)    # header
+            curses.init_pair(3, curses.COLOR_BLACK, curses.COLOR_WHITE)  # help bar
+            curses.init_pair(4, curses.COLOR_GREEN, -1)   # released
+            curses.init_pair(5, curses.COLOR_YELLOW, -1)  # processing
+            curses.init_pair(6, curses.COLOR_RED, -1)     # none/cancelled
 
         while True:
             stdscr.clear()
@@ -342,13 +348,21 @@ class SessionBrowser:
                 self.selected = max(0, len(self.view_rows) - 1)
             elif ch in (10, curses.KEY_ENTER):
                 if self.view_rows:
-                    _, url = self.view_rows[self.selected]
+                    _, url, _ = self.view_rows[self.selected]
                     if url:
                         webbrowser.open(url)
             elif ch == ord('/'):
                 q = self._get_input(stdscr, "/ ")
                 self.current_filter = q
                 self.view_rows = self.apply_filter(q)
+                self.selected = 0
+                self.offset = 0
+            # elif ch in (ord('f'), ord('F')):
+            # ignore lowercase 'f', and just catch 'F'
+            elif ch == ord('F'):
+                # Clear current filter and restore all rows
+                self.current_filter = ""
+                self.view_rows = self.rows
                 self.selected = 0
                 self.offset = 0
             elif ch in (ord('q'), 27):
@@ -369,7 +383,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="IVS Sessions TUI Browser")
     parser.add_argument("--year", type=int, default=datetime.now().year, help="Year (default: current year)")
     parser.add_argument("--session", type=str, help="Initial filter: session code (case-sensitive)")
-    parser.add_argument("--antenna", type=str, help="Initial filter: station/antenna (case-sensitive)")
+    parser.add_argument("--antenna", type=str, help="Initial filter: ACTIVE station/antenna (case-sensitive)")
     args = parser.parse_args()
 
     SessionBrowser(year=args.year, session_filter=args.session, antenna_filter=args.antenna).run()
