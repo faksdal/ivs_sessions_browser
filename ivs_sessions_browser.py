@@ -17,7 +17,7 @@ Row = Tuple[List[str], Optional[str], Dict[str, Any]]
 class SessionBrowser:
     # Column layout (preserve your widths)
     HEADERS = [
-        ("Type", 12), ("Code", 8), ("Start", 18), ("DOY", 3), ("Dur", 5),
+        ("Type", 13), ("Code", 8), ("Start", 18), ("DOY", 3), ("Dur", 5),
         ("Stations", 44), ("DB Code", 14), ("Ops Center", 10),
         ("Correlator", 10), ("Status", 20), ("Analysis", 10)
     ]
@@ -64,6 +64,83 @@ class SessionBrowser:
     @staticmethod
     def _fetch_one(url: str, session_filter: Optional[str], antenna_filter: Optional[str]) -> List[Row]:
         """Fetch and parse ONE IVSCC sessions table URL into rows (case-sensitive CLI filters)."""
+        try:
+            resp = requests.get(url, timeout=20)
+            resp.raise_for_status()
+        except requests.RequestException as exc:
+            print(f"Error fetching {url}: {exc}")
+            return []
+
+        soup = BeautifulSoup(resp.text, "html.parser")
+        session_rows = soup.select("table tr")
+        parsed: List[Row] = []
+
+        is_intensive = "/intensive/" in url  # mark intensives
+
+        for r in session_rows:
+            tds = r.find_all("td")
+            if len(tds) < 11:
+                continue
+
+            # Stations: split active vs removed, render as "Active [Removed]"
+            stations_cell = tds[5]
+            active_ids: List[str] = []
+            removed_ids: List[str] = []
+            for li in stations_cell.find_all("li", class_="station-id"):
+                classes = li.get("class", [])
+                code = li.get_text(strip=True)
+                if "removed" in classes:
+                    removed_ids.append(code)
+                else:
+                    active_ids.append(code)
+
+            active_str = "".join(active_ids)
+            removed_str = "".join(removed_ids)
+            if active_str and removed_str:
+                stations_str = f"{active_str} [{removed_str}]"
+            elif removed_str:
+                stations_str = f"[{removed_str}]"
+            else:
+                stations_str = active_str
+
+            values = [
+                tds[0].get_text(strip=True),  # Type
+                tds[1].get_text(strip=True),  # Code
+                tds[2].get_text(strip=True),  # Start
+                tds[3].get_text(strip=True),  # DOY
+                tds[4].get_text(strip=True),  # Dur
+                stations_str.ljust(44),  # Stations (fixed width for alignment)
+                tds[6].get_text(strip=True),  # DB Code
+                tds[7].get_text(strip=True),  # Ops Center
+                tds[8].get_text(strip=True),  # Correlator
+                tds[9].get_text(strip=True),  # Status
+                tds[10].get_text(strip=True),  # Analysis
+            ]
+
+            # Tag intensives directly in Type column (keeps alignment).
+            if is_intensive:
+                values[0] = f"{values[0]}[I]"
+
+            # Session detail URL from Code column if present
+            code_link = tds[1].find("a")
+            session_url = f"https://ivscc.gsfc.nasa.gov{code_link['href']}" if code_link and code_link.has_attr(
+                "href") else None
+
+            # Initial CLI filters (case-sensitive)
+            if session_filter and session_filter not in values[1]:
+                continue
+            if antenna_filter and antenna_filter not in active_str:
+                continue
+
+            meta = {"active": active_str, "removed": removed_str}
+            parsed.append((values, session_url, meta))
+
+        return parsed
+
+    """
+    def _fetch_one(self, url: str, session_filter: Optional[str], antenna_filter: Optional[str]) -> List[Row]:
+    def _fetch_one(url: str, session_filter: Optional[str], antenna_filter: Optional[str]) -> List[Row]:
+        # Fetch and parse ONE IVSCC sessions table URL into rows (case-sensitive CLI filters).
         try:
             resp = requests.get(url, timeout=20)
             resp.raise_for_status()
@@ -130,6 +207,7 @@ class SessionBrowser:
             parsed.append((values, session_url, meta))
 
         return parsed
+        """
 
     def _urls_for_scope(self) -> List[str]:
         base = "https://ivscc.gsfc.nasa.gov/sessions"
@@ -420,11 +498,25 @@ class SessionBrowser:
 
     def load_data(self) -> None:
         self.rows = self.fetch_all()
+        self.rows = sort_by_start(self.rows)  # added by jole, sorts the list by date
+
         self.view_rows = list(self.rows)
 
     def run(self) -> None:
         self.load_data()
         curses.wrapper(self._curses_main)
+
+
+
+def sort_by_start(rows: List[Row]) -> List[Row]:
+    def keyfunc(row: Row):
+        start_str = row[0][2]  # "Start" column
+        try:
+            return datetime.strptime(start_str, "%Y-%m-%d %H:%M")
+        except ValueError:
+            return datetime.min
+    return sorted(rows, key=keyfunc)
+
 
 
 def main() -> None:
