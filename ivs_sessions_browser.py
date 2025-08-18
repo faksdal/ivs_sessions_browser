@@ -1,4 +1,5 @@
 # File: ivs_sessions_browser.py
+
 import argparse
 import curses
 import webbrowser
@@ -16,7 +17,7 @@ Row = Tuple[List[str], Optional[str], Dict[str, Any]]
 class SessionBrowser:
     # Column layout (preserve your widths)
     HEADERS = [
-        ("Type", 12), ("Code", 6), ("Start", 18), ("DOY", 3), ("Dur", 5),
+        ("Type", 12), ("Code", 8), ("Start", 18), ("DOY", 3), ("Dur", 5),
         ("Stations", 44), ("DB Code", 14), ("Ops Center", 10),
         ("Correlator", 10), ("Status", 20), ("Analysis", 10)
     ]
@@ -38,10 +39,17 @@ class SessionBrowser:
         "analysis": 10,
     }
 
-    def __init__(self, year: int, session_filter: Optional[str] = None, antenna_filter: Optional[str] = None) -> None:
+    def __init__(
+        self,
+        year: int,
+        scope: str = "both",
+        session_filter: Optional[str] = None,
+        antenna_filter: Optional[str] = None,
+    ) -> None:
         self.year = year
+        self.scope = scope  # 'master' | 'intensive' | 'both'
         self.session_filter = session_filter
-        self.antenna_filter = antenna_filter
+        self.antenna_filter = antenna_filter  # ACTIVE-only
 
         self.rows: List[Row] = []
         self.view_rows: List[Row] = []
@@ -54,20 +62,19 @@ class SessionBrowser:
     # ------------------ Data ------------------
 
     @staticmethod
-    def fetch_html(year: int, session_filter: Optional[str] = None, antenna_filter: Optional[str] = None) -> List[Row]:
-        """Fetch and parse the IVSCC sessions table for a given year into rows (case-sensitive CLI filters)."""
-        url = f"https://ivscc.gsfc.nasa.gov/sessions/{year}/"
+    def _fetch_one(url: str, session_filter: Optional[str], antenna_filter: Optional[str]) -> List[Row]:
+        """Fetch and parse ONE IVSCC sessions table URL into rows (case-sensitive CLI filters)."""
         try:
             resp = requests.get(url, timeout=20)
             resp.raise_for_status()
         except requests.RequestException as exc:
-            print(f"Error fetching the page: {exc}")
+            print(f"Error fetching {url}: {exc}")
             return []
 
         soup = BeautifulSoup(resp.text, "html.parser")
         session_rows = soup.select("table tr")
-
         parsed: List[Row] = []
+
         for r in session_rows:
             tds = r.find_all("td")
             if len(tds) < 11:
@@ -108,6 +115,7 @@ class SessionBrowser:
                 tds[10].get_text(strip=True), # Analysis
             ]
 
+            # Session detail URL from Code column if present
             code_link = tds[1].find("a")
             session_url = f"https://ivscc.gsfc.nasa.gov{code_link['href']}" if code_link and code_link.has_attr("href") else None
 
@@ -115,12 +123,30 @@ class SessionBrowser:
             if session_filter and session_filter not in values[1]:
                 continue
             if antenna_filter and antenna_filter not in active_str:
+                # IMPORTANT: CLI antenna filter checks ACTIVE-ONLY
                 continue
 
             meta = {"active": active_str, "removed": removed_str}
             parsed.append((values, session_url, meta))
 
         return parsed
+
+    def _urls_for_scope(self) -> List[str]:
+        base = "https://ivscc.gsfc.nasa.gov/sessions"
+        year = str(self.year)
+        if self.scope == "master":
+            return [f"{base}/{year}/"]
+        if self.scope == "intensive":
+            return [f"{base}/intensive/{year}/"]
+        # both
+        return [f"{base}/{year}/", f"{base}/intensive/{year}/"]
+
+    def fetch_all(self) -> List[Row]:
+        """Fetch and merge rows from selected scope."""
+        rows: List[Row] = []
+        for url in self._urls_for_scope():
+            rows.extend(self._fetch_one(url, self.session_filter, self.antenna_filter))
+        return rows
 
     # ------------------ Filtering ------------------
 
@@ -291,7 +317,7 @@ class SessionBrowser:
 
     def _draw_helpbar(self, stdscr) -> None:
         max_y, max_x = stdscr.getmaxyx()
-        help_text = "↑↓ Move  PgUp/PgDn  Home/End  Enter Open  '/' Filter  F ClearFilter  ? Help  q Quit  stations: AND(&) OR(|)  active/removed/all  "
+        help_text = "↑↓ Move  PgUp/PgDn  Home/End  Enter Open  '/' Filter  F ClearFilter  ? Help  q Quit  stations: AND(&) OR(|)  "
         right = f"row {min(self.selected + 1, len(self.view_rows))}/{len(self.view_rows)}"
         bar = (help_text + (f"filter: {self.current_filter}" if self.current_filter else "") + "  " + right)[: max_x - 1]
         bar_attr = curses.color_pair(3) if self.has_colors else curses.A_REVERSE
@@ -306,17 +332,13 @@ class SessionBrowser:
             "Keys:",
             "  ↑/↓ Move    PgUp/PgDn Page    Home/End Jump",
             "  Enter Open session URL",
-            "  / Filter     F Clear Filter    q/Esc Quit",
+            "  / Filter     F Clear Filter    ? Help   q/Esc Quit",
             "",
             "Filters (case-sensitive):",
             "  Clauses separated by ';' are AND between clauses.",
-            "  Non-stations fields: tokens split by space/comma/plus/pipe are OR",
-            "    e.g. code: R1|R4",
-            "  Stations (active only):",
-            "    AND with '&' (or spaces), OR with '|'",
-            "    e.g. stations: Nn&Ns    stations: Nn|Ns",
-            "  Stations removed/any:",
-            "    stations_removed: Ft|Ur     stations_all: Hb|Ht",
+            "  Non-stations fields: tokens split by space/comma/plus/pipe are OR (e.g. code: R1|R4)",
+            "  Stations (active-only): AND with '&' (or spaces), OR with '|'",
+            "  Also: stations_removed: …   stations_all: …",
             "",
             "Press any key to close.",
         ]
@@ -331,7 +353,7 @@ class SessionBrowser:
             attr = title_attr if i == 1 else 0
             win.addnstr(i, 2, text, width - 4, attr)
         win.refresh()
-        win.getch()  # wait for any key
+        win.getch()
 
     # ------------------ Main loop ------------------
 
@@ -397,7 +419,7 @@ class SessionBrowser:
     # ------------------ Public ------------------
 
     def load_data(self) -> None:
-        self.rows = self.fetch_html(self.year, self.session_filter, self.antenna_filter)
+        self.rows = self.fetch_all()
         self.view_rows = list(self.rows)
 
     def run(self) -> None:
@@ -418,11 +440,18 @@ def main() -> None:
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
     parser.add_argument("--year", type=int, default=datetime.now().year, help="Year (default: current year)")
+    parser.add_argument("--scope", choices=("master", "intensive", "both"), default="both",
+                        help="Which schedules to include (default: both)")
     parser.add_argument("--session", type=str, help="Initial filter: session code (case-sensitive)")
     parser.add_argument("--antenna", type=str, help="Initial filter: ACTIVE station/antenna (case-sensitive)")
     args = parser.parse_args()
 
-    SessionBrowser(year=args.year, session_filter=args.session, antenna_filter=args.antenna).run()
+    SessionBrowser(
+        year=args.year,
+        scope=args.scope,
+        session_filter=args.session,
+        antenna_filter=args.antenna
+    ).run()
 
 
 if __name__ == "__main__":

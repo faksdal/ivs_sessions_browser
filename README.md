@@ -21,4 +21,7 @@ A terminal UI to browse IVS sessions by year, apply powerful filters, and open s
 python -m venv .venv
 source .venv/bin/activate            # on Windows: .\.venv\Scripts\activate
 pip install -r requirements.txt
+```
 
+## License
+This project is licensed under the MIT License – see the [LICENSE](LICENSE) file for details.
