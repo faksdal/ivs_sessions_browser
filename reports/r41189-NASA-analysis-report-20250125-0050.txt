@@ -1,0 +1,7 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head>
+<title>302 Found</title>
+</head><body>
+<h1>Found</h1>
+<p>The document has moved <a href="https://urs.earthdata.nasa.gov/oauth/authorize?client_id=gDQnv1IO0j9O2xXdwS8KMQ&amp;response_type=code&amp;redirect_uri=https%3A%2F%2Fcddis.nasa.gov%2Fproxyauth&amp;state=aHR0cDovL2NkZGlzLm5hc2EuZ292L2FyY2hpdmUvdmxiaS9pdnNkYXRhL2F1eC8yMDI1L3I0MTE4OS9yNDExODktTkFTQS1hbmFseXNpcy1yZXBvcnQtMjAyNTAxMjUtMDA1MC50eHQ">here</a>.</p>
+</body></html>

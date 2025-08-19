@@ -59,6 +59,9 @@ class SessionBrowser:
 
         self.has_colors: bool = False
 
+        # flag for showing/hiding removed sessions in the list
+        self.show_removed: bool = True
+
     # ------------------ Data ------------------
 
     @staticmethod
@@ -272,6 +275,36 @@ class SessionBrowser:
         self._addstr_clip(stdscr, 0, 0, self.HEADER_LINE, header_attr)
         self._addstr_clip(stdscr, 1, 0, "-" * len(self.HEADER_LINE))
 
+    #def _draw_rows(self, stdscr) -> None:
+    #    max_y, _ = stdscr.getmaxyx()
+    #    view_height = max(1, max_y - 3)
+
+    #    if self.selected < self.offset:
+    #        self.offset = self.selected
+    #    elif self.selected >= self.offset + view_height:
+    #        self.offset = self.selected - view_height + 1
+
+     #   if not self.view_rows:
+     #       self._addstr_clip(stdscr, 2, 0, "No sessions found.")
+     #       return
+
+     #   for i in range(self.offset, min(len(self.view_rows), self.offset + view_height)):
+     #       row_vals, _, _ = self.view_rows[i]
+     #       parts = [f"{val:<{self.WIDTHS[c]}}" for c, val in enumerate(row_vals)]
+     #       full_line = " | ".join(parts)
+     #       y = i - self.offset + 2
+     #       row_attr = curses.A_REVERSE if i == self.selected else 0
+
+     #       row_color = self._status_color(self.has_colors, row_vals[9])
+     #       self._addstr_clip(stdscr, y, 0, full_line, row_attr | row_color)
+
+            # Highlight removed stations "[...]" inline (overrides row color)
+     #       if self.has_colors and row_vals[5]:
+     #           lbr = full_line.find("[")
+     #           if lbr != -1:
+     #               rbr = full_line.find("]", lbr + 1)
+     #               if rbr != -1 and rbr > lbr:
+     #                   self._addstr_clip(stdscr, y, lbr, full_line[lbr:rbr+1], row_attr | curses.color_pair(1))
     def _draw_rows(self, stdscr) -> None:
         max_y, _ = stdscr.getmaxyx()
         view_height = max(1, max_y - 3)
@@ -286,26 +319,35 @@ class SessionBrowser:
             return
 
         for i in range(self.offset, min(len(self.view_rows), self.offset + view_height)):
-            row_vals, _, _ = self.view_rows[i]
-            parts = [f"{val:<{self.WIDTHS[c]}}" for c, val in enumerate(row_vals)]
+            row_vals, _, meta = self.view_rows[i]
+
+            # COPY so we can override Stations column safely
+            vals = list(row_vals)
+
+            # If hiding removed stations, render active-only in col 5
+            if not self.show_removed:
+                active_only = meta.get("active", "")
+                vals[5] = f"{active_only:<{self.WIDTHS[5]}}"
+
+            parts = [f"{val:<{self.WIDTHS[c]}}" for c, val in enumerate(vals)]
             full_line = " | ".join(parts)
             y = i - self.offset + 2
             row_attr = curses.A_REVERSE if i == self.selected else 0
 
-            row_color = self._status_color(self.has_colors, row_vals[9])
+            row_color = self._status_color(self.has_colors, vals[9])
             self._addstr_clip(stdscr, y, 0, full_line, row_attr | row_color)
 
-            # Highlight removed stations "[...]" inline (overrides row color)
-            if self.has_colors and row_vals[5]:
+            # Highlight "[...]" only if we are showing removed stations
+            if self.has_colors and self.show_removed and vals[5]:
                 lbr = full_line.find("[")
                 if lbr != -1:
                     rbr = full_line.find("]", lbr + 1)
                     if rbr != -1 and rbr > lbr:
-                        self._addstr_clip(stdscr, y, lbr, full_line[lbr:rbr+1], row_attr | curses.color_pair(1))
+                        self._addstr_clip(stdscr, y, lbr, full_line[lbr:rbr + 1], row_attr | curses.color_pair(1))
 
     def _draw_helpbar(self, stdscr) -> None:
         max_y, max_x = stdscr.getmaxyx()
-        help_text = "↑↓ Move  PgUp/PgDn  Home/End  Enter Open  '/' Filter  T Today  F ClearFilter  ? Help  q Quit  stations: AND(&) OR(|)  "
+        help_text = "↑↓ Move  PgUp/PgDn  Home/End  Enter Open  '/' Filter  T Today  F ClearFilter R Show/hide removed  ? Help  q Quit  stations: AND(&) OR(|)  "
         right = f"row {min(self.selected + 1, len(self.view_rows))}/{len(self.view_rows)}"
         bar = (help_text + (f"filter: {self.current_filter}" if self.current_filter else "") + "  " + right)[: max_x - 1]
         bar_attr = curses.color_pair(3) if self.has_colors else curses.A_REVERSE
@@ -327,6 +369,7 @@ class SessionBrowser:
             "Filtering:",
             "  / : Enter filter (field:value, supports AND/OR)",
             "  F : Clear filters",
+            "  R : Toggle show/hide removed stations",
             "",
             "Other:",
             "  q or ESC : Quit",
@@ -415,20 +458,8 @@ class SessionBrowser:
                 idx = index_on_or_after_today(self.view_rows)
                 self.selected = idx
                 self.offset = idx
-
-            #elif ch == ord('/'):
-            #    q = self._get_input(stdscr, "/ ")
-            #    self.current_filter = q
-            #    self.view_rows = self.apply_filter(q)
-            #    self.selected = 0
-            #    self.offset = 0
-             
-            #elif ch == ord('F'):
-            #    self.current_filter = ""
-            #    self.view_rows = self.rows
-            #    self.selected = 0
-            #    self.offset = 0
-
+            elif ch in (ord('r'), ord('R')):
+                self.show_removed = not self.show_removed
             elif ch == ord('?'):
                 self._show_help(stdscr)
             elif ch in (ord('q'), 27):
