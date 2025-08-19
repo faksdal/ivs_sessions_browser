@@ -3,7 +3,7 @@
 import argparse
 import curses
 import webbrowser
-from datetime import datetime
+from datetime import datetime, date
 from typing import List, Tuple, Optional, Dict, Any
 import re
 
@@ -17,7 +17,7 @@ Row = Tuple[List[str], Optional[str], Dict[str, Any]]
 class SessionBrowser:
     # Column layout (preserve your widths)
     HEADERS = [
-        ("Type", 13), ("Code", 8), ("Start", 18), ("DOY", 3), ("Dur", 5),
+        ("Type", 14), ("Code", 8), ("Start", 18), ("DOY", 3), ("Dur", 5),
         ("Stations", 44), ("DB Code", 14), ("Ops Center", 10),
         ("Correlator", 10), ("Status", 20), ("Analysis", 10)
     ]
@@ -29,7 +29,7 @@ class SessionBrowser:
         "start": 2,
         "doy": 3,
         "dur": 4,
-        "stations": 5,          # display column string (Active [Removed])
+        "stations": 5,
         "db code": 6,
         "db": 6,
         "ops center": 7,
@@ -109,81 +109,6 @@ class SessionBrowser:
                 tds[2].get_text(strip=True),  # Start
                 tds[3].get_text(strip=True),  # DOY
                 tds[4].get_text(strip=True),  # Dur
-                stations_str.ljust(44),  # Stations (fixed width for alignment)
-                tds[6].get_text(strip=True),  # DB Code
-                tds[7].get_text(strip=True),  # Ops Center
-                tds[8].get_text(strip=True),  # Correlator
-                tds[9].get_text(strip=True),  # Status
-                tds[10].get_text(strip=True),  # Analysis
-            ]
-
-            # Tag intensives directly in Type column (keeps alignment).
-            if is_intensive:
-                values[0] = f"{values[0]}[I]"
-
-            # Session detail URL from Code column if present
-            code_link = tds[1].find("a")
-            session_url = f"https://ivscc.gsfc.nasa.gov{code_link['href']}" if code_link and code_link.has_attr(
-                "href") else None
-
-            # Initial CLI filters (case-sensitive)
-            if session_filter and session_filter not in values[1]:
-                continue
-            if antenna_filter and antenna_filter not in active_str:
-                continue
-
-            meta = {"active": active_str, "removed": removed_str}
-            parsed.append((values, session_url, meta))
-
-        return parsed
-
-    """
-    def _fetch_one(self, url: str, session_filter: Optional[str], antenna_filter: Optional[str]) -> List[Row]:
-    def _fetch_one(url: str, session_filter: Optional[str], antenna_filter: Optional[str]) -> List[Row]:
-        # Fetch and parse ONE IVSCC sessions table URL into rows (case-sensitive CLI filters).
-        try:
-            resp = requests.get(url, timeout=20)
-            resp.raise_for_status()
-        except requests.RequestException as exc:
-            print(f"Error fetching {url}: {exc}")
-            return []
-
-        soup = BeautifulSoup(resp.text, "html.parser")
-        session_rows = soup.select("table tr")
-        parsed: List[Row] = []
-
-        for r in session_rows:
-            tds = r.find_all("td")
-            if len(tds) < 11:
-                continue
-
-            # Stations: split active vs removed, render as "Active [Removed]"
-            stations_cell = tds[5]
-            active_ids: List[str] = []
-            removed_ids: List[str] = []
-            for li in stations_cell.find_all("li", class_="station-id"):
-                classes = li.get("class", [])
-                code = li.get_text(strip=True)
-                if "removed" in classes:
-                    removed_ids.append(code)
-                else:
-                    active_ids.append(code)
-
-            active_str = "".join(active_ids)
-            removed_str = "".join(removed_ids)
-            if active_str and removed_str:
-                stations_str = f"{active_str} [{removed_str}]"
-            elif removed_str:
-                stations_str = f"[{removed_str}]"
-            else:
-                stations_str = active_str
-
-            values = [
-                tds[0].get_text(strip=True),  # Type
-                tds[1].get_text(strip=True),  # Code
-                tds[2].get_text(strip=True),  # Start
-                tds[3].get_text(strip=True),  # DOY
-                tds[4].get_text(strip=True),  # Dur
                 stations_str.ljust(44),       # Stations (fixed width for alignment)
                 tds[6].get_text(strip=True),  # DB Code
                 tds[7].get_text(strip=True),  # Ops Center
@@ -191,6 +116,15 @@ class SessionBrowser:
                 tds[9].get_text(strip=True),  # Status
                 tds[10].get_text(strip=True), # Analysis
             ]
+
+            # Column width for Type (class attribute, so prefix with the class)
+            TYPE_WIDTH = next(w for title, w in SessionBrowser.HEADERS if title == "Type")
+            # Tag intensives directly in Type column (right-align "[I]" in the Type field)
+            if is_intensive:
+                base_width = max(0, TYPE_WIDTH - 3)  # room for "[I]"
+                values[0] = f"{values[0]:<{base_width}}[I]"
+            else:
+                values[0] = f"{values[0]:<{TYPE_WIDTH}}"
 
             # Session detail URL from Code column if present
             code_link = tds[1].find("a")
@@ -200,27 +134,23 @@ class SessionBrowser:
             if session_filter and session_filter not in values[1]:
                 continue
             if antenna_filter and antenna_filter not in active_str:
-                # IMPORTANT: CLI antenna filter checks ACTIVE-ONLY
                 continue
 
             meta = {"active": active_str, "removed": removed_str}
             parsed.append((values, session_url, meta))
 
         return parsed
-        """
 
     def _urls_for_scope(self) -> List[str]:
         base = "https://ivscc.gsfc.nasa.gov/sessions"
-        year = str(self.year)
+        y = str(self.year)
         if self.scope == "master":
-            return [f"{base}/{year}/"]
+            return [f"{base}/{y}/"]
         if self.scope == "intensive":
-            return [f"{base}/intensive/{year}/"]
-        # both
-        return [f"{base}/{year}/", f"{base}/intensive/{year}/"]
+            return [f"{base}/intensive/{y}/"]
+        return [f"{base}/{y}/", f"{base}/intensive/{y}/"]
 
     def fetch_all(self) -> List[Row]:
-        """Fetch and merge rows from selected scope."""
         rows: List[Row] = []
         for url in self._urls_for_scope():
             rows.extend(self._fetch_one(url, self.session_filter, self.antenna_filter))
@@ -230,26 +160,15 @@ class SessionBrowser:
 
     @staticmethod
     def _split_tokens(val: str) -> List[str]:
-        """Split on space/comma/plus/pipe for non-stations fields (OR semantics)."""
         return [t for t in re.split(r"[ ,+|]+", val) if t]
 
     @staticmethod
     def _match_stations(hay: str, expr: str) -> bool:
-        """
-        stations filter with AND/OR:
-          - '|' or '||' separate OR-groups.
-          - '&' or '&&' mean AND inside a group.
-          - Within each AND group, space/comma/plus are also AND.
-          - If no '&' or '|' present, default AND over space/comma/plus.
-        Case-sensitive.
-        """
         text = expr.strip()
         if not text:
             return True
-
         has_or = '|' in text
         has_and = '&' in text
-
         if has_or or has_and:
             or_parts = [p.strip() for p in re.split(r"\s*\|{1,2}\s*", text) if p.strip()]
             for part in or_parts:
@@ -262,24 +181,12 @@ class SessionBrowser:
                 if not and_tokens and part and part in hay:
                     return True
             return False
-
         tokens = [t for t in re.split(r"[ ,+]+", text) if t]
         return all(tok in hay for tok in tokens)
 
     def apply_filter(self, query: str) -> List[Row]:
-        """
-        Filtering (case-sensitive).
-        Clauses: separated by ';' (AND across clauses).
-        Fielded clause: "field: value".
-          - stations / stations_active: ACTIVE-only, supports '&'/'&&' and '|'/'||'.
-          - stations_removed: REMOVED-only, supports '&'/'&&' and '|'/'||'.
-          - stations_all: active OR removed, supports '&'/'&&' and '|'/'||'.
-          - other fields: tokens split by space/comma/plus/pipe are OR.
-        Plain clause: searched in any column.
-        """
         if not query:
             return self.rows
-
         clauses = [c.strip() for c in query.split(';') if c.strip()]
         if not clauses:
             return self.rows
@@ -289,21 +196,18 @@ class SessionBrowser:
             if ':' in clause:
                 field, value = [p.strip() for p in clause.split(':', 1)]
                 fld = field.lower()
-                idx = self.FIELD_INDEX.get(fld)  # may be None for stations_* pseudo-fields
-
+                idx = self.FIELD_INDEX.get(fld)
                 if fld in ("stations", "stations_active", "stations-active"):
                     return self._match_stations(meta["active"], value)
                 if fld in ("stations_removed", "stations-removed"):
                     return self._match_stations(meta["removed"], value)
                 if fld in ("stations_all", "stations-all"):
                     return self._match_stations(meta["active"] + " " + meta["removed"], value)
-
                 if idx is None:
                     return False
                 hay = values[idx]
                 tokens = self._split_tokens(value)
                 return any(tok in hay for tok in tokens)
-
             return any(clause in col for col in values)
 
         return [r for r in self.rows if all(clause_match(r, c) for c in clauses)]
@@ -498,25 +402,45 @@ class SessionBrowser:
 
     def load_data(self) -> None:
         self.rows = self.fetch_all()
-        self.rows = sort_by_start(self.rows)  # added by jole, sorts the list by date
+        self.rows = sort_by_start(self.rows)  # chronological
 
         self.view_rows = list(self.rows)
+
+        # Jump to first row on/after today
+        idx = index_on_or_after_today(self.view_rows)
+        self.selected = idx
+        self.offset = idx  # makes it the first visible line
 
     def run(self) -> None:
         self.load_data()
         curses.wrapper(self._curses_main)
 
 
-
 def sort_by_start(rows: List[Row]) -> List[Row]:
     def keyfunc(row: Row):
-        start_str = row[0][2]  # "Start" column
+        start_str = row[0][2]
         try:
             return datetime.strptime(start_str, "%Y-%m-%d %H:%M")
         except ValueError:
             return datetime.min
     return sorted(rows, key=keyfunc)
 
+
+def index_on_or_after_today(rows: List[Row]) -> int:
+    """Return index of first row whose Start date is today or later.
+    If all are before today, return last index; if empty, return 0."""
+    if not rows:
+        return 0
+    today_d: date = datetime.now().date()
+    for i, r in enumerate(rows):
+        start_str = r[0][2]
+        try:
+            d = datetime.strptime(start_str, "%Y-%m-%d %H:%M").date()
+        except ValueError:
+            continue
+        if d >= today_d:
+            return i
+    return len(rows) - 1
 
 
 def main() -> None:

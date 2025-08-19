@@ -3,11 +3,10 @@
 All notable changes to this project will be documented in this file.
 
 ## Unreleased
-- Added in-app `?` help popup and updated help bar
-- Expanded README with features, keymap, and filter syntax
-- Introduced docs: USER_GUIDE, FILTER_SYNTAX, KEY_BINDINGS, ROADMAP
-- Case-sensitive, AND/OR-capable stations filtering; active/removed/all modes
-- Whole-row status coloring; removed stations highlighted
+
+## [0.3.0] - 2025-08-19
+### Added
+- Scrolling the list to today's date upon launch
 
 ## [0.2.0] - 2025-08-18
 ### Added
@@ -15,6 +14,11 @@ All notable changes to this project will be documented in this file.
 - `[I]` tag appended to `Type` for intensive sessions
 - Sessions are automatically sorted chronologically by `Start`
 - `F` hotkey to clear filters in TUI
+- Added in-app `?` help popup and updated help bar
+- Expanded README with features, keymap, and filter syntax
+- Introduced docs: USER_GUIDE, FILTER_SYNTAX, KEY_BINDINGS, ROADMAP
+- Case-sensitive, AND/OR-capable stations filtering; active/removed/all modes
+- Whole-row status coloring; removed stations highlighted
 
 ### Fixed
 - Column width for `Code` expanded to 8 to fit intensive session IDs
