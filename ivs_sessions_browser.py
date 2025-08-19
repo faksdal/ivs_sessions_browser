@@ -262,21 +262,8 @@ class SessionBrowser:
         if st == "":
             return curses.color_pair(7)
         return 0
-    '''
-    def _status_color(has_colors: bool, status_text: str) -> int:
-        if not has_colors:
-            return 0
-        st_lower = status_text.lower()
-        if "released" in st_lower:
-            return curses.color_pair(4)
-        if any(k in st_lower for k in ("waiting on media", "ready for processing", "cleaning up", "processing session")):
-            return curses.color_pair(5)
-        if status_text.strip() == "cancelled" in st_lower:
-            return curses.color_pair(6)
-        if status_text.strip() == "" in st_lower:
-            return curses.color_pair(7)
-        return 0
-    '''
+
+
 
     # ------------------ Curses UI drawing ------------------
 
@@ -318,7 +305,7 @@ class SessionBrowser:
 
     def _draw_helpbar(self, stdscr) -> None:
         max_y, max_x = stdscr.getmaxyx()
-        help_text = "↑↓ Move  PgUp/PgDn  Home/End  Enter Open  '/' Filter  F ClearFilter  ? Help  q Quit  stations: AND(&) OR(|)  "
+        help_text = "↑↓ Move  PgUp/PgDn  Home/End  Enter Open  '/' Filter  T Today  F ClearFilter  ? Help  q Quit  stations: AND(&) OR(|)  "
         right = f"row {min(self.selected + 1, len(self.view_rows))}/{len(self.view_rows)}"
         bar = (help_text + (f"filter: {self.current_filter}" if self.current_filter else "") + "  " + right)[: max_x - 1]
         bar_attr = curses.color_pair(3) if self.has_colors else curses.A_REVERSE
@@ -328,20 +315,28 @@ class SessionBrowser:
 
     def _show_help(self, stdscr) -> None:
         lines = [
-            "IVS Sessions TUI Browser — Help",
+            "IVS Session Browser Help",
             "",
-            "Keys:",
-            "  ↑/↓ Move    PgUp/PgDn Page    Home/End Jump",
-            "  Enter Open session URL",
-            "  / Filter     F Clear Filter    ? Help   q/Esc Quit",
+            "Navigation:",
+            "  ↑/↓ : Move selection",
+            "  PgUp/PgDn : Page up/down",
+            "  Home/End : Jump to first/last",
+            "  T : Jump to today's session",
+            "  Enter : Open session in browser",
             "",
-            "Filters (case-sensitive):",
-            "  Clauses separated by ';' are AND between clauses.",
-            "  Non-stations fields: tokens split by space/comma/plus/pipe are OR (e.g. code: R1|R4)",
-            "  Stations (active-only): AND with '&' (or spaces), OR with '|'",
-            "  Also: stations_removed: …   stations_all: …",
+            "Filtering:",
+            "  / : Enter filter (field:value, supports AND/OR)",
+            "  F : Clear filters",
             "",
-            "Press any key to close.",
+            "Other:",
+            "  q or ESC : Quit",
+            "  ? : Show this help",
+            "",
+            "Color legend:",
+            "  Green   = Released",
+            "  Yellow  = Processing / Waiting",
+            "  Magenta = Cancelled",
+            "  Blue    = No status",
         ]
         h, w = stdscr.getmaxyx()
         width = min(84, w - 4)
@@ -372,7 +367,7 @@ class SessionBrowser:
             curses.init_pair(4, curses.COLOR_GREEN, -1)                 # released
             curses.init_pair(5, curses.COLOR_YELLOW, -1)                # processing
             curses.init_pair(6, curses.COLOR_MAGENTA, -1)               # cancelled
-            curses.init_pair(7, curses.COLOR_RED, -1)                   # none
+            curses.init_pair(7, curses.COLOR_BLUE, -1)                  # none
 
         while True:
             stdscr.clear()
@@ -397,6 +392,11 @@ class SessionBrowser:
                 self.selected = 0
             elif ch == curses.KEY_END:
                 self.selected = max(0, len(self.view_rows) - 1)
+            elif ch in (ord('t'), ord('T')):
+                # Jump to today's date
+                idx = index_on_or_after_today(self.view_rows)
+                self.selected = idx
+                self.offset = idx
             elif ch in (10, curses.KEY_ENTER):
                 if self.view_rows:
                     _, url, _ = self.view_rows[self.selected]
@@ -406,13 +406,29 @@ class SessionBrowser:
                 q = self._get_input(stdscr, "/ ")
                 self.current_filter = q
                 self.view_rows = self.apply_filter(q)
-                self.selected = 0
-                self.offset = 0
+                idx = index_on_or_after_today(self.view_rows)
+                self.selected = idx
+                self.offset = idx
             elif ch == ord('F'):
                 self.current_filter = ""
                 self.view_rows = self.rows
-                self.selected = 0
-                self.offset = 0
+                idx = index_on_or_after_today(self.view_rows)
+                self.selected = idx
+                self.offset = idx
+
+            #elif ch == ord('/'):
+            #    q = self._get_input(stdscr, "/ ")
+            #    self.current_filter = q
+            #    self.view_rows = self.apply_filter(q)
+            #    self.selected = 0
+            #    self.offset = 0
+             
+            #elif ch == ord('F'):
+            #    self.current_filter = ""
+            #    self.view_rows = self.rows
+            #    self.selected = 0
+            #    self.offset = 0
+
             elif ch == ord('?'):
                 self._show_help(stdscr)
             elif ch in (ord('q'), 27):
