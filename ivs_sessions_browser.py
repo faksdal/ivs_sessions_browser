@@ -248,6 +248,22 @@ class SessionBrowser:
 
     @staticmethod
     def _status_color(has_colors: bool, status_text: str) -> int:
+        """Map status text to a curses color pair.
+        4=green(released), 5=yellow(processing/waiting), 6=magenta(cancelled), 7=red(none)."""
+        if not has_colors:
+            return 0
+        st = status_text.strip().lower()
+        if "released" in st:
+            return curses.color_pair(4)
+        if any(k in st for k in ("waiting on media", "ready for processing", "cleaning up", "processing session")):
+            return curses.color_pair(5)
+        if "cancelled" in st or "canceled" in st:  # handle both spellings
+            return curses.color_pair(6)
+        if st == "":
+            return curses.color_pair(7)
+        return 0
+    '''
+    def _status_color(has_colors: bool, status_text: str) -> int:
         if not has_colors:
             return 0
         st_lower = status_text.lower()
@@ -255,9 +271,12 @@ class SessionBrowser:
             return curses.color_pair(4)
         if any(k in st_lower for k in ("waiting on media", "ready for processing", "cleaning up", "processing session")):
             return curses.color_pair(5)
-        if status_text.strip() == "" or "cancelled" in st_lower:
+        if status_text.strip() == "cancelled" in st_lower:
             return curses.color_pair(6)
+        if status_text.strip() == "" in st_lower:
+            return curses.color_pair(7)
         return 0
+    '''
 
     # ------------------ Curses UI drawing ------------------
 
@@ -347,12 +366,13 @@ class SessionBrowser:
         if self.has_colors:
             curses.start_color()
             curses.use_default_colors()
-            curses.init_pair(1, curses.COLOR_YELLOW, -1)  # removed stations
-            curses.init_pair(2, curses.COLOR_CYAN, -1)    # header
-            curses.init_pair(3, curses.COLOR_BLACK, curses.COLOR_WHITE)  # help bar
-            curses.init_pair(4, curses.COLOR_GREEN, -1)   # released
-            curses.init_pair(5, curses.COLOR_YELLOW, -1)  # processing
-            curses.init_pair(6, curses.COLOR_RED, -1)     # none/cancelled
+            curses.init_pair(1, curses.COLOR_YELLOW, -1)                # removed stations
+            curses.init_pair(2, curses.COLOR_CYAN, -1)                  # header
+            curses.init_pair(3, curses.COLOR_BLACK, curses.COLOR_WHITE) # help bar
+            curses.init_pair(4, curses.COLOR_GREEN, -1)                 # released
+            curses.init_pair(5, curses.COLOR_YELLOW, -1)                # processing
+            curses.init_pair(6, curses.COLOR_MAGENTA, -1)               # cancelled
+            curses.init_pair(7, curses.COLOR_RED, -1)                   # none
 
         while True:
             stdscr.clear()
