@@ -1,7 +1,667 @@
-<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
-<html><head>
-<title>302 Found</title>
-</head><body>
-<h1>Found</h1>
-<p>The document has moved <a href="https://urs.earthdata.nasa.gov/oauth/authorize?client_id=gDQnv1IO0j9O2xXdwS8KMQ&amp;response_type=code&amp;redirect_uri=https%3A%2F%2Fcddis.nasa.gov%2Fproxyauth&amp;state=aHR0cDovL2NkZGlzLm5hc2EuZ292L2FyY2hpdmUvdmxiaS9pdnNkYXRhL2F1eC8yMDI1L3I0MTE4OS9yNDExODkuY29ycg">here</a>.</p>
-</body></html>
+%CORRELATOR_REPORT_FORMAT 3
+
++HEADER
+
+SESSION     R41189
+VGOSDB      20250109-r41189
+START       2025-009-1830
+END         2025-010-1830
+CORRELATOR  WACO
+ANALYST     Sara Hardin
+VERSION     1-1
+
++SUMMARY
+
+qcode     total   correlated
+----------------------------
+5-9        38.11%     88.66%
+0           3.84%      8.94%
+1-4,A-H,N  30.39%      2.40%
+removed    27.65%      0.00%
+
+* qcode       quality codes, error codes, or status
+* total       percent of total scans
+* correlated  percent of correlated scans
+
++STATIONS
+
+station name     mk4
+--------------------
+Bd      BADARY   d
+Ft      FORTLEZA b
+Hb      HOBART12 O
+Ht      HART15M  h
+Ke      KATH12M  K
+Kk      KOKEE    k
+Nn      NYALE13N N
+Sv      SVETLOE  s
+Wz      WETTZELL v
+Yg      YARRA12M P
+Zc      ZELENCHK z
+
+* station  2-char station ID
+* name     3- to 8-char station name
+* mk4      1-char HOPS station code
+
++NOTES
+
+station note
+-------------------------------------------------------
+Bd      Did not observe
+
+Ft      Did not observe
+
+Hb      Observed with dual linear polarisation X,Y
+Hb      Applied manual phase calibration
+Hb      Removed channel from fringe fitting: S04UX, S04UY, S05UX, S05UY
+Hb      Weak fringes; most fringes have SNR < 20
+
+Ke      Data not yet transferred due to connection issues between UTAS and WASH
+
+Kk      Applied manual phase calibration
+
+Nn      Observed with dual linear polarisation X,Y
+Nn      Applied manual phase calibration
+
+Sv      Halted for intensive: 2025-010-064815 -- 2025-010-075207
+
+Wz      Wind stow: 2025-009-192507 -- 2025-009-194310
+
+Yg      Observed with dual linear polarisation X,Y
+Yg      Applied manual phase calibration
+Yg      Only first 6 hours of raw data currently available due to connection issues between UTAS and WASH
+Yg      X band subambiguities present
+
+Zc      Halted for intensive: 2025-010-065114 -- 2025-010-075448
+
+* station  2-char station ID, baseline, closure set, or - for general notes
+* note     correlator notes and feedback
+
++CLOCK
+
+st         epoch used-offset     used-rate raw-offset      raw-rate comment
+-----------------------------------------------------------------------------
+Hb 2025-009-1830      27.839 -2.312000e-13  26.668978 -4.248246e-14
+Ht 2025-009-1830       5.449 -6.506000e-14   2.950193  1.811362e-13
+Kk 2025-009-1830      12.446  2.560000e-13  11.951393 -3.533313e-13
+Nn 2025-009-1830      15.857  3.526000e-13  14.653745  1.103264e-13
+Sv 2025-009-1830     215.140 -1.180000e-13  -1.450294 -2.838252e-13
+Wz 2025-009-1830      -1.839 -5.641000e-14  -3.961865 -5.640649e-14 reference
+Yg 2025-009-1830       8.902  7.887000e-13   8.264469  3.173946e-13
+Zc 2025-009-1830     213.898 -1.118000e-13  -2.746039 -1.540917e-13
+
+* st           2-char station ID
+* epoch        time coordinate of offsets and clock model segment start time
+* used-offset  (usec) station clock minus offset used in correlation at epoch
+* used-rate    drift rate of station clock minus offset used in correlation
+* raw-offset   (usec) station clock minus reference clock offset at epoch
+* raw-rate     drift rate of station clock minus reference clock offset
+* comment      clock-break, reference station, or other notes
+
++CHANNELS
+
+channel id frequency
+--------------------
+S00UR   a    2225.99
+S00UX   a    2225.99
+S00UY   a    2225.99
+S01UR   b    2245.99
+S01UX   b    2245.99
+S01UY   b    2245.99
+S02UR   c    2265.99
+S02UX   c    2265.99
+S02UY   c    2265.99
+S03UR   d    2295.99
+S03UX   d    2295.99
+S03UY   d    2295.99
+S04UR   e    2345.99
+S04UX   e    2345.99
+S04UY   e    2345.99
+S05UR   f    2365.99
+S05UX   f    2365.99
+S05UY   f    2365.99
+S06UX   -    2373.99
+S06UY   -    2373.99
+S07UX   -    2381.99
+S07UY   -    2381.99
+X06LR   g-   8212.99
+X06UR   g+   8212.99
+X06UX   g    8212.99
+X06UY   g    8212.99
+X08UX   g    8212.99
+X08UY   g    8212.99
+X07UR   h    8252.99
+X07UX   h    8252.99
+X07UY   h    8252.99
+X09UX   h    8252.99
+X09UY   h    8252.99
+X08UR   i    8352.99
+X08UX   i    8352.99
+X08UY   i    8352.99
+X10UX   i    8352.99
+X10UY   i    8352.99
+X09UR   j    8512.99
+X09UX   j    8512.99
+X09UY   j    8512.99
+X11UX   j    8512.99
+X11UY   j    8512.99
+X10UR   k    8732.99
+X10UX   k    8732.99
+X10UY   k    8732.99
+X12UX   k    8732.99
+X12UY   k    8732.99
+X11UR   l    8852.99
+X11UX   l    8852.99
+X11UY   l    8852.99
+X13UX   l    8852.99
+X13UY   l    8852.99
+X12UR   m    8912.99
+X12UX   m    8912.99
+X12UY   m    8912.99
+X14UX   m    8912.99
+X14UY   m    8912.99
+X13LR   n-   8932.99
+X13UR   n+   8932.99
+X13UX   n    8932.99
+X13UY   n    8932.99
+X15UX   n    8932.99
+X15UY   n    8932.99
+
+* channel    HOPS channel name
+* id         short name with sideband indicator
+* frequency  (MHz) sky frequency
+
++DROP_CHANNELS
+
+Hb      S04UX, S04UY, S05UX, S05UY
+
++MANUAL_PCAL
+
+Hb
+Kk
+Nn
+Yg
+
++QCODES
+
+bl:band   0 1 2 3 4 5  6   7   8    9   G H    N    - total
+-----------------------------------------------------------
+db:S      0 0 0 0 0 0  0   0   0    0   0 0    0   19    19
+db:X      0 0 0 0 0 0  0   0   0    0   0 0    0   19    19
+dO:S      0 0 0 0 0 0  0   0   0    0   0 0    0   80    80
+dO:X      0 0 0 0 0 0  0   0   0    0   0 0    0   80    80
+dh:S      0 0 0 0 0 0  0   0   0    0   0 0    0  164   164
+dh:X      0 0 0 0 0 0  0   0   0    0   0 0    0  164   164
+dK:S      0 0 0 0 0 0  0   0   0    0   0 0    0  117   117
+dK:X      0 0 0 0 0 0  0   0   0    0   0 0    0  117   117
+dk:S      0 0 0 0 0 0  0   0   0    0   0 0    0  108   108
+dk:X      0 0 0 0 0 0  0   0   0    0   0 0    0  108   108
+dN:S      0 0 0 0 0 0  0   0   0    0   0 0    0  201   201
+dN:X      0 0 0 0 0 0  0   0   0    0   0 0    0  201   201
+ds:S      0 0 0 0 0 0  0   0   0    0   0 0    0  234   234
+ds:X      0 0 0 0 0 0  0   0   0    0   0 0    0  234   234
+dv:S      0 0 0 0 0 0  0   0   0    0   0 0    0  191   191
+dv:X      0 0 0 0 0 0  0   0   0    0   0 0    0  191   191
+dP:S      0 0 0 0 0 0  0   0   0    0   0 0    0  118   118
+dP:X      0 0 0 0 0 0  0   0   0    0   0 0    0  118   118
+dz:S      0 0 0 0 0 0  0   0   0    0   0 0    0  265   265
+dz:X      0 0 0 0 0 0  0   0   0    0   0 0    0  265   265
+bO:S      0 0 0 0 0 0  0   0   0    0   0 0    0   19    19
+bO:X      0 0 0 0 0 0  0   0   0    0   0 0    0   19    19
+bh:S      0 0 0 0 0 0  0   0   0    0   0 0    0   57    57
+bh:X      0 0 0 0 0 0  0   0   0    0   0 0    0   57    57
+bK:S      0 0 0 0 0 0  0   0   0    0   0 0    0    6     6
+bK:X      0 0 0 0 0 0  0   0   0    0   0 0    0    6     6
+bk:S      0 0 0 0 0 0  0   0   0    0   0 0    0   20    20
+bk:X      0 0 0 0 0 0  0   0   0    0   0 0    0   20    20
+bN:S      0 0 0 0 0 0  0   0   0    0   0 0    0   31    31
+bN:X      0 0 0 0 0 0  0   0   0    0   0 0    0   31    31
+bs:S      0 0 0 0 0 0  0   0   0    0   0 0    0   32    32
+bs:X      0 0 0 0 0 0  0   0   0    0   0 0    0   32    32
+bv:S      0 0 0 0 0 0  0   0   0    0   0 0    0   55    55
+bv:X      0 0 0 0 0 0  0   0   0    0   0 0    0   55    55
+bP:S      0 0 0 0 0 0  0   0   0    0   0 0    0   15    15
+bP:X      0 0 0 0 0 0  0   0   0    0   0 0    0   15    15
+bz:S      0 0 0 0 0 0  0   0   0    0   0 0    0   39    39
+bz:X      0 0 0 0 0 0  0   0   0    0   0 0    0   39    39
+Oh:S     14 0 0 0 0 0  0   1   6   57   6 0   54    0   138
+Oh:X     32 0 0 0 0 0  0   0   0   52   0 0   54    0   138
+OK:S      0 0 0 0 0 0  0   0   0    0   0 0  307    0   307
+OK:X      0 0 0 0 0 0  0   0   0    0   0 0  307    0   307
+Ok:S     32 0 0 0 0 0  0   0   0   61   0 0   46    0   139
+Ok:X     24 0 0 0 0 0  0   1  11   57   0 0   46    0   139
+ON:S      5 0 0 0 0 0  0   0   1    6   0 0    4    0    16
+ON:X      8 0 0 0 0 0  0   0   0    4   0 0    4    0    16
+Os:S      6 0 0 0 0 0  0   0   2   12   0 0   12    0    32
+Os:X      5 0 0 0 0 0  0   0   1   14   0 0   12    0    32
+Ov:S      7 0 0 0 0 0  0   0   1   13   0 0    8    0    29
+Ov:X      6 0 0 0 0 0  0   1   0   14   0 0    8    0    29
+OP:S     41 0 0 0 0 0  0   0   0   17   0 0  242    0   300
+OP:X     59 0 0 0 0 0  0   1   0    2   0 0  238    0   300
+Oz:S      9 0 0 0 0 0  0   1   1   20   0 0   18    0    49
+Oz:X      3 0 0 0 0 0  0   0   3   25   0 0   18    0    49
+hK:S      0 0 0 0 0 0  0   0   0    0   0 0  130    0   130
+hK:X      0 0 0 0 0 0  0   0   0    0   0 0  130    0   130
+hk:S      0 0 0 0 0 0  0   0   0    0   0 0    0    0     0
+hk:X      0 0 0 0 0 0  0   0   0    0   0 0    0    0     0
+hN:S     24 0 0 0 0 0  1   9  16   72   1 0    0    0   123
+hN:X     35 0 0 0 0 0  0   0   4   84   0 0    0    0   123
+hs:S      1 0 0 0 0 0  1   8  39   97  30 0    0    7   183
+hs:X      6 0 0 0 0 0  0   1   3  166   0 0    0    7   183
+hv:S     10 0 0 0 0 0  1   5  40  171  26 0    0    0   253
+hv:X     10 0 0 0 0 0  1   1  21  220   0 0    0    0   253
+hP:S      7 0 0 0 0 0  0   7   2   13   3 0  138    0   170
+hP:X     10 0 0 0 0 0  0   0   0   25   0 0  135    0   170
+hz:S      3 0 0 0 0 0  1   9  98   99  19 0    1   10   240
+hz:X      0 0 0 0 0 0  3   0   9  217   0 0    1   10   240
+Kk:S      0 0 0 0 0 0  0   0   0    0   0 0  131    0   131
+Kk:X      0 0 0 0 0 0  0   0   0    0   0 0  131    0   131
+KN:S      0 0 0 0 0 0  0   0   0    0   0 0   44    0    44
+KN:X      0 0 0 0 0 0  0   0   0    0   0 0   44    0    44
+Ks:S      0 0 0 0 0 0  0   0   0    0   0 0   63    3    66
+Ks:X      0 0 0 0 0 0  0   0   0    0   0 0   63    3    66
+Kv:S      0 0 0 0 0 0  0   0   0    0   0 0   61    2    63
+Kv:X      0 0 0 0 0 0  0   0   0    0   0 0   61    2    63
+KP:S      0 0 0 0 0 0  0   0   0    0   0 0  337    0   337
+KP:X      0 0 0 0 0 0  0   0   0    0   0 0  337    0   337
+Kz:S      0 0 0 0 0 0  0   0   0    0   0 0   88    3    91
+Kz:X      0 0 0 0 0 0  0   0   0    0   0 0   88    3    91
+kN:S     31 0 0 0 0 0  1   4  13   81   6 0    0    0   136
+kN:X     25 0 0 0 0 0  0   3  19   89   0 0    0    0   136
+ks:S      1 0 0 0 0 0  0   2   8   55   5 1    0    5    77
+ks:X      1 0 0 0 0 0  0   0   2   69   0 0    0    5    77
+kv:S      6 0 0 0 0 0  0   0   9   54   4 0    0    0    73
+kv:X      1 0 0 0 0 0  0   3  12   55   2 0    0    0    73
+kP:S      5 0 0 0 0 0  0   2   2   11   0 0   80    0   100
+kP:X     10 0 0 0 0 0  0   0   1   10   0 0   79    0   100
+kz:S      9 0 0 0 0 0  0   1  15   30   8 0    0    5    68
+kz:X      1 0 0 0 0 0  0   0   4   58   0 0    0    5    68
+Ns:S      0 0 0 0 1 2  6   8  42  147   2 0    1   10   219
+Ns:X      1 0 0 0 0 0  1   1   7  197   1 0    1   10   219
+Nv:S      4 0 0 0 0 1  9  18  33  124   2 0    0    0   191
+Nv:X      2 0 0 0 0 0  5   5  29  150   0 0    0    0   191
+NP:S      5 0 0 0 0 0  0   1   1    4   0 0   28    0    39
+NP:X     11 0 0 0 0 0  0   0   0    0   0 0   28    0    39
+Nz:S      4 0 0 0 0 1  2   6  28  156   3 0    0    8   208
+Nz:X      2 0 0 0 0 0  2   1  13  182   0 0    0    8   208
+sv:S      5 0 0 0 0 1  0   5  28  179   1 0    0   15   234
+sv:X      5 0 0 0 0 0  0   3  13  198   0 0    0   15   234
+sP:S      2 0 0 0 0 0  0   1   3    6   4 0   57    2    75
+sP:X      6 0 0 0 0 0  0   0   0   10   0 0   57    2    75
+sz:S      0 0 0 0 0 0  4  27  79  168   2 0    1   16   297
+sz:X      0 0 0 0 0 0  2   2  19  257   0 0    1   16   297
+vP:S      2 0 0 0 0 0  0   0   5    5   3 0   60    0    75
+vP:X      6 0 0 0 0 0  0   0   0   11   0 0   58    0    75
+vz:S      7 0 0 0 0 0  1   5  44  185   8 0    0   15   265
+vz:X      7 0 0 0 0 0  1   1  40  201   0 0    0   15   265
+Pz:S      3 0 0 0 0 0  0   2   5   11   2 0   83    2   108
+Pz:X      2 0 0 0 0 0  0   1   1   18   0 0   84    2   108
+total   521 0 0 0 1 5 42 147 733 4239 138 1 3979 3748 13554
+
+* bl:band  baseline and frequency band name
+* 0        no fringe detected
+* 1-9      fringe detected, higher value means better quality
+* B        fourfit interpolation error
+* D        no data in one or more frequency channels
+* E        fringe found at edge of SBD, MBD, or rate window
+* F        fork problem in processing
+* G        channel amplitude diverges too far from mean amplitude
+* H        low phase-cal amplitude in one or more channels
+* N        correlation or fringing failed
+* -        correlation not attempted
+* total    column and row totals
+
++SNR_RATIOS
+
+bl        S n_S        X n_X
+----------------------------
+Oh 0.449602  70 0.304418  52
+Ok 0.291356  59 0.343049  69
+ON 0.571855   7 0.207744   4
+Os 0.626059  14 0.400303  15
+Ov 0.525795  13 0.710050  15
+OP 0.302517  16 0.107288   3
+Oz 0.403001  22 0.478026  28
+hN 0.675843  99 0.363750  88
+hs 1.108668 175 0.425698 170
+hv 1.010889 243 0.719578 243
+hP 0.439305  25 0.233801  24
+hz 0.794550 226 0.608380 229
+kN 0.346259 105 0.386276 111
+ks 0.484668  71 0.391351  71
+kv 0.530430  67 0.825075  72
+kP 0.355865  15 0.255545  11
+kz 0.371733  54 0.525574  62
+Ns 1.020872 208 0.384892 207
+Nv 0.943666 187 0.638746 189
+NP 0.403413   5  -         0
+Nz 0.672791 196 0.501972 198
+sv 1.520534 214 0.864552 214
+sP 0.717114  14 0.152073  10
+sz 1.085709 280 0.654282 280
+vP 0.596460  13 0.165905  11
+vz 0.983690 243 1.139571 243
+Pz 0.482898  20 0.170236  20
+
+* bl       baseline
+* [A-Z]    ratio for this band name
+* n_[A-Z]  number of scans in average for this band name
+
++EOP
+
+  mjd tai-utc  ut1-utc    xpole    ypole
+----------------------------------------
+60683    37.0 0.042908 0.137067 0.305523
+60684    37.0 0.042530 0.135251 0.305388
+60685    37.0 0.042456 0.133148 0.305274
+60686    37.0 0.042660 0.130920 0.305024
+60687    37.0 0.043015 0.128937 0.304659
+
+* mjd      integer modified Julian date
+* tai-utc  (sec) TAI minus UTC offset
+* ut1-utc  (sec) UT1 minus UTC offset
+* xpole    X pole EOP parameter
+* ypole    Y pole EOP parameter
+
++CORRELATION
+
+SOFTWARE    DiFX
+VERSION     2.5.4
+ALGORITHM   FX
+NCHAN       256, 1024
+FFTSPECRES  0.03125 MHz
+SPECRES     0.125 MHz
+TINT        2.0 sec
+
++FRINGING
+
+SOFTWARE  HOPS
+VERSION   3.25-0
+
++VGOSDB
+
+SOFTWARE  nuSolve
+
++CORRELATION_CONFIG_FILE
+
+vex = r41189.vex
+maxGap = 180000.0
+maxLength = 360000.0
+singleScan = true
+startSeries = 1
+antennas = HB, HT, KK, NN, SV, WZ, YG, ZC
+SETUP normalSetup {
+  FFTSpecRes = 0.03125
+  specRes = 0.125
+  tInt = 2
+}
+RULE scansubset {
+  setup = normalSetup
+}
+ANTENNA BD {
+  phaseCalInt = 1
+  toneSelection = all
+}
+ANTENNA FT {
+  phaseCalInt = 1
+  toneSelection = all
+}
+DATASTREAM HB_XX {
+  format = VDIF_8032-256-8-2
+  filelist = filelist_xx
+}
+DATASTREAM HB_XY {
+  format = VDIF_8032-256-8-2
+  filelist = filelist_xy
+}
+DATASTREAM HB_SX {
+  format = VDIF_8032-256-8-2
+  filelist = filelist_sx
+}
+DATASTREAM HB_SY {
+  format = VDIF_8032-256-8-2
+  filelist = filelist_sy
+}
+ANTENNA HB {
+  phaseCalInt = 10
+  toneSelection = all
+  datastreams = HB_XX, HB_XY, HB_SX, HB_SY
+}
+ANTENNA HT {
+  phaseCalInt = 1
+  toneSelection = all
+  filelist = filelist
+}
+DATASTREAM KE_XX {
+}
+DATASTREAM KE_XY {
+}
+DATASTREAM KE_SX {
+}
+DATASTREAM KE_SY {
+}
+ANTENNA KE {
+  phaseCalInt = 10
+  toneSelection = all
+  datastreams = KE_XX, KE_XY, KE_SX, KE_SY
+}
+ANTENNA KK {
+  phaseCalInt = 1
+  toneSelection = all
+  filelist = filelist
+}
+DATASTREAM NN_6 {
+  format = VDIF_8032-1024-8-2
+  filelist = filelist_6
+}
+DATASTREAM NN_7 {
+  format = VDIF_8032-1024-8-2
+  filelist = filelist_7
+}
+DATASTREAM NN_0 {
+  format = VDIF_8032-1024-8-2
+  filelist = filelist_0
+}
+DATASTREAM NN_1 {
+  format = VDIF_8032-1024-8-2
+  filelist = filelist_1
+}
+ANTENNA NN {
+  phaseCalInt = 10
+  toneSelection = all
+  zoom = geoZoom
+  datastreams = NN_6, NN_7, NN_0, NN_1
+}
+ANTENNA SV {
+  phaseCalInt = 1
+  toneSelection = all
+  filelist = filelist
+}
+ANTENNA WZ {
+  phaseCalInt = 1
+  toneSelection = all
+  filelist = filelist
+}
+DATASTREAM YG_XX {
+  format = VDIF_8032-256-8-2
+  filelist = filelist_xx
+}
+DATASTREAM YG_XY {
+  format = VDIF_8032-256-8-2
+  filelist = filelist_xy
+}
+DATASTREAM YG_SX {
+  format = VDIF_8032-256-8-2
+  filelist = filelist_sx
+}
+DATASTREAM YG_SY {
+  format = VDIF_8032-256-8-2
+  filelist = filelist_sy
+}
+ANTENNA YG {
+  phaseCalInt = 10
+  toneSelection = all
+  datastreams = YG_XX, YG_XY, YG_SX, YG_SY
+}
+ANTENNA ZC {
+  phaseCalInt = 1
+  toneSelection = all
+  filelist = filelist
+}
+ZOOM geoZoom
+{
+   addZoomFreq=freq@8212.99/bw@8.00
+   addZoomFreq=freq@8252.99/bw@8.00
+   addZoomFreq=freq@8352.99/bw@8.00
+   addZoomFreq=freq@8512.99/bw@8.00
+   addZoomFreq=freq@8732.99/bw@8.00
+   addZoomFreq=freq@8852.99/bw@8.00
+   addZoomFreq=freq@8912.99/bw@8.00
+   addZoomFreq=freq@8932.99/bw@8.00
+   addZoomFreq=freq@2225.99/bw@8.00
+   addZoomFreq=freq@2245.99/bw@8.00
+   addZoomFreq=freq@2265.99/bw@8.00
+   addZoomFreq=freq@2295.99/bw@8.00
+   addZoomFreq=freq@2345.99/bw@8.00
+   addZoomFreq=freq@2365.99/bw@8.00
+}
+
++FRINGING_CONFIG_FILE
+
+sb_win -256.0 256.0
+mb_win -256.0 256.0
+dr_win -0.03 0.03
+pc_mode multitone
+pc_period 5
+mixed_pol_yshift90 true
+chan_ids abcdefghijklmn 2225.99 2245.99 2265.99 2295.99 2345.99 2365.99 8212.99 8252.99 8352.99 8512.99 8732.99 8852.99 8912.99 8932.99
+
+if f_group S
+  freqs a b c d e f
+
+if f_group X
+  freqs g h i j k l m n
+
+if f_group X
+  ref_freq 8212.99
+
+if f_group S
+  ref_freq 2225.99
+
+if station k and f_group X
+  pc_tonemask ghijklmn 148 132 132 132 132 132 132 132
+
+if station k and f_group S
+  pc_tonemask abcdef 16 16 16 16 16 16
+
+if station d
+  lsb_offset 140.0
+
+if station b
+  lsb_offset 120.0
+
+if station h
+  lsb_offset 0.0
+
+if station O
+  lsb_offset 0.0
+
+if station K
+  lsb_offset 0.0
+
+if station k
+  lsb_offset 70.0
+
+if station N
+  lsb_offset 0.0
+
+if station s
+  lsb_offset 140.0
+
+if station v
+  lsb_offset 0.0
+
+if station P
+  lsb_offset 0.0
+
+if station z
+  lsb_offset 160.0
+
+if station O and f_group S
+  freqs a b c d
+
+if station K and f_group S
+  pc_mode manual
+
+if station K and f_group X
+  pc_mode manual
+
+if station k and f_group S
+  pc_mode manual
+  pc_phases abcdef 170.90297 134.00679 -174.20775 -173.27005 -116.57172 113.47926
+
+if station k and f_group X
+  pc_mode manual
+  pc_phases ghijklmn -107.63494 -160.3822 -92.35138 -47.70982 -175.85979 -99.98145 173.96544 -79.23363
+
+if station N and f_group S
+  pc_mode manual
+  delay_offs_x abcdef 22.672 22.672 22.672 22.672 22.672 22.672
+  delay_offs_y abcdef 27.644 27.644 27.644 27.644 27.644 27.644
+  pc_phases_x abcdef -73.5 126.8 330.1 277.7 88.0 293.7
+  pc_phases_y abcdef 161.5 37.8 272.9 269.4 157.1 32.4
+
+if station N and f_group X
+  pc_mode manual
+  delay_offs_x ghijklmn -0.554 -0.554 -0.554 -0.554 -0.554 -0.554 -0.554 -0.554
+  delay_offs_y ghijklmn 6.35 6.35 6.35 6.35 6.35 6.35 6.35 6.35
+  pc_phases_x ghijklmn -9.1 123.7 204.8 144.0 306.7 356.2 183.8 268.9
+  pc_phases_y ghijklmn -114.8 119.0 97.8 78.5 73.0 60.2 44.5 179.1
+
+if station O and f_group S
+  pc_mode manual
+  delay_offs_x abcd 328.28 328.28 328.28 328.28
+  delay_offs_y abcd 320.014 320.014 320.014 320.014
+  pc_phases_x abcd 129.8 -80.6 -260.0 -158.0
+  pc_phases_y abcd 10.3 -71.1 -142.3 -212.1
+
+if station O and f_group X
+  pc_mode manual
+  delay_offs_x ghijklmn 11.296 11.296 11.296 11.296 11.296 11.296 11.296 11.296
+  delay_offs_y ghijklmn 15.292 15.292 15.292 15.292 15.292 15.292 15.292 15.292
+  pc_phases_x ghijklmn -171.0 77.5 -166.0 -199.4 -45.0 -355.7 -161.5 -208.7
+  pc_phases_y ghijklmn -50.2 -54.1 -78.3 -126.1 -215.7 -286.1 -306.9 -320.7
+
+if station P and f_group S
+  pc_mode manual
+  delay_offs_x abcdef 252.772 252.772 252.772 252.772 252.772 252.772
+  delay_offs_y abcdef 263.834 263.834 263.834 263.834 263.834 263.834
+  pc_phases_x abcdef -14.5 -183.2 -350.2 -246.8 -274.3 -69.2
+  pc_phases_y abcdef -57.4 -239.8 -49.2 -308.7 -189.8 -295.6
+
+if station P and f_group X
+  pc_mode manual
+  delay_offs_x ghijklmn -11.762 -11.762 -11.762 -11.762 -11.762 -11.762 -11.762 -11.762
+  delay_offs_y ghijklmn -10.9 -10.9 -10.9 -10.9 -10.9 -10.9 -10.9 -10.9
+  pc_phases_x ghijklmn 93.8 -221.6 -293.6 -104.2 -92.7 -283.9 -51.5 -205.9
+  pc_phases_y ghijklmn -96.8 -70.4 -99.9 -239.5 -173.5 -359.5 -110.3 -257.3
+
+if station h and f_group S
+  pc_phases abcdef -3.6 -1.1 1.2 4.6 7.9 -8.9
+
+if station h and f_group X
+  pc_phases ghijklmn -2.5 -3.5 -7.7 19.7 7.9 -6.1 -5.5 -1.8
+
+if station s and f_group S
+  pc_phases abcdef 17.0 -4.5 -24.0 7.5 8.1 -4.3
+
+if station s and f_group X
+  pc_phases ghijklmn -0.6 -2.7 1.4 3.9 4.0 -0.5 -7.1 1.4
+
+if station z and f_group S
+  pc_phases abcdef 1.5 4.0 -2.6 -6.7 0.6 3.1
+
+if station z and f_group X
+  pc_phases ghijklmn -5.9 3.1 3.3 7.6 2.8 -0.1 -11.9 1.3
+
++END
