@@ -1,3 +1,5 @@
+#! /usr/bin/python3
+
 # File: ivs_sessions_browser.py
 
 import argparse
@@ -61,6 +63,46 @@ class SessionBrowser:
 
         # flag for showing/hiding removed sessions in the list
         self.show_removed: bool = True
+        # --- patch added by chatgpt 30/8-2025 --- #####################################################################
+
+        # tokens to highlight in Stations column (from a stations:* filter)
+        self.highlight_tokens: List[str] = []
+
+        # ------------------ Highlight helpers ------------------
+
+    def _extract_station_tokens(self, query: str) -> List[str]:
+        """Pull station codes from any stations-related clause in the current filter."""
+        if not query:
+            return []
+
+        tokens: List[str] = []
+        clauses = [c.strip() for c in query.split(';') if c.strip()]
+
+        for clause in clauses:
+            if ':' not in clause:
+                continue
+            field, value = [p.strip() for p in clause.split(':', 1)]
+            fld = field.lower()
+            if fld in ("stations", "stations_active", "stations-active",
+                       "stations_removed", "stations-removed",
+                       "stations_all", "stations-all"):
+                parts = re.split(r"[ ,+|&]+", value)
+                tokens.extend([p for p in parts if p])
+
+        # Deduplicate; longer-first to avoid partial-overwrite visuals (e.g., 'Ny' vs 'Nya')
+        return sorted(set(tokens), key=lambda s: (-len(s), s))
+
+    def _col_start_x(self, col_idx: int) -> int:
+        """Compute the x offset where column col_idx starts in the printed line."""
+        # Each column is printed left-padded to WIDTHS[c], joined by " | " (3 chars).
+        sep = 3
+        x = 0
+
+        for i in range(col_idx):
+            x += self.WIDTHS[i] + sep
+        return x
+
+    # --- END: patch added by chatgpt 30/8-2025 --- ################################################################
 
     # ------------------ Data ------------------
 
@@ -133,10 +175,14 @@ class SessionBrowser:
             code_link = tds[1].find("a")
             session_url = f"https://ivscc.gsfc.nasa.gov{code_link['href']}" if code_link and code_link.has_attr("href") else None
 
-            # Initial CLI filters (case-sensitive)
+            # --- patch added by chatgtp 30/8-2025 --- #################################################################
+            # Initial CLI filters (case-sensitive for code; stations use same AND/OR grammar as TUI)
             if session_filter and session_filter not in values[1]:
                 continue
-            if antenna_filter and antenna_filter not in active_str:
+            # chatgtp patch --- if antenna_filter and antenna_filter not in active_str:
+            # Use the same stations grammar as the TUI (OR '|' and AND '&', space/',' '+' split),
+            # applied to ACTIVE stations only for the CLI.
+            if antenna_filter and not SessionBrowser._match_stations(active_str, antenna_filter):
                 continue
 
             meta = {"active": active_str, "removed": removed_str}
@@ -275,6 +321,7 @@ class SessionBrowser:
         self._addstr_clip(stdscr, 0, 0, self.HEADER_LINE, header_attr)
         self._addstr_clip(stdscr, 1, 0, "-" * len(self.HEADER_LINE))
 
+    # --- re-drawn to fix indentation errors
     #def _draw_rows(self, stdscr) -> None:
     #    max_y, _ = stdscr.getmaxyx()
     #    view_height = max(1, max_y - 3)
@@ -284,27 +331,55 @@ class SessionBrowser:
     #    elif self.selected >= self.offset + view_height:
     #        self.offset = self.selected - view_height + 1
 
-     #   if not self.view_rows:
-     #       self._addstr_clip(stdscr, 2, 0, "No sessions found.")
-     #       return
+    #    if not self.view_rows:
+    #        self._addstr_clip(stdscr, 2, 0, "No sessions found.")
+    #        return
 
-     #   for i in range(self.offset, min(len(self.view_rows), self.offset + view_height)):
-     #       row_vals, _, _ = self.view_rows[i]
-     #       parts = [f"{val:<{self.WIDTHS[c]}}" for c, val in enumerate(row_vals)]
-     #       full_line = " | ".join(parts)
-     #       y = i - self.offset + 2
-     #       row_attr = curses.A_REVERSE if i == self.selected else 0
+    #    # --- patch added by chatgtp 30/8-2025 --- #####################################################################
+    #    for i in range(self.offset, min(len(self.view_rows), self.offset + view_height)):
+    #        row_vals, _, meta = self.view_rows[i]
 
-     #       row_color = self._status_color(self.has_colors, row_vals[9])
-     #       self._addstr_clip(stdscr, y, 0, full_line, row_attr | row_color)
+    #        # COPY so we can override Stations column safely
+    #        vals = list(row_vals)
 
-            # Highlight removed stations "[...]" inline (overrides row color)
-     #       if self.has_colors and row_vals[5]:
-     #           lbr = full_line.find("[")
-     #           if lbr != -1:
-     #               rbr = full_line.find("]", lbr + 1)
-     #               if rbr != -1 and rbr > lbr:
-     #                   self._addstr_clip(stdscr, y, lbr, full_line[lbr:rbr+1], row_attr | curses.color_pair(1))
+    #        # If hiding removed stations, render active-only in col 5
+    #        if not self.show_removed:
+    #            active_only = meta.get("active", "")
+    #            vals[5] = f"{active_only:<{self.WIDTHS[5]}}"
+
+    #        parts = [f"{val:<{self.WIDTHS[c]}}" for c, val in enumerate(vals)]
+    #        full_line = " | ".join(parts)
+    #        y = i - self.offset + 2
+    #        row_attr = curses.A_REVERSE if i == self.selected else 0
+
+    #        row_color = self._status_color(self.has_colors, vals[9])
+    #        self._addstr_clip(stdscr, y, 0, full_line, row_attr | row_color)
+
+    #        # Highlight "[...]" only if we are showing removed stations
+    #        if self.has_colors and self.show_removed and vals[5]:
+    #            lbr = full_line.find("[")
+    #            if lbr != -1:
+    #                rbr = full_line.find("]", lbr + 1)
+    #                if rbr != -1 and rbr > lbr:
+    #                    self._addstr_clip(stdscr, y, lbr, full_line[lbr:rbr + 1], row_attr | curses.color_pair(1))
+
+    #    #--- added by chatgtp 30/8-2025 ---#############################################################################
+    #    # Station token highlighting (from stations:* filters)
+    #    if vals[5] and self.highlight_tokens:
+    #        stations_text = vals[5]  # padded field text as printed
+    #        col_x = self._col_start_x(5)  # Stations column index is 5
+    #        hl_attr = (curses.color_pair(8) | curses.A_BOLD) if self.has_colors else (curses.A_REVERSE | curses.A_BOLD)
+    #        for tok in self.highlight_tokens:
+    #            start = 0
+    #            while True:
+    #                j = stations_text.find(tok, start)
+    #                if j == -1:
+    #                    break
+    #                self._addstr_clip(stdscr, y, col_x + j, tok, row_attr | hl_attr)
+    #                start = j + len(tok)
+
+    #    # --- END: added by chatgtp 30/8-2025 ---#######################################################################
+    # --- END OF: re-drawn to fix indentation errors
     def _draw_rows(self, stdscr) -> None:
         max_y, _ = stdscr.getmaxyx()
         view_height = max(1, max_y - 3)
@@ -318,6 +393,7 @@ class SessionBrowser:
             self._addstr_clip(stdscr, 2, 0, "No sessions found.")
             return
 
+        # draw each visible row
         for i in range(self.offset, min(len(self.view_rows), self.offset + view_height)):
             row_vals, _, meta = self.view_rows[i]
 
@@ -344,6 +420,22 @@ class SessionBrowser:
                     rbr = full_line.find("]", lbr + 1)
                     if rbr != -1 and rbr > lbr:
                         self._addstr_clip(stdscr, y, lbr, full_line[lbr:rbr + 1], row_attr | curses.color_pair(1))
+
+            # Station token highlighting (from stations:* filters)
+            if vals[5] and self.highlight_tokens:
+                stations_text = vals[5]  # padded field text as printed
+                col_x = self._col_start_x(5)  # Stations column index is 5
+                # Fallback without colors: underline+bold (shows even on selected/reversed rows)
+                hl_attr = (curses.color_pair(8) | curses.A_BOLD) if self.has_colors else (
+                            curses.A_BOLD | curses.A_UNDERLINE)
+                for tok in self.highlight_tokens:
+                    start = 0
+                    while True:
+                        j = stations_text.find(tok, start)
+                        if j == -1:
+                            break
+                        self._addstr_clip(stdscr, y, col_x + j, tok, row_attr | hl_attr)
+                        start = j + len(tok)
 
     def _draw_helpbar(self, stdscr) -> None:
         max_y, max_x = stdscr.getmaxyx()
@@ -410,7 +502,9 @@ class SessionBrowser:
             curses.init_pair(4, curses.COLOR_GREEN, -1)                 # released
             curses.init_pair(5, curses.COLOR_YELLOW, -1)                # processing
             curses.init_pair(6, curses.COLOR_MAGENTA, -1)               # cancelled
-            curses.init_pair(7, curses.COLOR_BLUE, -1)                  # none
+            curses.init_pair(7, curses.COLOR_WHITE, -1)                  # none
+            # --- added by chatgpt 30/8-2025 ---
+            curses.init_pair(8, curses.COLOR_CYAN, -1)                   # station highlight
 
         while True:
             stdscr.clear()
@@ -449,12 +543,16 @@ class SessionBrowser:
                 q = self._get_input(stdscr, "/ ")
                 self.current_filter = q
                 self.view_rows = self.apply_filter(q)
+                # --- added by chatgpt 30/8-2025 ---
+                self.highlight_tokens = self._extract_station_tokens(self.current_filter)
                 idx = index_on_or_after_today(self.view_rows)
                 self.selected = idx
                 self.offset = idx
             elif ch == ord('F'):
                 self.current_filter = ""
                 self.view_rows = self.rows
+                # --- added by chatgpt 30/8-2025 ---
+                self.highlight_tokens = []
                 idx = index_on_or_after_today(self.view_rows)
                 self.selected = idx
                 self.offset = idx
@@ -477,6 +575,17 @@ class SessionBrowser:
         idx = index_on_or_after_today(self.view_rows)
         self.selected = idx
         self.offset = idx  # makes it the first visible line
+
+        # --- added by chatgpt 30/8-2025 --- ###########################################################################
+        # If launched with --antenna, use it as an initial highlight hint
+        #if self.antenna_filter:
+        #    self.highlight_tokens = [self.antenna_filter]
+        # If launched with --stations/--antenna, seed highlight tokens using the same split logic
+        if self.antenna_filter:
+            toks = [t for t in re.split(r"[ ,+|&]+", self.antenna_filter) if t]
+            # longer-first avoids partial overwrites ('Ny' inside 'Nya')
+            self.highlight_tokens = sorted(set(toks), key=lambda s: (-len(s), s))
+        # --- END: added by chatgpt 30/8-2025 --- ######################################################################
 
     def run(self) -> None:
         self.load_data()
@@ -519,6 +628,9 @@ def main() -> None:
             "  Non-stations fields: tokens split by space/comma/plus/pipe are OR (e.g. code: R1|R4)\n"
             "  Stations active: stations: Nn&Ns  or  stations: Nn|Ns\n"
             "  Stations removed/any: stations_removed: Ft|Ur   stations_all: Hb|Ht\n"
+            "\nCLI:\n"
+            "  --stations uses the same grammar as 'stations:' and applies to ACTIVE stations.\n"
+            "  --antenna is deprecated and behaves like --stations.\n"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
@@ -526,14 +638,18 @@ def main() -> None:
     parser.add_argument("--scope", choices=("master", "intensive", "both"), default="both",
                         help="Which schedules to include (default: both)")
     parser.add_argument("--session", type=str, help="Initial filter: session code (case-sensitive)")
-    parser.add_argument("--antenna", type=str, help="Initial filter: ACTIVE station/antenna (case-sensitive)")
+    parser.add_argument("--stations", type=str, help="Initial filter for ACTIVE stations (same grammar as 'stations:')")
+    parser.add_argument("--antenna", type=str, help="(Deprecated) Same as --stations")
+    #parser.add_argument("--session", type=str, help="Initial filter: session code (case-sensitive)")
+    #parser.add_argument("--antenna", type=str, help="Initial filter: ACTIVE station/antenna (case-sensitive)")
     args = parser.parse_args()
 
+    cli_stations = args.stations or args.antenna
     SessionBrowser(
         year=args.year,
         scope=args.scope,
         session_filter=args.session,
-        antenna_filter=args.antenna
+        antenna_filter=cli_stations
     ).run()
 
 
