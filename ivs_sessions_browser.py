@@ -468,10 +468,11 @@ class SessionBrowser:
             "  ? : Show this help",
             "",
             "Color legend:",
-            "  Green   = Released",
-            "  Yellow  = Processing / Waiting",
-            "  Magenta = Cancelled",
-            "  Blue    = No status",
+            "  Green    = Released",
+            "  Yellow   = Processing / Waiting",
+            "  Magenta  = Cancelled",
+            "  White    = No status",
+            "  Cyan     = Active filters",
         ]
         h, w = stdscr.getmaxyx()
         width = min(84, w - 4)
