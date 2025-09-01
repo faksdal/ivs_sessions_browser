@@ -96,6 +96,7 @@ class SessionBrowser:
     # --- highlight helper, to be called from within class, not from an instance outside
     # --- Pull station codes from any station-related clause in the current filter
     # --- Called from the 'while True:' in curses main loop when the user type '/' to apply filtering
+    # --- Whatever the user types, is passed as '_query', for instance '/ stations: "Ns|Nn"'
     def _extract_station_tokens(selfself, _query: str) -> List[str]:
 
         # if we're passed an empty query, return with nothing
