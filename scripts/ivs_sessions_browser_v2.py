@@ -110,6 +110,12 @@ class SessionBrowser:
                                                                                     # what's left in 'clauses'
         ################################################################################################################
 
+        for clause in clauses:
+            if ':' not in clause:
+                continue
+            field, value = [p.strip() for p in clause.split(':', 1)]
+            fld = field.lower()
+
     # this is the end of _extract_station_tokens #######################################################################
 
 
