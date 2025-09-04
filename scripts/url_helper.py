@@ -1,5 +1,10 @@
+
+## Import section ######################################################################################################
+import time
 import requests
-from bs4 import BeautifulSoup
+from bs4    import BeautifulSoup
+from typing import Callable, Optional, List, Tuple, Dict, Any
+## END OF Import section ###############################################################################################
 
 
 # --- Classes in Python has methods and attributes ---------------------------------------------------------------------
@@ -25,22 +30,129 @@ class URLHelper:
         return '{}'.format(self.url_string)
     # --- END OF url() method ------------------------------------------------------------------------------------------
 
+
+
+    ####################################################################################################################
+    ### TEXT HELPERS ###################################################################################################
+    ####################################################################################################################
+    # --- helper to print feedback to the user. This one prints feedback on a new line - not in use....-----------------
+    def _set_status_line(self, msg: str) -> None:
+        print(msg)
+    # --- END OF _set_status_line() ------------------------------------------------------------------------------------
+
+    # --- helper to print feedback to the user. This one prints on the same line, clearing it between feedbacks --------
+    # --- at the end, it prints a message telling the user download is done! -------------------------------------------
+    def status_inline(self, msg: str) -> None:
+        print(f"\r{msg}", end="", flush=True)
+    # --- END OF _status_inline() --------------------------------------------------------------------------------------
+
+
+
+    ####################################################################################################################
+    ### FETCHING THE DATA ##############################################################################################
+    ####################################################################################################################
+    # --- downloads from web giving feedback to the user of the progress ###############################################
+    def get_text_with_progress(self,
+                                _url: str,
+                                *, _timeout=(5, 20),
+                                _status_cb: Optional[Callable[[str], None]] = None,
+                                _chunk_size: int = 65536,
+                                _min_update_interval: float = 0.10
+                                ) -> str:
+        UA = "Mozilla/5.0 (compatible; IVSBrowser/1.0)"
+        cb = _status_cb or (lambda _msg: None)
+
+        with requests.get(_url, stream=True, timeout=_timeout, headers={"User-Agent": UA}) as r:
+            try:
+                # raise for 4xx/5xx errors
+                r.raise_for_status()
+            except requests.HTTPError as e:
+                # give useful context
+                raise RuntimeError(f"HTTP {r.status_code} {r.reason} for {r.url}") from e
+            # content length, may be missing or non-numeric
+            try:
+                total = int(r.headers.get("Content-Length", ""))
+            except ValueError:
+                total = None
+
+            got = 0
+            chunks = []
+            last_emit = 0.0
+
+            for chunk in r.iter_content(chunk_size=_chunk_size):
+                if not chunk:
+                    continue
+                chunks.append(chunk)
+                got += len(chunk)
+
+                now = time.monotonic()
+                if now - last_emit >= _min_update_interval:
+                    if total:
+                        cb(f"Downloading… {got}/{total} bytes ({got / total * 100:.1f}%)")
+                    else:
+                        cb(f"Downloading… {got} bytes")
+                    last_emit = now
+
+            # final progress line
+            if total:
+                cb(f"Download complete: {got}/{total} bytes.")
+            else:
+                cb(f"Download complete: {got} bytes.")
+
+            # Pick a sensible encoding
+            enc = r.encoding or r.apparent_encoding or "utf-8"
+            try:
+                return b"".join(chunks).decode(enc, errors="replace")
+            except LookupError:
+                # Unknown codec name – fall back to utf-8
+                return b"".join(chunks).decode("utf-8", errors="replace")
+    # --- END OF _get_text_with_progress() -----------------------------------------------------------------------------
+
+
+
+    # --- downloads from web giving feedback to the user of the progress ###############################################
+    def get_text_with_progress_retry(self,
+                                      _url: str,
+                                      *,
+                                      _retries: int = 2,
+                                      _backoff: float = 0.5,
+                                      _status_cb: Optional[Callable[[str],None]] = None,
+                                      **_kwargs,
+                                      ) -> str:
+
+        cb = _status_cb or (lambda _msg: None)
+        for attempt in range(_retries + 1):
+            try:
+                return self._get_text_with_progress(_url, _status_cb = cb, **_kwargs)
+            except (requests.Timeout, requests.ConnectionError) as e:
+                if attempt < _retries:
+                    cb(f"{e.__class__.__name__}: {e}. Retrying in {_backoff:.1f}s…")
+                    time.sleep(_backoff)
+                    _backoff *= 2
+                else:
+                    raise
+
+    # --- END OF _get_text_with_progress_retry() -----------------------------------------------------------------------
+
+
+
     # --- _fetch_website() method --------------------------------------------------------------------------------------
     # --- fetches the content of the website pointed to by the attribute self.url_string, and places it in
     # --- self.response, returning the text property of self.response, self.response.text
-    def _fetch_website(self, timeout: float = 20) -> str:
+    def _fetch_website(self, _timeout: float = 20) -> str:
 
         # Validate URL early (empty or whitespace-only)
         if not isinstance(self.url_string, str) or not self.url_string.strip():
             raise ValueError("url must be a non-empty string")
 
-        self.response = None  # avoid stale response if this attempt fails
+        # avoid stale response if this attempt fails
+        self.response = None
 
         try:
             # Tip: consider a (connect, read) tuple timeout, e.g., (5, 20)
             resp = requests.get(
                 self.url_string,
-                timeout=timeout,
+                timeout=_timeout,
                 headers={"User-Agent": "Mozilla/5.0 (compatible; TransferStatus/1.0)"},
             )
             resp.raise_for_status()
@@ -61,8 +173,9 @@ class URLHelper:
         except requests.RequestException as exc:
             # ConnectionError, SSLError, InvalidURL, etc.
             raise RuntimeError(f"Request error fetching {self.url_string}: {exc}") from exc
-
     # --- END OF _fetch_website() method -------------------------------------------------------------------------------
+
+
 
     # --- soup_pretty() method -----------------------------------------------------------------------------------------
     # --- returns the prettified soup object from the instance
@@ -70,9 +183,4 @@ class URLHelper:
         #return self.soup.prettify()
         return '{}'.format(self.soup.prettify())
     # --- END OF soup_pretty() method ----------------------------------------------------------------------------------
-
-    # --- _parse_soup() method -----------------------------------------------------------------------------------------
-    # --- Intended use: parsing the soup based on user input.
-    #def _parse_soup(self):
-    #    print(f"{self.soup}")
-    # --- END OF _parse_soup() method ----------------------------------------------------------------------------------
+# --- END OF class URLHelper -------------------------------------------------------------------------------------------
