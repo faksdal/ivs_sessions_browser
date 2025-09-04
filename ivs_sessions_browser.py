@@ -546,6 +546,10 @@ class SessionBrowser:
                 self.view_rows = self.apply_filter(q)
                 # --- added by chatgpt 30/8-2025 ---
                 self.highlight_tokens = self._extract_station_tokens(self.current_filter)
+
+                #with open("out.txt", "a", encoding="utf-8") as f:
+                #    print(self.highlight_tokens, file=f)  # adds newline automatically
+
                 idx = index_on_or_after_today(self.view_rows)
                 self.selected = idx
                 self.offset = idx
