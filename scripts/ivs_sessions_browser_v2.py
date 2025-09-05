@@ -2,8 +2,7 @@
 # --- This is a re-write of the ivs_sessions_browser.py script
 #
 # --- jole 2025
-
-
+import logging
 
 ## Import section ######################################################################################################
 from bs4    import BeautifulSoup
@@ -19,13 +18,14 @@ from session_parser import SessionParser
 
 
 
+# todo: figure out if this can be made local or instance/class dependant instead of being global!
 Row = Tuple[List[str], Optional[str], Dict[str, Any]]
 
 # --- class definition -------------------------------------------------------------------------------------------------
-class SessionBrowser(SessionParser):
+#class SessionBrowser(SessionParser):
+class SessionBrowser():
 
     # --- CLASS ATTRIBUTES ---------------------------------------------------------------------------------------------
-
     # Column layout, taking care to preserve the width
     HEADERS =   [
                 ("Type", 14),
@@ -59,21 +59,24 @@ class SessionBrowser(SessionParser):
                    "correlator": 8,
                    "status": 9,
                    "analysis": 10}
-
     # --- END OF CLASS ATTRIBUTES --------------------------------------------------------------------------------------
 
-    # --- __init__ function, or constructor if you like since I come from c/c++ ----------------------------------------
+    # --- __init__() function, or constructor if you like since I come from c/c++ ----------------------------------------
     def __init__(self,
                  _year: int,
+                 _logger: logging.Logger,
                  _scope: str = "both",
                  _session_filter: Optional[str] = None,
                  _antenna_filter: Optional[str] = None,
-                 _url : str = ""
+                 _url: str = ""
                  ) -> None:
-        self.year   = _year
-        self.scope  = _scope
+        # assigning all parameters to local instance vars
+        self.year           = _year
+        self.logger         = _logger
+        self.scope          = _scope
         self.session_filter = _session_filter
         self.antenna_filter = _antenna_filter
+        self.url            = _url
 
         # define and initialize some instance attributes ###############################################################
         self.rows: List[Row]                = []
@@ -85,45 +88,43 @@ class SessionBrowser(SessionParser):
         self.show_removed: bool             = False # --- flag for showing/hiding removed sessions in the list
         self.highlight_tokens: List[str]    = []    # --- tokens to highlight in the stations column when filtering
         ################################################################################################################
-        # define url helper attribute, defined in url_helper.py
-        self.urlhelper = URLHelper(_url)
-        ################################################################################################################
     # this is the end of __init__() ------------------------------------------------------------------------------------
 
 
 
-    # --- highlight helper, to be called from within class, not from an instance outside
-    # --- Pull station codes from any station-related clause in the current filter
-    # --- Called from the 'while True:' in curses main loop when the user type '/' to apply filtering
-    # --- Whatever the user types, is passed as '_query', for instance '/ stations: "Ns|Nn"'
-    def _extract_station_tokens(self, _query: str) -> List[str]:
-        # if we're passed an empty query, return with nothing
-        if not _query:
-            return []
+    # # --- highlight helper, to be called from within class, not from an instance outside
+    # # --- Pull station codes from any station-related clause in the current filter
+    # # --- Called from the 'while True:' in curses main loop when the user type '/' to apply filtering
+    # # --- Whatever the user types, is passed as '_query', for instance '/ stations: "Ns|Nn"'
+    # def _extract_station_tokens(self, _query: str) -> List[str]:
+    #     # if we're passed an empty query, return with nothing
+    #     if not _query:
+    #         return []
+    #
+    #     # define and initialize some local instance attributes #########################################################
+    #     tokens: List[str]   = []                                                    # empty list of strings
+    #     clauses             = [c.strip() for c in _query.split(';') if c.strip()]   # splits _query by the ';', and
+    #                                                                                 # strips away any whitespace, storing
+    #                                                                                 # what's left in 'clauses'
+    #     ################################################################################################################
+    #     for clause in clauses:
+    #         if ':' not in clause:
+    #             continue
+    #         field, value = [p.strip() for p in clause.split(':', 1)]
+    #         fld = field.lower()
+    #         if fld in ("stations", "stations_active", "stations-active",
+    #                    "stations_removed", "stations-removed",
+    #                    "stations_all", "stations-all"):
+    #             parts = re.split(r"[ ,+|&]+", value)
+    #             tokens.extend([p for p in parts if p])
+    #
+    #     # Deduplicate; longer-first to avoid partial-overwrite visuals (e.g., 'Ny' vs 'Nya')
+    #     return sorted(set(tokens), key=lambda s: (-len(s), s))
+    # # this is the end of _extract_station_tokens() #####################################################################
 
-        # define and initialize some local instance attributes #########################################################
-        tokens: List[str]   = []                                                    # empty list of strings
-        clauses             = [c.strip() for c in _query.split(';') if c.strip()]   # splits _query by the ';', and
-                                                                                    # strips away any whitespace, storing
-                                                                                    # what's left in 'clauses'
-        ################################################################################################################
-        for clause in clauses:
-            if ':' not in clause:
-                continue
-            field, value = [p.strip() for p in clause.split(':', 1)]
-            fld = field.lower()
-            if fld in ("stations", "stations_active", "stations-active",
-                       "stations_removed", "stations-removed",
-                       "stations_all", "stations-all"):
-                parts = re.split(r"[ ,+|&]+", value)
-                tokens.extend([p for p in parts if p])
-
-        # Deduplicate; longer-first to avoid partial-overwrite visuals (e.g., 'Ny' vs 'Nya')
-        return sorted(set(tokens), key=lambda s: (-len(s), s))
-    # this is the end of _extract_station_tokens() #####################################################################
 
 
-
+    # todo: Decide where to put this. I'm not yet quite sure what is does.
     # --- computes the x offset where column _col_idx starts in the printed line
     # --- each column is printed left-padded to WIDTHS[c], joined by " | " (3 chars)
     def _col_start_x(self, _col_idx: int) -> int:
@@ -138,21 +139,26 @@ class SessionBrowser(SessionParser):
 
     # --- fetch and parse ONE IVS sessions table URL into rows (case-sensitive CLI filters)
     # --- data fetched from https://ivscc.gsfc.nasa.gov/
-    def _fetch_one(self, _url: str, _session_filter: Optional[str], _antenna_filter: Optional[str]) -> List[Row]:
-
+    #def _fetch_one(self, _url: str, _session_filter: Optional[str], _antenna_filter: Optional[str]) -> List[Row]:
+    def fetch_data_from_web(self) -> List[Row]:
         # --- reading data from web ####################################################################################
-        print(f"Reading data from {_url}...")
+        print(f"Reading data from {self.url}...")
+        self.logger.info(f"Reading data from {self.url}...")
         try:
             # --- this function is defined in subclass URLHelper. It fetches the content from the _url, giving feedback
             # --- to the user along the way through self._status_inline, which is also defined in URLHelper
-            html = self.urlhelper.get_text_with_progress_retry(_url, _status_cb = self.urlhelper.status_inline)
+            urlhelper = URLHelper(self.url, self.logger)
+            html = urlhelper.get_text_with_progress_retry(self.url, _status_cb = urlhelper.status_inline)
             # newline after it finishes
             print()
         except requests.RequestException as exc:
-            print(f"Error fetching {_url}: {exc}")
+            print(f"Error fetching {self.url}: {exc}")
+            self.logger.warning(f"Error fetching {self.url}: {exc}")
             return []
         # this is the end of reading data from web #####################################################################
 
+        # todo: there should be a parser class
+        # start of parser ##############################################################################################
         # --- read the content into a soup object
         soup = BeautifulSoup(html, "html.parser")
 
@@ -162,7 +168,7 @@ class SessionBrowser(SessionParser):
         parsed: List[Row] = []
 
         # attribute to mark if intensives
-        is_intensive = "/intensive" in _url
+        is_intensive = "/intensive" in self.url
 
         for r in session_rows:
             tds = r.find_all("td")
@@ -184,6 +190,7 @@ class SessionBrowser(SessionParser):
             active_ids: List[str] = []
             removed_ids: List[str] = []
         return parsed
+        # end of parser ##############################################################################################
 
         # this is the end of 'for r in session_rows:' ------------------------------------------------------------------
     # this is the end of _fetch_one() ----------------------------------------------------------------------------------
@@ -196,11 +203,14 @@ class SessionBrowser(SessionParser):
 
 def main():
     # create and set up the logger object. Disable printing to stdout
-    logger = setup_logger(filename='../log/ivs_browser.log', to_stdout=False)
+    # todo: May rename log_setup to general_setup(or something similar). Maybe there are other constants that can be
+    # todo: set there!
+    from log_setup import log_filename
+    logger = setup_logger(filename = log_filename, to_stdout = False)
     logger.info("Script started")
 
-    sb = SessionBrowser(2025, _url = "https://ivscc.gsfc.nasa.gov/sessions/2025/")
-    #sb._fetch_one("https://ivscc.gsfc.nasa.gov/sessions/2025/", "", "")
+    sb = SessionBrowser(2025, logger, _url = "https://ivscc.gsfc.nasa.gov/sessions/2025/")
+    sb.fetch_data_from_web()
 
 
 
