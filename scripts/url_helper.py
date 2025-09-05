@@ -1,7 +1,19 @@
+########################################################################################################################
+#   file:       url_helper.py
+#   author:     jole 2025
+#   content:    something
+########################################################################################################################
+
+# --- todo section -----------------------------------------------------------------------------------------------------
+# --- todo: Decide whether to keep or delete the soup in this class. I'm not sure it's needed here! It makes better
+# sense to keep it in the parser
+# --- END OF todo section ----------------------------------------------------------------------------------------------
 
 ## Import section ######################################################################################################
 import time
 import requests
+import logging
+
 from bs4    import BeautifulSoup
 from typing import Callable, Optional, List, Tuple, Dict, Any
 ## END OF Import section ###############################################################################################
@@ -18,10 +30,15 @@ class URLHelper:
     # --- method uses the instance variable url_string to look up and return the contents of the site
     # --- It then runs the site content through BeautifulSoup, putting the result in soup attribute
     # --- Then the site content is parsed, using BeautifulSoup package in the instance method _parse_soup()
-    def __init__(self, _url: str):
+    def __init__(self,
+                 _url: str,
+                 _logger: logging.Logger
+                 ):
         self.url_string: str    = _url
+        self.logger             = _logger
+
         self.site: str          = self._fetch_website()
-        self.soup = BeautifulSoup(self.site, "html.parser")
+        # self.soup = BeautifulSoup(self.site, "html.parser")
     # --- END OF __init__() method, or constructor if you like ---------------------------------------------------------
 
     # --- url() method -------------------------------------------------------------------------------------------------
@@ -43,6 +60,7 @@ class URLHelper:
     # --- helper to print feedback to the user. This one prints on the same line, clearing it between feedbacks --------
     # --- at the end, it prints a message telling the user download is done! -------------------------------------------
     def status_inline(self, msg: str) -> None:
+        #self.logger.info(f"\r{msg}")
         print(f"\r{msg}", end="", flush=True)
     # --- END OF _status_inline() --------------------------------------------------------------------------------------
 
@@ -52,7 +70,7 @@ class URLHelper:
     ### FETCHING THE DATA ##############################################################################################
     ####################################################################################################################
     # --- downloads from web giving feedback to the user of the progress ###############################################
-    def get_text_with_progress(self,
+    def _get_text_with_progress(self,
                                 _url: str,
                                 *, _timeout=(5, 20),
                                 _status_cb: Optional[Callable[[str], None]] = None,
@@ -96,8 +114,10 @@ class URLHelper:
             # final progress line
             if total:
                 cb(f"Download complete: {got}/{total} bytes.")
+                self.logger.info(f"Download complete: {got}/{total} bytes.")
             else:
                 cb(f"Download complete: {got} bytes.")
+                self.logger.info(f"Download complete: {got} bytes.")
 
             # Pick a sensible encoding
             enc = r.encoding or r.apparent_encoding or "utf-8"
@@ -126,6 +146,7 @@ class URLHelper:
                 return self._get_text_with_progress(_url, _status_cb = cb, **_kwargs)
             except (requests.Timeout, requests.ConnectionError) as e:
                 if attempt < _retries:
+                    self.logger.info(f"{e.__class__.__name__}: {e}. Retrying in {_backoff:.1f}s…")
                     cb(f"{e.__class__.__name__}: {e}. Retrying in {_backoff:.1f}s…")
                     time.sleep(_backoff)
                     _backoff *= 2
@@ -143,6 +164,7 @@ class URLHelper:
 
         # Validate URL early (empty or whitespace-only)
         if not isinstance(self.url_string, str) or not self.url_string.strip():
+            self.logger.warning("url must be a non-empty string")
             raise ValueError("url must be a non-empty string")
 
         # avoid stale response if this attempt fails
@@ -166,21 +188,24 @@ class URLHelper:
 
         except requests.Timeout as exc:
             # Specific message for common case
+            self.logger.warning(f"Timeout fetching {self.url_string}")
             raise RuntimeError(f"Timeout fetching {self.url_string}") from exc
         except requests.HTTPError as exc:
             # Includes status code info in str(exc)
+            self.logger.warning(f"HTTP error fetching {self.url_string}: {exc}")
             raise RuntimeError(f"HTTP error fetching {self.url_string}: {exc}") from exc
         except requests.RequestException as exc:
             # ConnectionError, SSLError, InvalidURL, etc.
+            self.logger.warning(f"Request error fetching {self.url_string}: {exc}")
             raise RuntimeError(f"Request error fetching {self.url_string}: {exc}") from exc
     # --- END OF _fetch_website() method -------------------------------------------------------------------------------
 
 
 
-    # --- soup_pretty() method -----------------------------------------------------------------------------------------
-    # --- returns the prettified soup object from the instance
-    def soup_pretty(self) -> str:
-        #return self.soup.prettify()
-        return '{}'.format(self.soup.prettify())
-    # --- END OF soup_pretty() method ----------------------------------------------------------------------------------
+    # # --- soup_pretty() method -----------------------------------------------------------------------------------------
+    # # --- returns the prettified soup object from the instance
+    # def soup_pretty(self) -> str:
+    #     #return self.soup.prettify()
+    #     return '{}'.format(self.soup.prettify())
+    # # --- END OF soup_pretty() method ----------------------------------------------------------------------------------
 # --- END OF class URLHelper -------------------------------------------------------------------------------------------
