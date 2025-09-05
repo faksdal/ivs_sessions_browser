@@ -1,0 +1,1 @@
+log_filename: str = '../log/ivs_browser.log'
