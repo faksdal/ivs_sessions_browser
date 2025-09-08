@@ -113,12 +113,12 @@ class URLHelper:
             # final progress line
             if total:
                 cb(f"Download complete: {got}/{total} bytes.")
-                self.logger.info(f"Download complete: {got}/{total} bytes.")
+                self.logger.notice(f"Download complete: {got}/{total} bytes.")
                 # print a newline after it finishes to clean up user prompt
                 print()
             else:
                 cb(f"Download complete: {got} bytes.")
-                self.logger.info(f"Download complete: {got} bytes.")
+                self.logger.notice(f"Download complete: {got} bytes.")
                 # print a newline after it finishes to clean up user prompt
                 print()
 
@@ -149,7 +149,7 @@ class URLHelper:
                 return self._get_text_with_progress(_url, _status_cb = cb, **_kwargs)
             except (requests.Timeout, requests.ConnectionError) as e:
                 if attempt < _retries:
-                    self.logger.info(f"{e.__class__.__name__}: {e}. Retrying in {_backoff:.1f}s…")
+                    self.logger.notice(f"{e.__class__.__name__}: {e}. Retrying in {_backoff:.1f}s…")
                     cb(f"{e.__class__.__name__}: {e}. Retrying in {_backoff:.1f}s…")
                     time.sleep(_backoff)
                     _backoff *= 2

@@ -11,7 +11,7 @@ import logging
 from bs4            import BeautifulSoup
 from typing         import Optional, List, Tuple, Dict, Any
 from datetime       import datetime, date
-from log_helper     import setup_logger
+from log_helper     import *
 from url_helper     import URLHelper
 from session_parser import SessionParser
 from type_defs      import (Row,
@@ -88,7 +88,7 @@ class SessionBrowser:
         """
         # --- reading data from web ####################################################################################
         print(f"Reading data from {_url}...")
-        self.logger.info(f"Reading data from {_url}...")
+        self.logger.notice(f"Reading data from {_url}...")
         try:
             # --- this function is defined in subclass URLHelper. It fetches the content from the _url, giving feedback
             # --- to the user along the way through self._status_inline, which is also defined in URLHelper
@@ -158,8 +158,9 @@ def main() -> None:
     args = arg_parser.parse_args()
 
     from log_setup import log_filename
-    logger = setup_logger(filename = log_filename, to_stdout = False)
-    logger.info("Script started")
+    # logger = setup_logger(filename = log_filename, to_stdout = False)
+    logger = setup_logger(filename=log_filename)
+    logger.info("Script started...")
 
     sb = SessionBrowser(_year   = args.year,
                         _logger = logger,
