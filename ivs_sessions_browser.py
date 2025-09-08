@@ -25,21 +25,21 @@ class SessionBrowser:
     ]
     HEADER_LINE = " | ".join([f"{title:<{w}}" for title, w in HEADERS])
     WIDTHS = [w for _, w in HEADERS]
-    FIELD_INDEX = {
-        "type": 0,
-        "code": 1,
-        "start": 2,
-        "doy": 3,
-        "dur": 4,
-        "stations": 5,
-        "db code": 6,
-        "db": 6,
-        "ops center": 7,
-        "ops": 7,
-        "correlator": 8,
-        "status": 9,
-        "analysis": 10,
-    }
+    # FIELD_INDEX = {
+    #     "type": 0,
+    #     "code": 1,
+    #     "start": 2,
+    #     "doy": 3,
+    #     "dur": 4,
+    #     "stations": 5,
+    #     "db code": 6,
+    #     "db": 6,
+    #     "ops center": 7,
+    #     "ops": 7,
+    #     "correlator": 8,
+    #     "status": 9,
+    #     "analysis": 10,
+    # }
 
     def __init__(
         self,
