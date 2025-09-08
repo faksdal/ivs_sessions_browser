@@ -76,66 +76,26 @@ class SessionBrowser:
 
 
 
-    #def _fetch_one(self, _url: str, _session_filter: Optional[str], _antenna_filter: Optional[str]) -> List[Row]:
-    def _fetch_one_url(self,
-                       _url: str
-                       ) -> List[Row]:
-        """
-        Fetch and parse the IVS sessions table URL into rows (case-sensitive CLI filters)
-        Data fetched from https://ivscc.gsfc.nasa.gov/
-
-        :return:    html (List[Row])
-        """
-        # --- reading data from web ####################################################################################
-        print(f"Reading data from {_url}...")
-        self.logger.notice(f"Reading data from {_url}...")
-        try:
-            # --- this function is defined in subclass URLHelper. It fetches the content from the _url, giving feedback
-            # --- to the user along the way through self._status_inline, which is also defined in URLHelper
-            urlhelper = URLHelper(_url, self.logger)
-            html = urlhelper.get_text_with_progress_retry(_url, _status_cb = urlhelper.status_inline)
-            return html
-
-        except requests.RequestException as exc:
-            print(f"Error fetching {_url}: {exc}")
-            self.logger.warning(f"Error fetching {_url}: {exc}")
-            return []
-
-    # this is the end of _fetch_one_url() ----------------------------------------------------------------------------------
-
-
-
-    def fetch_all_urls(self) -> List[Row]:
-        rows: List[Row] = []
-        rows.extend(self._fetch_one_url())
-
-        return rows
-
-
-
     def run(self) -> None:
         """
-        This is what the user calls to run the loop.
+        SessionBrowser.run() - This is what the user calls to run the loop.
 
         :return: None
         """
-        # Get data from web, and store in 'html'
-        html = self.fetch_all_urls()
+        # Get data from web, and store in 'html', using functionality from 'URLHelper' class
+        url_helper: URLHelper   = URLHelper(self.logger, self.year, self.scope)
+        html: str               = url_helper.fetch_all_urls()
 
         # Instantiate a SessionParser object, passing a soup object of the 'html', and the logger object
         # Store the return value in 'parsed'
-        # We should be given a list of extracted columns from SessionParser,w hich in turn will be used to display
-        # in the TUI.
-        # parsed: List[Row] = SessionParser(BeautifulSoup(html, "html.parser"), self.logger, len(HEADERS)).parser()
-        # print(len(SessionBrowser.HEADERS))
-
+        parsed: List[Row] = SessionParser(BeautifulSoup(html, "html.parser"), self.logger, len(HEADERS)).parser()
 # --- END OF class SessionBrowser definition ------------------------------------------------------------------------------------------
 
 
 
 def main() -> None:
     """
-    Create and set up the logger object.
+    main()
 
     :return:    None
     """
@@ -164,7 +124,7 @@ def main() -> None:
 
     sb = SessionBrowser(_year   = args.year,
                         _logger = logger,
-                        _scope  = args.scope)
+                        _scope  = args.scope).run()
     # print(sb.__dict__)
     # sb.fetch_data_from_web()
 

@@ -4,18 +4,15 @@
 #   content:    something
 ########################################################################################################################
 
-# --- todo section -----------------------------------------------------------------------------------------------------
-# --- todo:
-# --- END OF todo section ----------------------------------------------------------------------------------------------
-
 ## Import section ######################################################################################################
 import time
 import requests
 import logging
 
 from bs4    import BeautifulSoup
-from typing import Callable, Optional, List, Tuple, Dict, Any
+from typing import Callable, Optional, List #, Tuple, Dict, Any
 ## END OF Import section ###############################################################################################
+
 
 
 # --- Classes in Python has methods and attributes ---------------------------------------------------------------------
@@ -23,52 +20,42 @@ from typing import Callable, Optional, List, Tuple, Dict, Any
 # --- Perhaps this class should just retrieve the data, and I make a different class, more specific to the transfers and
 # --- what I'd like to get out of that...
 class URLHelper:
-    # --- __init__() method, or constructor if you like ----------------------------------------------------------------
-    # --- It initialises the string 'url_string' with the string from the parameter '_url'
-    # --- It initialises the string 'site' with the result from calling the instance method _fetch_website(), this
-    # --- method uses the instance variable url_string to look up and return the contents of the site
-    # --- It then runs the site content through BeautifulSoup, putting the result in soup attribute
-    # --- Then the site content is parsed, using BeautifulSoup package in the instance method _parse_soup()
+    """
+    class URLHelper
+    """
     def __init__(self,
-                 _url: str,
-                 _logger: logging.Logger
-                 ):
-        self.url_string: str    = _url
+                 _logger:   logging.Logger,
+                 _year:     int,
+                 _scope:    str
+                 ) -> None:
+        """
+        ___init___() - initialises an instance of the URLHelper class
+        :param _logger:
+        :param _year:
+        :param _scope:
+        """
+        # self.url_string: str    = _url
         self.logger             = _logger
-
-        self.site: str          = self._fetch_website()
-        # self.soup = BeautifulSoup(self.site, "html.parser")
+        self.year               = _year
+        self.scope              = _scope
     # --- END OF __init__() method, or constructor if you like ---------------------------------------------------------
 
-    # --- url() method -------------------------------------------------------------------------------------------------
-    # --- returns the url as string, to be called from outside
-    def url(self) -> str:
-        return '{}'.format(self.url_string)
-    # --- END OF url() method ------------------------------------------------------------------------------------------
 
 
+    def _status_inline(self, msg: str) -> None:
+        """
+        URLHelper._status_inline() - Used as callback function in URLHelper._get_text_with_progress_retry(), which is
+                                     called from URLHelper._fetch_one_url(). It prints the download progress to stdout.
 
-    ####################################################################################################################
-    ### TEXT HELPERS ###################################################################################################
-    ####################################################################################################################
-    # --- helper to print feedback to the user. This one prints feedback on a new line - not in use....-----------------
-    def _set_status_line(self, msg: str) -> None:
-        print(msg)
-    # --- END OF _set_status_line() ------------------------------------------------------------------------------------
+        :param msg: The message to print to stdout
+        :return:    None
+        """
 
-    # --- helper to print feedback to the user. This one prints on the same line, clearing it between feedbacks --------
-    # --- at the end, it prints a message telling the user download is done! -------------------------------------------
-    def status_inline(self, msg: str) -> None:
-        #self.logger.info(f"\r{msg}")
         print(f"\r{msg}", end="", flush=True)
     # --- END OF _status_inline() --------------------------------------------------------------------------------------
 
 
 
-    ####################################################################################################################
-    ### FETCHING THE DATA ##############################################################################################
-    ####################################################################################################################
-    # --- downloads from web giving feedback to the user of the progress ###############################################
     def _get_text_with_progress(self,
                                 _url: str,
                                 *, _timeout=(5, 20),
@@ -76,6 +63,22 @@ class URLHelper:
                                 _chunk_size: int = 65536,
                                 _min_update_interval: float = 0.10
                                 ) -> str:
+        """
+            Download text content from a URL with progress reporting.
+
+            This method streams the response in chunks, periodically invoking a
+            callback with download status messages. Returns the entire response
+            body decoded as text.
+
+            :param _url:                    The URL to fetch.
+            :param _timeout:                (connect_timeout, read_timeout) in seconds.
+            :param _status_cb:              Optional callback taking a str; called with progress updates.
+            :param _chunk_size:             Number of bytes to read per chunk (default 64 KB).
+            :param _min_update_interval:    Minimum seconds between status callbacks (default 0.1).
+            :return:                        The full response body as decoded text (usually HTML).
+            :raises RuntimeError:           If the server responds with an HTTP error.
+        """
+
         UA = "Mozilla/5.0 (compatible; IVSBrowser/1.0)"
         cb = _status_cb or (lambda _msg: None)
 
@@ -134,7 +137,7 @@ class URLHelper:
 
 
     # --- downloads from web giving feedback to the user of the progress ###############################################
-    def get_text_with_progress_retry(self,
+    def _get_text_with_progress_retry(self,
                                       _url: str,
                                       *,
                                       _retries: int = 2,
@@ -160,55 +163,63 @@ class URLHelper:
 
 
 
-    # --- _fetch_website() method --------------------------------------------------------------------------------------
-    # --- fetches the content of the website pointed to by the attribute self.url_string, and places it in
-    # --- self.response, returning the text property of self.response, self.response.text
-    def _fetch_website(self, _timeout: float = 20) -> str:
+    def _fetch_one_url(self,
+                       _url: str
+                       ) -> str:
+        """
+        Fetch and parse the IVS sessions table URL into rows (case-sensitive CLI filters)
+        Data fetched from https://ivscc.gsfc.nasa.gov/
 
-        # Validate URL early (empty or whitespace-only)
-        if not isinstance(self.url_string, str) or not self.url_string.strip():
-            self.logger.warning("url must be a non-empty string")
-            raise ValueError("url must be a non-empty string")
-
-        # avoid stale response if this attempt fails
-        self.response = None
-
+        :return str:
+        """
+        # --- reading data from web ####################################################################################
+        # print(f"Reading data from {_url}...")
+        self.logger.notice(f"Reading data from {_url}")
         try:
-            # Tip: consider a (connect, read) tuple timeout, e.g., (5, 20)
-            resp = requests.get(
-                self.url_string,
-                timeout=_timeout,
-                headers={"User-Agent": "Mozilla/5.0 (compatible; TransferStatus/1.0)"},
-            )
-            resp.raise_for_status()
+            # --- this function is defined in subclass URLHelper. It fetches the content from the _url, giving feedback
+            # --- to the user along the way through self._status_inline, which is also defined in URLHelper
+            # urlhelper = URLHelper(_url, self.logger)
+            html = self._get_text_with_progress_retry(_url, _status_cb = self._status_inline)
+            return html
 
-            # Respect server-provided encoding; fall back to detection if missing
-            if not resp.encoding:
-                resp.encoding = resp.apparent_encoding
-
-            self.response = resp  # only set after success
-            return self.response.text
-
-        except requests.Timeout as exc:
-            # Specific message for common case
-            self.logger.warning(f"Timeout fetching {self.url_string}")
-            raise RuntimeError(f"Timeout fetching {self.url_string}") from exc
-        except requests.HTTPError as exc:
-            # Includes status code info in str(exc)
-            self.logger.warning(f"HTTP error fetching {self.url_string}: {exc}")
-            raise RuntimeError(f"HTTP error fetching {self.url_string}: {exc}") from exc
         except requests.RequestException as exc:
-            # ConnectionError, SSLError, InvalidURL, etc.
-            self.logger.warning(f"Request error fetching {self.url_string}: {exc}")
-            raise RuntimeError(f"Request error fetching {self.url_string}: {exc}") from exc
-    # --- END OF _fetch_website() method -------------------------------------------------------------------------------
+            print(f"Error fetching {_url}: {exc}")
+            self.logger.warning(f"Error fetching {_url}: {exc}")
+            return []
+    # this is the end of _fetch_one_url() ------------------------------------------------------------------------------
 
 
 
-    # # --- soup_pretty() method -----------------------------------------------------------------------------------------
-    # # --- returns the prettified soup object from the instance
-    # def soup_pretty(self) -> str:
-    #     #return self.soup.prettify()
-    #     return '{}'.format(self.soup.prettify())
-    # # --- END OF soup_pretty() method ----------------------------------------------------------------------------------
+    def fetch_all_urls(self) -> str:
+        """
+        Goes through all the url's in the list constructed by _urls_for_scope(), appending results to the return value
+
+        :return str:
+        """
+
+        pages: List[str] = []
+        for url in self._urls_for_scope():
+            # rows.extend(self._fetch_one_url(url))
+            pages.append(self._fetch_one_url(url))
+
+        return "\n".join(pages)
+    # this is the end of _fetch_all_urls() -----------------------------------------------------------------------------
+
+
+    def _urls_for_scope(self) -> List[str]:
+        """
+        Constructing the url's to read from
+
+        :return List[str]:  List of url's from which we read our data. This will be 'master', and 'intensive' for
+                            a given year. It defaults to the current year and both master and intensives
+        """
+        base_url = "https://ivscc.gsfc.nasa.gov/sessions"
+        year = str(self.year)
+        if self.scope == "master":
+            return [f"{base_url}/{year}/"]
+        if self.scope == "intensive":
+            return [f"{base_url}/intensive/{year}/"]
+        return [f"{base_url}/{year}/", f"{base_url}/intensive/{year}/"]
+    # this is the end of _urls_for_scope() -----------------------------------------------------------------------------
+
 # --- END OF class URLHelper -------------------------------------------------------------------------------------------
