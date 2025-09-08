@@ -114,9 +114,13 @@ class URLHelper:
             if total:
                 cb(f"Download complete: {got}/{total} bytes.")
                 self.logger.info(f"Download complete: {got}/{total} bytes.")
+                # print a newline after it finishes to clean up user prompt
+                print()
             else:
                 cb(f"Download complete: {got} bytes.")
                 self.logger.info(f"Download complete: {got} bytes.")
+                # print a newline after it finishes to clean up user prompt
+                print()
 
             # Pick a sensible encoding
             enc = r.encoding or r.apparent_encoding or "utf-8"
