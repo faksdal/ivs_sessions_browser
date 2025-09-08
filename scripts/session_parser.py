@@ -1,15 +1,38 @@
 
+import logging
+
 from typing import List
+from bs4 import BeautifulSoup
 
 
 
 class SessionParser:
 
-    # --- highlight helper, to be called from within class, not from an instance outside
-    # --- Pull station codes from any station-related clause in the current filter
-    # --- Called from the 'while True:' in curses main loop when the user type '/' to apply filtering
-    # --- Whatever the user types, is passed as '_query', for instance '/ stations: "Ns|Nn"'
+    def __init__(self,
+                 _soup:     BeautifulSoup,
+                 _logger:   logging.Logger) -> None:
+        """
+        Initializer for SessionBrowser object. It takes a bs4 soup and logger object as parameters.
+        The SessionParser is responsible for parsing the soup, generating a list (or tuplet) with the extracted data.
+
+        :param _soup:   BeautifulSoup object from which we will extract our data
+        :param _logger: Logger object, we're logging to a file
+        :return:        None
+        """
+        self.soup   = _soup
+        self.logger = _logger
+
+
+
     def _extract_station_tokens(self, _query: str) -> List[str]:
+        """
+        Highlight helper, to be called from within class, not from an instance outside
+        Pull station codes from any station-related clause in the current filter
+        Called from the 'while True:' in curses main loop when the user type '/' to apply filtering
+        Whatever the user types, is passed as '_query', for instance '/ stations: "Ns|Nn"'
+        :param _query:  The query passed by the caller, from which to extract station names (Nn, Ns, etc.)
+        :return:        A list of strings
+        """
         print("Inside _extract_station_tokens()")
         # # if we're passed an empty query, return with nothing
         # if not _query:

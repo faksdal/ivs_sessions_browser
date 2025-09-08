@@ -18,12 +18,9 @@ from session_parser import SessionParser
 
 
 
-# todo: figure out if this can be made local or instance/class dependant instead of being global!
-Row = Tuple[List[str], Optional[str], Dict[str, Any]]
-
 # --- class definition -------------------------------------------------------------------------------------------------
 #class SessionBrowser(SessionParser):
-class SessionBrowser():
+class SessionBrowser:
 
     # --- CLASS ATTRIBUTES ---------------------------------------------------------------------------------------------
     # Column layout, taking care to preserve the width
@@ -59,6 +56,8 @@ class SessionBrowser():
                    "correlator": 8,
                    "status": 9,
                    "analysis": 10}
+
+    Row = Tuple[List[str], Optional[str], Dict[str, Any]]
     # --- END OF CLASS ATTRIBUTES --------------------------------------------------------------------------------------
 
     # --- __init__() function, or constructor if you like since I come from c/c++ ----------------------------------------
@@ -79,48 +78,16 @@ class SessionBrowser():
         self.url            = _url
 
         # define and initialize some instance attributes ###############################################################
-        self.rows: List[Row]                = []
-        self.view_rows: List[Row]           = []
-        self.current_filter: str            = ""
-        self.selected: int                  = 0
-        self.offset: int                    = 0
-        self.has_colors: bool               = False
-        self.show_removed: bool             = False # --- flag for showing/hiding removed sessions in the list
-        self.highlight_tokens: List[str]    = []    # --- tokens to highlight in the stations column when filtering
+        self.rows: List[SessionBrowser.Row]         = []
+        self.view_rows: List[SessionBrowser.Row]    = []
+        self.current_filter: str                    = ""
+        self.selected: int                          = 0
+        self.offset: int                            = 0
+        self.has_colors: bool                       = False
+        self.show_removed: bool                     = False # --- flag for showing/hiding removed sessions in the list
+        self.highlight_tokens: List[str]            = []    # --- tokens to highlight in the stations column when filtering
         ################################################################################################################
     # this is the end of __init__() ------------------------------------------------------------------------------------
-
-
-
-    # # --- highlight helper, to be called from within class, not from an instance outside
-    # # --- Pull station codes from any station-related clause in the current filter
-    # # --- Called from the 'while True:' in curses main loop when the user type '/' to apply filtering
-    # # --- Whatever the user types, is passed as '_query', for instance '/ stations: "Ns|Nn"'
-    # def _extract_station_tokens(self, _query: str) -> List[str]:
-    #     # if we're passed an empty query, return with nothing
-    #     if not _query:
-    #         return []
-    #
-    #     # define and initialize some local instance attributes #########################################################
-    #     tokens: List[str]   = []                                                    # empty list of strings
-    #     clauses             = [c.strip() for c in _query.split(';') if c.strip()]   # splits _query by the ';', and
-    #                                                                                 # strips away any whitespace, storing
-    #                                                                                 # what's left in 'clauses'
-    #     ################################################################################################################
-    #     for clause in clauses:
-    #         if ':' not in clause:
-    #             continue
-    #         field, value = [p.strip() for p in clause.split(':', 1)]
-    #         fld = field.lower()
-    #         if fld in ("stations", "stations_active", "stations-active",
-    #                    "stations_removed", "stations-removed",
-    #                    "stations_all", "stations-all"):
-    #             parts = re.split(r"[ ,+|&]+", value)
-    #             tokens.extend([p for p in parts if p])
-    #
-    #     # Deduplicate; longer-first to avoid partial-overwrite visuals (e.g., 'Ny' vs 'Nya')
-    #     return sorted(set(tokens), key=lambda s: (-len(s), s))
-    # # this is the end of _extract_station_tokens() #####################################################################
 
 
 
@@ -137,10 +104,15 @@ class SessionBrowser():
 
 
 
-    # --- fetch and parse ONE IVS sessions table URL into rows (case-sensitive CLI filters)
-    # --- data fetched from https://ivscc.gsfc.nasa.gov/
+    # ---
     #def _fetch_one(self, _url: str, _session_filter: Optional[str], _antenna_filter: Optional[str]) -> List[Row]:
-    def fetch_data_from_web(self) -> List[Row]:
+    def fetch_data_from_web(self) -> str:
+        """
+        Fetch and parse the IVS sessions table URL into rows (case-sensitive CLI filters)
+        Data fetched from https://ivscc.gsfc.nasa.gov/
+        :param:     self
+        :return:    html (str)
+        """
         # --- reading data from web ####################################################################################
         print(f"Reading data from {self.url}...")
         self.logger.info(f"Reading data from {self.url}...")
@@ -149,68 +121,86 @@ class SessionBrowser():
             # --- to the user along the way through self._status_inline, which is also defined in URLHelper
             urlhelper = URLHelper(self.url, self.logger)
             html = urlhelper.get_text_with_progress_retry(self.url, _status_cb = urlhelper.status_inline)
-            # newline after it finishes
-            print()
+            return html
+
         except requests.RequestException as exc:
             print(f"Error fetching {self.url}: {exc}")
             self.logger.warning(f"Error fetching {self.url}: {exc}")
             return []
         # this is the end of reading data from web #####################################################################
 
-        # todo: there should be a parser class
         # start of parser ##############################################################################################
         # --- read the content into a soup object
-        soup = BeautifulSoup(html, "html.parser")
+        #soup = BeautifulSoup(html, "html.parser")
+        #print(type(soup))
 
         # and extract table tags into session_rows
-        session_rows = soup.select("table tr")
+        #session_rows = soup.select("table tr")
 
-        parsed: List[Row] = []
+        #parsed: List[Row] = []
 
         # attribute to mark if intensives
-        is_intensive = "/intensive" in self.url
+        # is_intensive = "/intensive" in self.url
 
-        for r in session_rows:
-            tds = r.find_all("td")
-
-            if len(tds) < len(SessionBrowser.HEADERS):
-                continue
-            #print(tds[5])
-
-            # --- regarding stations: split active vs. removed, render them as "Active [Removed]"
-            # assign the stations_cell to the cells containing stations names, using the correct index from
-            # FIELD_INDEX
-            idx = SessionBrowser.FIELD_INDEX.get("stations")
-            if idx is None or idx >= len(tds):
-                continue
-            stations_cell = tds[idx]
-            #stations_cell = tds[SessionBrowser.FIELD_INDEX["stations"]]
-
-            # create a couple of local string list attributes to hold the active, and removed stations
-            active_ids: List[str] = []
-            removed_ids: List[str] = []
-        return parsed
+        # for r in session_rows:
+        #     tds = r.find_all("td")
+        #
+        #     if len(tds) < len(SessionBrowser.HEADERS):
+        #         continue
+        #     #print(tds[5])
+        #
+        #     # --- regarding stations: split active vs. removed, render them as "Active [Removed]"
+        #     # assign the stations_cell to the cells containing stations names, using the correct index from
+        #     # FIELD_INDEX
+        #     idx = SessionBrowser.FIELD_INDEX.get("stations")
+        #     if idx is None or idx >= len(tds):
+        #         continue
+        #     stations_cell = tds[idx]
+        #     #stations_cell = tds[SessionBrowser.FIELD_INDEX["stations"]]
+        #
+        #     # create a couple of local string list attributes to hold the active, and removed stations
+        #     active_ids: List[str] = []
+        #     removed_ids: List[str] = []
+        # return parsed
         # end of parser ##############################################################################################
 
         # this is the end of 'for r in session_rows:' ------------------------------------------------------------------
     # this is the end of _fetch_one() ----------------------------------------------------------------------------------
 
+    def run(self) -> None:
+        """
+        This is what the user calls to run the loop.
+
+        :return: None
+        """
+        # Get data from web, and store in 'html'
+        html = self.fetch_data_from_web()
+
+        # Instantiate a SessionParser object, passing a soup object of the 'html', and the logger object
+        # Store the return value in 'parsed'
+        # We should be given a list of extracted columns from SessionParser,w hich in turn will be used to display
+        # in the TUI.
+        parsed = SessionParser(BeautifulSoup(html, "html.parser"), self.logger)
+        # print(parsed)
+# --- END OF class SessionBrowser definition ------------------------------------------------------------------------------------------
 
 
-# --- END OF class definition ------------------------------------------------------------------------------------------
 
+def main() -> None:
+    """
+    Create and set up the logger object.
 
+    :return:    None
+    """
 
-def main():
-    # create and set up the logger object. Disable printing to stdout
     # todo: May rename log_setup to general_setup(or something similar). Maybe there are other constants that can be
-    # todo: set there!
+    # todo: set there as well!
     from log_setup import log_filename
     logger = setup_logger(filename = log_filename, to_stdout = False)
     logger.info("Script started")
 
-    sb = SessionBrowser(2025, logger, _url = "https://ivscc.gsfc.nasa.gov/sessions/2025/")
-    sb.fetch_data_from_web()
+    sb = SessionBrowser(2025, logger, _url = "https://ivscc.gsfc.nasa.gov/sessions/2025/").run()
+    # sb.fetch_data_from_web()
 
 
 

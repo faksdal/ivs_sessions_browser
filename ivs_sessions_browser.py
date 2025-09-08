@@ -201,8 +201,14 @@ class SessionBrowser:
 
     def fetch_all(self) -> List[Row]:
         rows: List[Row] = []
+        print(f"self._urls_for_scope(): {self._urls_for_scope()}")
+        ch = input()
         for url in self._urls_for_scope():
+            # print(f"url: {url}")
             rows.extend(self._fetch_one(url, self.session_filter, self.antenna_filter))
+            # ch = input()
+            # print(f"type(rows): {type(rows)}")
+            # ch = input()
         return rows
 
     # ------------------ Filtering ------------------
@@ -650,6 +656,11 @@ def main() -> None:
     args = parser.parse_args()
 
     cli_stations = args.stations or args.antenna
+    # print(f"year:           {args.year}")
+    # print(f"scope:          {args.scope}")
+    # print(f"session_filter: {args.session}")
+    # print(f"cli_stations:   {cli_stations}")
+
     SessionBrowser(
         year=args.year,
         scope=args.scope,
