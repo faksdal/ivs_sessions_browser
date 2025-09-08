@@ -1,41 +1,81 @@
-## Setting up the logger ###############################################################################################
-# the log output file, should be /var/log/something or /tmp/something
-#
+# log_helper.py
 
-import logging, sys
-from pathlib import Path
+import logging
+import sys
+from typing import Optional
 
-def setup_logger(filename: str = "/var/log/ivs_browser.log",
-                 *,
-                 name: str = "plot_tics",
-                 level: int = logging.DEBUG,
-                 to_stdout: bool = True) -> logging.Logger:
+# --- Custom level: NOTICE (between INFO=20 and WARNING=30)
+NOTICE = 25
+logging.addLevelName(NOTICE, "NOTICE")
 
-    """Create a logger that writes to 'filename' and (optionally) stdout."""
-    log = logging.getLogger(name)
-    log.setLevel(level)
+def notice(self: logging.Logger, message, *args, **kwargs):
+    if self.isEnabledFor(NOTICE):
+        self._log(NOTICE, message, args, **kwargs)
 
-    # Make idempotent: if called again, don't stack handlers
-    if log.handlers:
-        log.handlers.clear()
+# Add as a real method on Logger
+logging.Logger.notice = notice  # type: ignore[attr-defined]
 
-    # Ensure the directory exists
-    Path(filename).parent.mkdir(parents=True, exist_ok=True)
+# Default log file path (keep your existing default)
+log_filename: str = '../log/ivs_browser.log'
 
-    fmt = logging.Formatter("%(asctime)s-%(levelname)s: %(message)s", "%Y.%m.%d-%H:%M:%S")
 
-    fh = logging.FileHandler(filename, mode="a", encoding="utf-8")
-    fh.setFormatter(fmt)
-    fh.setLevel(level)
-    log.addHandler(fh)
+def _has_file_handler(logger: logging.Logger, filename: str) -> bool:
+    for h in logger.handlers:
+        if isinstance(h, logging.FileHandler):
+            # Compare underlying file names if available
+            try:
+                if getattr(h, 'baseFilename', None) == filename:
+                    return True
+            except Exception:
+                pass
+    return False
 
-    if to_stdout:
-        sh = logging.StreamHandler(sys.stdout)  # stdout (default is stderr)
-        sh.setFormatter(fmt)
+
+def _get_stream_handler(logger: logging.Logger) -> Optional[logging.Handler]:
+    for h in logger.handlers:
+        if isinstance(h, logging.StreamHandler) and getattr(h, "_is_ivsb_stdout", False):
+            return h
+    return None
+
+
+def setup_logger(
+    filename: str = log_filename,
+    *,
+    file_level: int = logging.DEBUG,
+    stream_level: int = NOTICE
+) -> logging.Logger:
+    """
+    Configure a logger that ALWAYS writes everything (file_level) to 'filename'
+    and only emits NOTICE+ to stdout (stream_level).
+    """
+    logger = logging.getLogger("ivs_browser")
+    logger.setLevel(min(file_level, stream_level, logging.DEBUG))
+
+    # File handler: add once
+    if not _has_file_handler(logger, filename):
+        fh = logging.FileHandler(filename)
+        fh.setLevel(file_level)
+        fh.setFormatter(logging.Formatter(
+            "%(asctime)s - %(levelname)s - %(name)s - %(message)s"
+        ))
+        logger.addHandler(fh)
+
+    # Stream handler: add once
+    if _get_stream_handler(logger) is None:
+        sh = logging.StreamHandler(sys.stdout)
+        sh.setLevel(stream_level)             # NOTICE and above to stdout
+        sh.setFormatter(logging.Formatter("%(message)s"))
+        # Mark so we can find it later
+        setattr(sh, "_is_ivsb_stdout", True)
+        logger.addHandler(sh)
+
+    return logger
+
+
+def set_stdout_threshold(logger: logging.Logger, level: int = NOTICE) -> None:
+    """
+    Change what goes to stdout at runtime, without touching file logging.
+    """
+    sh = _get_stream_handler(logger)
+    if sh is not None:
         sh.setLevel(level)
-        log.addHandler(sh)
-
-    # Keep messages from propagating to the root logger (prevents dupes)
-    log.propagate = False
-    return log
-########################################################################################################################
