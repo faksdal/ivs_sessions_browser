@@ -176,8 +176,6 @@ class SessionBrowser:
             # Session detail URL from Code column if present
             code_link = tds[1].find("a")
             session_url = f"https://ivscc.gsfc.nasa.gov{code_link['href']}" if code_link and code_link.has_attr("href") else None
-            # print(f"session_url: {session_url}")
-            # ch = input("wait for key....")
 
             # --- patch added by chatgtp 30/8-2025 --- #################################################################
             # Initial CLI filters (case-sensitive for code; stations use same AND/OR grammar as TUI)
@@ -582,8 +580,6 @@ class SessionBrowser:
 
     def load_data(self) -> None:
         self.rows = self.fetch_all()
-        # print(f"type(self.rows): {type(self.rows)}")
-        # ch = input("Wait for key...")
         self.rows = sort_by_start(self.rows)  # chronological
 
         self.view_rows = list(self.rows)

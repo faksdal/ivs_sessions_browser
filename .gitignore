@@ -9,6 +9,7 @@ __pycache__/
 .venv/
 venv/
 .idea/
+output.txt
 
 # ignore logs
 log/

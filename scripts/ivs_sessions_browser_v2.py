@@ -5,7 +5,6 @@
 
 ## Import section ######################################################################################################
 import argparse
-import re
 import requests
 import logging
 from bs4            import BeautifulSoup
@@ -39,15 +38,15 @@ class SessionBrowser:
                  _year: int,
                  _logger: logging.Logger,
                  _scope: str = "both",
-                 _session_filter: Optional[str] = None,
-                 _antenna_filter: Optional[str] = None,
+                 _stations_filter: Optional[str] = None,
+                 _sessions_filter: Optional[str] = None,
                  ) -> None:
         # assigning all parameters to local instance vars
-        self.year           = _year
-        self.logger         = _logger
-        self.scope          = _scope
-        self.session_filter = _session_filter
-        self.antenna_filter = _antenna_filter
+        self.year               = _year
+        self.logger             = _logger
+        self.scope              = _scope
+        self.stations_filter    = _stations_filter
+        self.sessions_filter    = _sessions_filter
 
         # define and initialize some instance attributes ###############################################################
         self.rows:              List[Row]   = []
@@ -83,12 +82,27 @@ class SessionBrowser:
         :return: None
         """
         # Get data from web, and store in 'html', using functionality from 'URLHelper' class
-        url_helper: URLHelper   = URLHelper(self.logger, self.year, self.scope)
-        html: str               = url_helper.fetch_all_urls()
+        # We must differentiate between master and intensives, because we want to mark the intensives
+
+        url_helper: URLHelper   = URLHelper(self.logger,
+                                            self.year,
+                                            self.scope,
+                                            self.stations_filter,
+                                            self.sessions_filter)
+        parsed = url_helper.fetch_all_urls()
+        print(len(parsed))
+
+        # html: str = ""
+        # url_helper.fetch_one_url(url)
+        #
 
         # Instantiate a SessionParser object, passing a soup object of the 'html', and the logger object
         # Store the return value in 'parsed'
-        parsed: List[Row] = SessionParser(BeautifulSoup(html, "html.parser"), self.logger, len(HEADERS)).parser()
+        # parsed: List[Row] = SessionParser(BeautifulSoup(html, "html.parser"), self.logger, len(HEADERS), False).parse()
+
+        # print(self.year)
+        # print(self.scope)
+        # print(self.stations_filter)
 # --- END OF class SessionBrowser definition ------------------------------------------------------------------------------------------
 
 
@@ -106,14 +120,17 @@ def main() -> None:
                                          formatter_class = ARGUMENT_FORMATTER_CLASS)
 
     arg_parser.add_argument("--year",
-                            type = int,
+                            type    = int,
                             default = datetime.now().year,
-                            help = "Year (default: current year)")
+                            help    = "Year (default: current year)")
 
     arg_parser.add_argument("--scope",
                             choices = ("master", "intensive", "both"),
                             default = "both",
-                            help = "Which schedules to include (default: both)")
+                            help    = "Which schedules to include (default: both)")
+    arg_parser.add_argument("--stations",
+                            type    = str,
+                            help    ="Initial filter for stations:")
 
     args = arg_parser.parse_args()
 
@@ -122,9 +139,9 @@ def main() -> None:
     logger = setup_logger(filename=log_filename)
     logger.info("Script started...")
 
-    sb = SessionBrowser(_year   = args.year,
-                        _logger = logger,
-                        _scope  = args.scope).run()
+    # sb = SessionBrowser(_year=args.year, _logger=logger, _scope=args.scope, _stations_filter=args.stations).run()
+    SessionBrowser(_year=args.year, _logger=logger, _scope=args.scope, _stations_filter=args.stations).run()
+
     # print(sb.__dict__)
     # sb.fetch_data_from_web()
 

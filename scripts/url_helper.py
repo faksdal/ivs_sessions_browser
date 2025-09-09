@@ -11,6 +11,9 @@ import logging
 
 from bs4    import BeautifulSoup
 from typing import Callable, Optional, List #, Tuple, Dict, Any
+
+from type_defs      import HEADERS, Row, FIELD_INDEX
+from session_parser import SessionParser
 ## END OF Import section ###############################################################################################
 
 
@@ -26,7 +29,9 @@ class URLHelper:
     def __init__(self,
                  _logger:   logging.Logger,
                  _year:     int,
-                 _scope:    str
+                 _scope:    str,
+                 _stations_filter: Optional[str] = None,
+                 _sessions_filter: Optional[str] = None
                  ) -> None:
         """
         ___init___() - initialises an instance of the URLHelper class
@@ -38,6 +43,8 @@ class URLHelper:
         self.logger             = _logger
         self.year               = _year
         self.scope              = _scope
+        self.stations_filter    = _stations_filter
+        self.sessions_filter    = _sessions_filter
     # --- END OF __init__() method, or constructor if you like ---------------------------------------------------------
 
 
@@ -116,12 +123,12 @@ class URLHelper:
             # final progress line
             if total:
                 cb(f"Download complete: {got}/{total} bytes.")
-                self.logger.notice(f"Download complete: {got}/{total} bytes.")
+                self.logger.info(f"Download complete: {got}/{total} bytes.")
                 # print a newline after it finishes to clean up user prompt
                 print()
             else:
                 cb(f"Download complete: {got} bytes.")
-                self.logger.notice(f"Download complete: {got} bytes.")
+                self.logger.info(f"Download complete: {got} bytes.")
                 # print a newline after it finishes to clean up user prompt
                 print()
 
@@ -164,8 +171,8 @@ class URLHelper:
 
 
     def _fetch_one_url(self,
-                       _url: str
-                       ) -> str:
+                      _url: str
+                      ) -> List[Row]:
         """
         Fetch and parse the IVS sessions table URL into rows (case-sensitive CLI filters)
         Data fetched from https://ivscc.gsfc.nasa.gov/
@@ -175,12 +182,21 @@ class URLHelper:
         # --- reading data from web ####################################################################################
         # print(f"Reading data from {_url}...")
         self.logger.notice(f"Reading data from {_url}")
+        # self.logger.debug(f"URLHelper._fetch_one_url()")
         try:
             # --- this function is defined in subclass URLHelper. It fetches the content from the _url, giving feedback
             # --- to the user along the way through self._status_inline, which is also defined in URLHelper
             # urlhelper = URLHelper(_url, self.logger)
-            html = self._get_text_with_progress_retry(_url, _status_cb = self._status_inline)
-            return html
+            is_intensive = "/intensive/" in _url
+
+            html    = self._get_text_with_progress_retry(_url, _status_cb = self._status_inline)
+            parsed  = SessionParser(BeautifulSoup(html, "html.parser"),
+                                    self.logger,
+                                    len(HEADERS),
+                                    is_intensive,
+                                    self.stations_filter,
+                                    self.sessions_filter).parse()
+            return parsed
 
         except requests.RequestException as exc:
             print(f"Error fetching {_url}: {exc}")
@@ -190,19 +206,18 @@ class URLHelper:
 
 
 
-    def fetch_all_urls(self) -> str:
+    def fetch_all_urls(self) -> List[Row]:
         """
         Goes through all the url's in the list constructed by _urls_for_scope(), appending results to the return value
 
         :return str:
         """
 
-        pages: List[str] = []
+        rows: List[Row] = []
         for url in self._urls_for_scope():
-            # rows.extend(self._fetch_one_url(url))
-            pages.append(self._fetch_one_url(url))
+            rows.extend(self._fetch_one_url(url))
 
-        return "\n".join(pages)
+        return rows
     # this is the end of _fetch_all_urls() -----------------------------------------------------------------------------
 
 
