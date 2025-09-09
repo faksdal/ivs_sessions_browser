@@ -278,6 +278,7 @@ class SessionBrowser:
         max_y, max_x = stdscr.getmaxyx()
         if y >= max_y or x >= max_x:
             return
+        # print(text)
         stdscr.addstr(y, x, text[: max_x - x - 1], attr)
 
     @staticmethod

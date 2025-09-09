@@ -217,6 +217,9 @@ class URLHelper:
         for url in self._urls_for_scope():
             rows.extend(self._fetch_one_url(url))
 
+        # for r in rows:
+        #     self.logger.debug(f"URLHelper.fetch_all_urls(): row: {r}")
+
         return rows
     # this is the end of _fetch_all_urls() -----------------------------------------------------------------------------
 

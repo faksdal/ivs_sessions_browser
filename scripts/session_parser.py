@@ -52,9 +52,6 @@ class SessionParser:
 
     def parse(self) -> List[Row]:
         """
-        Parses the instance attribute self.soup, populating self.parsed
-
-        :return List[Row]:  Returns teh list self.parsed
         """
 
         parsed: List[Row] = []
@@ -126,21 +123,20 @@ class SessionParser:
                            if code_link and code_link.has_attr("href")
                            else None)
 
-            # # Use the same stations grammar as the TUI (OR '|' and AND '&', space/',' '+' split),
-            # # applied to ACTIVE stations only for the CLI.
-            # if self.stations_filter and not self._match_stations(active_str, self.stations_filter):
+            # if stations_filter is set,and there is NO match between the active_str and the stations_filter,
+            # continue the 'for r in session_rows loop'; e.g. we have no match
             if self.stations_filter and not self._match_stations(active_str, self.stations_filter):
-                self.logger.debug(f"self.stations_filter: {self.stations_filter}. active_str: {active_str}")
                 continue
 
-            # # Initial CLI filters (case-sensitive for code; stations use same AND/OR grammar as TUI)
+            # if sessions_filter is set,and there is NO match between the values[1] and the sessions_filter,
+            # continue the 'for r in session_rows loop'; e.g. we have no match
+            # values[1] is the column for session name, e.g. R41223, and so on
             if self.sessions_filter and self.sessions_filter not in values[1]:
-                self.logger.debug(f"self.sessions_filter: {self.sessions_filter}. values[1]: {values[1]}")
                 continue
 
-
-
+            # if we are here, we're good to append the current r in rows to the parsed List[Row]
             meta = {"active": active_str, "removed": removed_str}
+            # self.logger.debug(f"values: {values}, session_url: {session_url}, meta: {meta}")
             parsed.append((values, session_url, meta))
 
         return parsed
