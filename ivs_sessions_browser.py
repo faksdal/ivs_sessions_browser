@@ -25,21 +25,21 @@ class SessionBrowser:
     ]
     HEADER_LINE = " | ".join([f"{title:<{w}}" for title, w in HEADERS])
     WIDTHS = [w for _, w in HEADERS]
-    # FIELD_INDEX = {
-    #     "type": 0,
-    #     "code": 1,
-    #     "start": 2,
-    #     "doy": 3,
-    #     "dur": 4,
-    #     "stations": 5,
-    #     "db code": 6,
-    #     "db": 6,
-    #     "ops center": 7,
-    #     "ops": 7,
-    #     "correlator": 8,
-    #     "status": 9,
-    #     "analysis": 10,
-    # }
+    FIELD_INDEX =   {
+                    "type": 0,
+                    "code": 1,
+                    "start": 2,
+                    "doy": 3,
+                    "dur": 4,
+                    "stations": 5,
+                    "db code": 6,
+                    "db": 6,
+                    "ops center": 7,
+                    "ops": 7,
+                    "correlator": 8,
+                    "status": 9,
+                    "analysis": 10,
+                    }
 
     def __init__(
         self,
@@ -332,65 +332,7 @@ class SessionBrowser:
         self._addstr_clip(stdscr, 0, 0, self.HEADER_LINE, header_attr)
         self._addstr_clip(stdscr, 1, 0, "-" * len(self.HEADER_LINE))
 
-    # --- re-drawn to fix indentation errors
-    #def _draw_rows(self, stdscr) -> None:
-    #    max_y, _ = stdscr.getmaxyx()
-    #    view_height = max(1, max_y - 3)
 
-    #    if self.selected < self.offset:
-    #        self.offset = self.selected
-    #    elif self.selected >= self.offset + view_height:
-    #        self.offset = self.selected - view_height + 1
-
-    #    if not self.view_rows:
-    #        self._addstr_clip(stdscr, 2, 0, "No sessions found.")
-    #        return
-
-    #    # --- patch added by chatgtp 30/8-2025 --- #####################################################################
-    #    for i in range(self.offset, min(len(self.view_rows), self.offset + view_height)):
-    #        row_vals, _, meta = self.view_rows[i]
-
-    #        # COPY so we can override Stations column safely
-    #        vals = list(row_vals)
-
-    #        # If hiding removed stations, render active-only in col 5
-    #        if not self.show_removed:
-    #            active_only = meta.get("active", "")
-    #            vals[5] = f"{active_only:<{self.WIDTHS[5]}}"
-
-    #        parts = [f"{val:<{self.WIDTHS[c]}}" for c, val in enumerate(vals)]
-    #        full_line = " | ".join(parts)
-    #        y = i - self.offset + 2
-    #        row_attr = curses.A_REVERSE if i == self.selected else 0
-
-    #        row_color = self._status_color(self.has_colors, vals[9])
-    #        self._addstr_clip(stdscr, y, 0, full_line, row_attr | row_color)
-
-    #        # Highlight "[...]" only if we are showing removed stations
-    #        if self.has_colors and self.show_removed and vals[5]:
-    #            lbr = full_line.find("[")
-    #            if lbr != -1:
-    #                rbr = full_line.find("]", lbr + 1)
-    #                if rbr != -1 and rbr > lbr:
-    #                    self._addstr_clip(stdscr, y, lbr, full_line[lbr:rbr + 1], row_attr | curses.color_pair(1))
-
-    #    #--- added by chatgtp 30/8-2025 ---#############################################################################
-    #    # Station token highlighting (from stations:* filters)
-    #    if vals[5] and self.highlight_tokens:
-    #        stations_text = vals[5]  # padded field text as printed
-    #        col_x = self._col_start_x(5)  # Stations column index is 5
-    #        hl_attr = (curses.color_pair(8) | curses.A_BOLD) if self.has_colors else (curses.A_REVERSE | curses.A_BOLD)
-    #        for tok in self.highlight_tokens:
-    #            start = 0
-    #            while True:
-    #                j = stations_text.find(tok, start)
-    #                if j == -1:
-    #                    break
-    #                self._addstr_clip(stdscr, y, col_x + j, tok, row_attr | hl_attr)
-    #                start = j + len(tok)
-
-    #    # --- END: added by chatgtp 30/8-2025 ---#######################################################################
-    # --- END OF: re-drawn to fix indentation errors
     def _draw_rows(self, stdscr) -> None:
         max_y, _ = stdscr.getmaxyx()
         view_height = max(1, max_y - 3)

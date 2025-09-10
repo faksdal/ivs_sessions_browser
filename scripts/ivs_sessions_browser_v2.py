@@ -119,6 +119,8 @@ class SessionBrowser:
         return 0
     # --- END OF _status_color() ----------------------------------------------------------------------------------------
 
+
+
     def _addstr_clip(self, stdscr, y: int, x: int, text: str, attr: int = 0) -> None:
         """
         Writes a string to terminal, clipping if necessary
@@ -197,7 +199,8 @@ class SessionBrowser:
             # --- Column 5 is best accessed as index = FIELD_INDEX.get("stations", -1)
             if not self.show_removed:
                 active_only = meta.get("active", "")
-                vals[FIELD_INDEX.get("stations", -1)] = f"{active_only:<{WIDTHS[FIELD_INDEX.get("stations", -1)]}}"
+                field_index: int = FIELD_INDEX.get("stations", -1)
+                vals[field_index] = f"{active_only:<{WIDTHS[field_index]}}"
 
             # --- Construct full lines from parts
             parts       = [f"{val:<{WIDTHS[c]}}" for c, val in enumerate(vals)]
@@ -233,7 +236,6 @@ class SessionBrowser:
                         self._addstr_clip(stdscr, y, col_x + j, tok, row_attr | hl_attr)
                         start = j + len(tok)
 
-
         # --- END OF for i in range ------------------------------------------------------------------------------------
     # --- END OF _draw_rows() ------------------------------------------------------------------------------------------
 
@@ -268,7 +270,7 @@ class SessionBrowser:
         if self.has_colors:
             curses.start_color()
             curses.use_default_colors()
-            curses.init_pair(1, curses.COLOR_YELLOW, -1)                # removed stations
+            curses.init_pair(1, curses.COLOR_YELLOW, -1)                # removed stations, intensives
             curses.init_pair(2, curses.COLOR_CYAN, -1)                  # header
             curses.init_pair(3, curses.COLOR_BLACK, curses.COLOR_WHITE) # help bar
             curses.init_pair(4, curses.COLOR_GREEN, -1)                 # released
@@ -310,10 +312,7 @@ class SessionBrowser:
                 case _:
                     pass
             # --- END OF match ch --------------------------------------------------------------------------------------
-
-        # --- END OF while not quit ----------------------------------------------------------------------------------------
-
-
+        # --- END OF while not quit ------------------------------------------------------------------------------------
     # --- END OF _curses_main() ----------------------------------------------------------------------------------------
 
 
@@ -346,13 +345,12 @@ class SessionBrowser:
         self.view_rows = list(self.rows)
 
         idx             = self._index_on_or_after_today(self.view_rows)
-        self.selected   = idx;
-        self.offset     = idx;
+        self.selected   = idx
+        self.offset     = idx
 
         # --- using curses to call on the main loop, self._curses.main()
         curses.wrapper(self._curses_main)
-
-# --- END OF class SessionBrowser definition ------------------------------------------------------------------------------------------
+# --- END OF class SessionBrowser definition ---------------------------------------------------------------------------
 
 
 
@@ -393,6 +391,7 @@ def main() -> None:
 
     # print(sb.__dict__)
     # sb.fetch_data_from_web()
+# --- END OF class main() ----------------------------------------------------------------------------------------------
 
 
 
