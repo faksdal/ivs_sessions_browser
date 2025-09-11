@@ -6,7 +6,8 @@
 ## Import section ######################################################################################################
 import argparse
 import curses
-# import requests
+import webbrowser
+import re
 # import logging
 # from bs4                import BeautifulSoup
 from typing             import Optional, List, Tuple, Dict, Any
@@ -21,9 +22,11 @@ from type_defs          import (Row,
                                 WIDTHS,
                                 ARGUMENT_DESCRIPTION,
                                 ARGUMENT_EPILOG,
-                                ARGUMENT_FORMATTER_CLASS
+                                ARGUMENT_FORMATTER_CLASS,
+                                NAVIGATION_KEYS
                                )
 from sort_and_filter    import SortAndFilter
+# from . import constants
 ## END OF Import section ###############################################################################################
 
 
@@ -57,7 +60,7 @@ class SessionBrowser:
         self.selected:          int         = 0
         self.offset:            int         = 0
         self.has_colors:        bool        = False
-        self.show_removed:      bool        = False # --- flag for showing/hiding removed sessions in the list
+        self.show_removed:      bool        = True # --- flag for showing/hiding removed sessions in the list
         self.highlight_tokens:  List[str]   = []    # --- tokens to highlight in the stations column when filtering
         ################################################################################################################
     # this is the end of __init__() ------------------------------------------------------------------------------------
@@ -176,8 +179,8 @@ class SessionBrowser:
         elif self.selected >= self.offset + view_height:
             self.offset = self.selected - view_height + 1
 
-        self.logger.debug(f"self.offset: {self.offset}")
-        self.logger.debug(f"self.selected: {self.selected}")
+        # self.logger.debug(f"self.offset: {self.offset}")
+        # self.logger.debug(f"self.selected: {self.selected}")
 
         # --- Let the user know if we have nothing to show
         if not self.view_rows:
@@ -257,6 +260,248 @@ class SessionBrowser:
         self._addstr_clip(stdscr, max_y - 1, 0, bar, bar_attr)
     # --- END OF _draw_helpbar() ---------------------------------------------------------------------------------------
 
+
+
+    def _navigate(self, key: int, stdscr) -> None:
+        """
+        Wrapper for main loop, _curses_main, to handle navigation in the session list.
+        The idea is to keep a neater _curse_main.
+        This wrapper handles navigation keys: up/down arrows, page up/down, home/end and the enter key
+        to open the selected session in browser.
+
+        :param key: The curse_KEY_ to handle
+
+        :return:    None
+        """
+        match key:
+            case curses.KEY_UP if self.selected > 0:
+                self.selected -= 1
+            case curses.KEY_DOWN if self.selected < len(self.view_rows) - 1:
+                self.selected += 1
+            case curses.KEY_NPAGE:
+                max_y, _ = stdscr.getmaxyx()
+                page = max(1, max_y - 3)
+                self.selected = min(self.selected + page, len(self.view_rows) - 1)
+            case curses.KEY_PPAGE:
+                max_y, _ = stdscr.getmaxyx()
+                page = max(1, max_y - 3)
+                self.selected = max(self.selected - page, 0)
+            case curses.KEY_HOME:
+                self.selected = 0;
+            case curses.KEY_END:
+                self.selected = max(0, len(self.view_rows) - 1)
+            case 10 | 13 | curses.KEY_ENTER:
+                if self.view_rows:
+                    _, url, _ = self.view_rows[self.selected]
+                    if url:
+                        webbrowser.open(url)
+            case _:
+                pass
+
+    # --- END OF _navigate() -------------------------------------------------------------------------------------------
+
+    def _jump_to_today(self) -> None:
+        """
+        Small helper to jump to today's date. If there are several sessions for a given date, this function stops
+        at the first one, such that the rest are visible below the selected.
+
+        :return:    None
+        """
+
+        idx = self._index_on_or_after_today(self.view_rows)
+        self.selected = idx
+        self.offset = idx
+    # --- END OF _jump_to_today() --------------------------------------------------------------------------------------
+
+
+
+    def _get_input(self, stdscr, prompt: str) -> str:
+        """
+        Get input from the user.
+
+        :param stdscr:  Where to print
+        :param prompt:  Prompt for the user, printed jsut behind the cursor
+
+        :return:        The entered text
+        """
+
+        curses.curs_set(1)
+        curses.noecho()
+        stdscr.keypad(True)  # <-- important for KEY_* codes
+        max_y, max_x = stdscr.getmaxyx()
+        buffer: list[str] = []
+
+        while True:
+            line = (prompt + "".join(buffer))[: max_x - 1]
+            # clear the last line
+            stdscr.move(max_y - 1, 0)
+            stdscr.clrtoeol()
+            # draw prompt+buffer inverted
+            stdscr.addnstr(max_y - 1, 0, line, max_x - 1, curses.A_REVERSE)
+            # place cursor at end of visible line
+            stdscr.move(max_y - 1, min(len(line), max_x - 2))
+
+            ch = stdscr.getch()
+            match ch:
+                # Enter / Return
+                case 10 | 13 | curses.KEY_ENTER:
+                    break
+
+                # ESC → clear buffer and exit
+                case 27:
+                    buffer = []
+                    break
+
+                # Backspace (cover many terminals)
+                case 8 | 127 | curses.KEY_BACKSPACE:
+                    if buffer:
+                        buffer.pop()
+                    continue
+
+                # Printable ASCII
+                case c if 32 <= c <= 126:
+                    buffer.append(chr(c))
+
+                # Everything else ignored
+                case _:
+                    pass
+
+        curses.curs_set(0)
+        stdscr.keypad(False)
+        curses.echo()
+        return "".join(buffer).strip()
+
+        # curses.curs_set(1)
+        # max_y, max_x = stdscr.getmaxyx()
+        # buffer: List[str] = []
+        #
+        # while True:
+        #     line = (prompt + "".join(buf))[: max_x - 1]
+        #     self._addstr_clip(stdscr, max_y - 1, 0, " " * (max_x - 1))
+        #     self._addstr_clip(stdscr, max_y - 1, 0, line, curses.A_REVERSE)
+        #     stdscr.move(max_y - 1, min(len(line), max_x - 2))
+        #
+        #     ch = stdscr.getch()
+        #     match ch:
+        #         case 10 | 13 | curses.KEY_ENTER:    break
+        #
+        #         case 27:                            buffer = []
+        #                                             break
+        #
+        #         case 8 | 127 | curses.KEY_BACKSPACE:    if buffer:
+        #                                                     buffer.pop()
+        #                                                 continue
+        #
+        # return "".join(buffer).strip()
+        # --- END OF while True ----------------------------------------------------------------------------------------
+    # --- END OF _get_input() ------------------------------------------------------------------------------------------
+
+
+    def _split_tokens(self, val: str) -> List[str]:
+        """
+
+        :return:
+        """
+        return [t for t in re.split(r"[ ,+|]+", val) if t]
+    # --- END OF _split_tokens() ---------------------------------------------------------------------------------------
+
+
+
+    def _match_stations(self, hay: str, expr: str) -> bool:
+        """
+
+        :param expr:
+        :return:
+        """
+        text = expr.strip()
+
+        # self.logger.debug(f"_match_stations().text: {text}")
+
+        if not text:
+            return True
+        has_or = '|' in text
+        has_and = '&' in text
+
+        # self.logger.debug(f"_match_stations().has_or: {has_or}")
+        # self.logger.debug(f"_match_stations().has_and: {has_and}")
+
+        if has_or or has_and:
+            or_parts = [p.strip() for p in re.split(r"\s*\|{1,2}\s*", text) if p.strip()]
+
+            # self.logger.debug(f"_match_stations().or_parts: {or_parts}")
+
+            for part in or_parts:
+                and_chunks = [c.strip() for c in re.split(r"\s*&{1,2}\s*", part) if c.strip()]
+                and_tokens: List[str] = []
+
+                for chunk in and_chunks:
+                    and_tokens.extend([t for t in re.split(r"[ ,+]+", chunk) if t])
+
+                self.logger.debug(f"_match_stations().and_chunks: {and_chunks}, _match_stations().and_tokens: {and_tokens}")
+
+                if and_tokens and all(tok in hay for tok in and_tokens):
+                    return True
+                if not and_tokens and part and part in hay:
+                    return True
+            return False
+        tokens = [t for t in re.split(r"[ ,+]+", text) if t]
+        return all(tok in hay for tok in tokens)
+    # --- END OF _match_stations() -------------------------------------------------------------------------------------
+
+
+
+    def _apply_filter(self, _query: str) -> List[Row]:
+        """
+        Applies filter from user input to the session list
+
+        :param _query:
+
+        :return:
+        """
+
+        if not _query:
+            return self.rows
+
+        clauses = [c.strip() for c in _query.split(';') if c.strip()]
+        # self.logger.debug(f"_query.split(';'): {_query.split(';')}")
+        # self.logger.debug(f"clauses: {clauses}")
+        if not clauses:
+            return self.rows
+
+        def _clause_match(_row: Row, _clause: str) -> bool:
+            values, _, meta = _row
+            # self.logger.debug(f"values: {values}")
+            # self.logger.debug(f"meta: {meta}")
+            # self.logger.debug(f"_clause: {_clause}")
+            if ':' in _clause:
+                field, value = [p.strip() for p in _clause.split(':', 1)]
+
+                fld = field.lower()
+
+                # self.logger.debug(f"field: {field}, value: {value}, fld: {fld}")
+
+                idx = FIELD_INDEX.get(fld)
+                if fld in("stations", "stations_active", "stations-active"):
+                    # self.logger.debug(f"fld in('stations', 'stations_active', 'stations-active'")
+                    return self._match_stations(meta["active"], value)
+                if fld in("stations_removed", "stations-removed"):
+                    # self.logger.debug(f"fld in('stations_removed', 'stations-removed'")
+                    return self._match_stations(meta["removed"], value)
+                if fld in("stations_all", "stations-all"):
+                    # self.logger.debug(f"fld in('stations_all', 'stations-all'")
+                    return self._match_stations(meta["active"] + " " + meta["removed"], value)
+                if idx is None:
+                    return False
+                hay = values[idx]
+                tokens = self._split_tokens(value)
+                return any(tok in hay for tok in tokens)
+            return any(_clause in col for col in values)
+        # --- END OF neste function _clause_match() -----------------------------------------------------------------------------------
+        return [r for r in self.rows if all(_clause_match(r, c) for c in clauses)]
+    # --- END OF _apply_filter() ---------------------------------------------------------------------------------------
+
+
+
     def _curses_main(self, stdscr) -> None:
 
         # --- hide the cursor in the terminal
@@ -279,6 +524,17 @@ class SessionBrowser:
             curses.init_pair(7, curses.COLOR_WHITE, -1)                 # none
             curses.init_pair(8, curses.COLOR_CYAN, -1)                  # station highlight in filter
 
+        # NAVIGATION_KEYS = (curses.KEY_UP
+        #                    |curses.KEY_DOWN
+        #                    |curses.KEY_NPAGE
+        #                    |curses.KEY_PPAGE
+        #                    |curses.KEY_HOME
+        #                    |curses.KEY_END
+        #                    |curses.KEY_ENTER
+        #                    |10 | 13)
+        # NAVIGATION_KEYS = {curses.KEY_UP, curses.KEY_DOWN, curses.KEY_NPAGE, curses.KEY_PPAGE, curses.KEY_HOME,
+        #                    curses.KEY_END, curses.KEY_ENTER, 10, 13}
+
         # --- start the main loop
         quit = False
         while not quit:
@@ -289,28 +545,20 @@ class SessionBrowser:
 
             ch = stdscr.getch()
             match ch:
-                case curses.KEY_UP if self.selected > 0:
-                    self.selected -= 1
-                case curses.KEY_DOWN if self.selected < len(self.view_rows) -1:
-                    self.selected += 1
-                case curses.KEY_NPAGE:
-                    max_y, _ = stdscr.getmaxyx()
-                    page = max(1, max_y - 3)
-                    self.selected = min(self.selected + page, len(self.view_rows) - 1)
-                case curses.KEY_PPAGE:
-                    max_y, _ = stdscr.getmaxyx()
-                    page = max(1, max_y - 3)
-                    self.selected = max(self.selected - page, 0)
-                case curses.KEY_HOME:
-                    self.selected = 0;
-                case curses.KEY_END:
-                    self.selected = max(0, len(self.view_rows) - 1)
 
-                case c if c in (ord('q'), ord('Q'), 27):
-                    quit = True
+                # --- handles all navigation keys, and enter
+                case key if key in NAVIGATION_KEYS: self._navigate(ch, stdscr)
 
-                case _:
-                    pass
+                # --- jump to today's date
+                case c if c == ord('T'): self._jump_to_today()
+
+                # --- apply filter from the user
+                case c if c == ord('/'): self.view_rows = self._apply_filter(self._get_input(stdscr, "/ "))
+
+                # --- quit the script and return to terminal
+                case c if c in (ord('q'), ord('Q')):    quit = True
+
+                case _:                                 pass
             # --- END OF match ch --------------------------------------------------------------------------------------
         # --- END OF while not quit ------------------------------------------------------------------------------------
     # --- END OF _curses_main() ----------------------------------------------------------------------------------------

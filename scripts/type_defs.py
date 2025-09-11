@@ -6,6 +6,7 @@
     2025 jole
 """
 import argparse
+import curses
 
 from typing import List, Tuple, Optional, Dict, Any
 
@@ -56,3 +57,5 @@ ARGUMENT_EPILOG             = ("Filters (case-sensitive):\n"
                                "  --stations uses the same grammar as 'stations:' and applies to ACTIVE stations.\n")
 
 ARGUMENT_FORMATTER_CLASS    = argparse.RawDescriptionHelpFormatter
+NAVIGATION_KEYS = {curses.KEY_UP, curses.KEY_DOWN, curses.KEY_NPAGE, curses.KEY_PPAGE, curses.KEY_HOME,
+                           curses.KEY_END, curses.KEY_ENTER, 10, 13}
