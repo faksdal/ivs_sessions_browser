@@ -252,7 +252,7 @@ class SessionBrowser:
         :return:        None
         """
         max_y, max_x = stdscr.getmaxyx()
-        help_text = "↑↓ Move  PgUp/PgDn  Home/End  Enter Open  '/' Filter  T Today  F ClearFilter R Show/hide removed  ? Help  q Quit  stations: AND(&) OR(|)  "
+        help_text = "[↑↓-PgUp/PgDn-Home/End]: Move - Enter: Open - /: Filter - [q/Q]: Quit - stations: &(AND) |(OR) "
         right = f"row {min(self.selected + 1, len(self.view_rows))}/{len(self.view_rows)}"
         bar = (help_text + (f"filter: {self.current_filter}" if self.current_filter else "") + "  " + right)[
             : max_x - 1]
@@ -370,29 +370,6 @@ class SessionBrowser:
         stdscr.keypad(False)
         curses.echo()
         return "".join(buffer).strip()
-
-        # curses.curs_set(1)
-        # max_y, max_x = stdscr.getmaxyx()
-        # buffer: List[str] = []
-        #
-        # while True:
-        #     line = (prompt + "".join(buf))[: max_x - 1]
-        #     self._addstr_clip(stdscr, max_y - 1, 0, " " * (max_x - 1))
-        #     self._addstr_clip(stdscr, max_y - 1, 0, line, curses.A_REVERSE)
-        #     stdscr.move(max_y - 1, min(len(line), max_x - 2))
-        #
-        #     ch = stdscr.getch()
-        #     match ch:
-        #         case 10 | 13 | curses.KEY_ENTER:    break
-        #
-        #         case 27:                            buffer = []
-        #                                             break
-        #
-        #         case 8 | 127 | curses.KEY_BACKSPACE:    if buffer:
-        #                                                     buffer.pop()
-        #                                                 continue
-        #
-        # return "".join(buffer).strip()
         # --- END OF while True ----------------------------------------------------------------------------------------
     # --- END OF _get_input() ------------------------------------------------------------------------------------------
 
@@ -437,7 +414,7 @@ class SessionBrowser:
                 for chunk in and_chunks:
                     and_tokens.extend([t for t in re.split(r"[ ,+]+", chunk) if t])
 
-                self.logger.debug(f"_match_stations().and_chunks: {and_chunks}, _match_stations().and_tokens: {and_tokens}")
+                # self.logger.debug(f"_match_stations().and_chunks: {and_chunks}, _match_stations().and_tokens: {and_tokens}")
 
                 if and_tokens and all(tok in hay for tok in and_tokens):
                     return True
@@ -463,43 +440,62 @@ class SessionBrowser:
             return self.rows
 
         clauses = [c.strip() for c in _query.split(';') if c.strip()]
+
         # self.logger.debug(f"_query.split(';'): {_query.split(';')}")
         # self.logger.debug(f"clauses: {clauses}")
+
         if not clauses:
             return self.rows
 
-        def _clause_match(_row: Row, _clause: str) -> bool:
-            values, _, meta = _row
-            # self.logger.debug(f"values: {values}")
-            # self.logger.debug(f"meta: {meta}")
-            # self.logger.debug(f"_clause: {_clause}")
-            if ':' in _clause:
-                field, value = [p.strip() for p in _clause.split(':', 1)]
 
-                fld = field.lower()
 
-                # self.logger.debug(f"field: {field}, value: {value}, fld: {fld}")
+        # return [r for r in self.rows if all(self._clause_match(r, c) for c in clauses)]
 
-                idx = FIELD_INDEX.get(fld)
-                if fld in("stations", "stations_active", "stations-active"):
-                    # self.logger.debug(f"fld in('stations', 'stations_active', 'stations-active'")
-                    return self._match_stations(meta["active"], value)
-                if fld in("stations_removed", "stations-removed"):
-                    # self.logger.debug(f"fld in('stations_removed', 'stations-removed'")
-                    return self._match_stations(meta["removed"], value)
-                if fld in("stations_all", "stations-all"):
-                    # self.logger.debug(f"fld in('stations_all', 'stations-all'")
-                    return self._match_stations(meta["active"] + " " + meta["removed"], value)
-                if idx is None:
-                    return False
-                hay = values[idx]
-                tokens = self._split_tokens(value)
-                return any(tok in hay for tok in tokens)
-            return any(_clause in col for col in values)
-        # --- END OF neste function _clause_match() -----------------------------------------------------------------------------------
-        return [r for r in self.rows if all(_clause_match(r, c) for c in clauses)]
+        return_value: List[Row] = []
+
+        for r in self.rows:
+            if all(self._clause_match(<r, c) for c in clauses):
+                return_value.append(r)
+        return return_value
+
     # --- END OF _apply_filter() ---------------------------------------------------------------------------------------
 
+
+
+    def _clause_match(self, _row: Row, _clause: str) -> bool:
+        values, _, meta = _row
+
+        # self.logger.debug(f"_row: {_row}")
+        # self.logger.debug(f"_clause: {_clause}")
+
+        if ':' in _clause:
+            field, value = [p.strip() for p in _clause.split(':', 1)]
+
+            fld = field.lower()
+
+            # self.logger.debug(f"field: {field}, value: {value}, fld: {fld}")
+
+            idx = FIELD_INDEX.get(fld)
+            if fld in ("stations", "stations_active", "stations-active"):
+                # self.logger.debug(f"fld in('stations', 'stations_active', 'stations-active'")
+                return self._match_stations(meta["active"], value)
+            if fld in ("stations_removed", "stations-removed"):
+                # self.logger.debug(f"fld in('stations_removed', 'stations-removed'")
+                return self._match_stations(meta["removed"], value)
+            if fld in ("stations_all", "stations-all"):
+                # self.logger.debug(f"fld in('stations_all', 'stations-all'")
+                return self._match_stations(meta["active"] + " " + meta["removed"], value)
+            if idx is None:
+                return False
+            hay = values[idx]
+
+            self.logger.debug(f"_clause_match().hay: {hay}")
+
+            tokens = self._split_tokens(value)
+            return any(tok in hay for tok in tokens)
+        return any(_clause in col for col in values)
+
+    # --- END OF _clause_match() ---------------------------------------------------------------------------------------
 
 
     def _curses_main(self, stdscr) -> None:
