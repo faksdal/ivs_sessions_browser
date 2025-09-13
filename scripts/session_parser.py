@@ -67,7 +67,7 @@ class SessionParser:
             # --- Find the current index of 'stations', and assign an attribute
             index = FIELD_INDEX.get("stations", -1)
             if index == -1:
-                self.logger.error("Index error on 'stations', exiting...")
+                self.logger.error("SessionParser.parse(): Index error on 'stations', exiting...")
                 print("Index error on 'stations', exiting...")
                 exit(-1)
 

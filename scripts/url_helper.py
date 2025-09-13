@@ -24,8 +24,9 @@ from session_parser import SessionParser
 # --- what I'd like to get out of that...
 class URLHelper:
     """
-    class URLHelper
+    Small helper class to handle downloading from the web
     """
+
     def __init__(self,
                  _logger:   logging.Logger,
                  _year:     int,
@@ -35,10 +36,12 @@ class URLHelper:
                  ) -> None:
         """
         ___init___() - initialises an instance of the URLHelper class
-        :param _logger:
-        :param _year:
-        :param _scope:
+
+        :param _logger: logger object
+        :param _year:   which year to download, defaults to current
+        :param _scope:  scope: master, intensives, both
         """
+
         # self.url_string: str    = _url
         self.logger             = _logger
         self.year               = _year
@@ -123,12 +126,12 @@ class URLHelper:
             # final progress line
             if total:
                 cb(f"Download complete: {got}/{total} bytes.")
-                self.logger.info(f"Download complete: {got}/{total} bytes.")
+                self.logger.info(f"URLHelper._get_text_with_progress(): Download complete: {got}/{total} bytes.")
                 # print a newline after it finishes to clean up user prompt
                 print()
             else:
                 cb(f"Download complete: {got} bytes.")
-                self.logger.info(f"Download complete: {got} bytes.")
+                self.logger.info(f"URLHelper._get_text_with_progress(): Download complete: {got} bytes.")
                 # print a newline after it finishes to clean up user prompt
                 print()
 
@@ -152,6 +155,15 @@ class URLHelper:
                                       _status_cb: Optional[Callable[[str],None]] = None,
                                       **_kwargs,
                                       ) -> str:
+        """
+
+        :param _url:
+        :param _retries:
+        :param _backoff:
+        :param _status_cb:
+        :param _kwargs:
+        :return:
+        """
 
         cb = _status_cb or (lambda _msg: None)
         for attempt in range(_retries + 1):
@@ -159,7 +171,7 @@ class URLHelper:
                 return self._get_text_with_progress(_url, _status_cb = cb, **_kwargs)
             except (requests.Timeout, requests.ConnectionError) as e:
                 if attempt < _retries:
-                    self.logger.notice(f"{e.__class__.__name__}: {e}. Retrying in {_backoff:.1f}s…")
+                    self.logger.notice(f"URLHelper._get_text_with_progress(): {e.__class__.__name__}: {e}. Retrying in {_backoff:.1f}s…")
                     cb(f"{e.__class__.__name__}: {e}. Retrying in {_backoff:.1f}s…")
                     time.sleep(_backoff)
                     _backoff *= 2
@@ -177,11 +189,12 @@ class URLHelper:
         Fetch and parse the IVS sessions table URL into rows (case-sensitive CLI filters)
         Data fetched from https://ivscc.gsfc.nasa.gov/
 
-        :return str:
+        :return str:    List containing the downloaded and parsed data
         """
+
         # --- reading data from web ####################################################################################
         # print(f"Reading data from {_url}...")
-        self.logger.notice(f"Reading data from {_url}")
+        self.logger.notice(f"URLHelper._fetch_one_url(): Reading data from {_url}")
         # self.logger.debug(f"URLHelper._fetch_one_url()")
         try:
             # --- this function is defined in subclass URLHelper. It fetches the content from the _url, giving feedback
@@ -200,7 +213,7 @@ class URLHelper:
 
         except requests.RequestException as exc:
             print(f"Error fetching {_url}: {exc}")
-            self.logger.warning(f"Error fetching {_url}: {exc}")
+            self.logger.warning(f"URLHelper._fetch_one_url(): Error fetching {_url}: {exc}")
             return []
     # this is the end of _fetch_one_url() ------------------------------------------------------------------------------
 
@@ -210,7 +223,7 @@ class URLHelper:
         """
         Goes through all the url's in the list constructed by _urls_for_scope(), appending results to the return value
 
-        :return str:
+        :return str:    List containing the downloaded and parsed data
         """
 
         rows: List[Row] = []
@@ -224,6 +237,7 @@ class URLHelper:
     # this is the end of _fetch_all_urls() -----------------------------------------------------------------------------
 
 
+
     def _urls_for_scope(self) -> List[str]:
         """
         Constructing the url's to read from
@@ -231,6 +245,7 @@ class URLHelper:
         :return List[str]:  List of url's from which we read our data. This will be 'master', and 'intensive' for
                             a given year. It defaults to the current year and both master and intensives
         """
+
         base_url = "https://ivscc.gsfc.nasa.gov/sessions"
         year = str(self.year)
         if self.scope == "master":

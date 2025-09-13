@@ -1,16 +1,15 @@
 """
     types.py
 
-    Contains user defined types for use around the different project classes
+    Contains user defined types for use in the SessionBrowser project
 
     2025 jole
 """
+
 import argparse
 import curses
 
 from typing import List, Tuple, Optional, Dict, Any
-
-
 
 Row = Tuple[List[str], Optional[str], Dict[str, Any]]
 
@@ -53,9 +52,15 @@ ARGUMENT_EPILOG             = ("Filters (case-sensitive):\n"
                                "  Non-stations fields: tokens split by space/comma/plus/pipe are OR (e.g. code: R1|R4)\n"
                                "  Stations active: stations: Nn&Ns  or  stations: Nn|Ns\n"
                                "  Stations removed/any: stations_removed: Ft|Ur   stations_all: Hb|Ht\n"
-                               "\nCLI:\n"
-                               "  --stations uses the same grammar as 'stations:' and applies to ACTIVE stations.\n")
+                               "\nCLI:\n")
 
 ARGUMENT_FORMATTER_CLASS    = argparse.RawDescriptionHelpFormatter
-NAVIGATION_KEYS = {curses.KEY_UP, curses.KEY_DOWN, curses.KEY_NPAGE, curses.KEY_PPAGE, curses.KEY_HOME,
-                           curses.KEY_END, curses.KEY_ENTER, 10, 13}
+
+NAVIGATION_KEYS = {curses.KEY_UP,
+                   curses.KEY_DOWN,
+                   curses.KEY_NPAGE,
+                   curses.KEY_PPAGE,
+                   curses.KEY_HOME,
+                   curses.KEY_END,
+                   curses.KEY_ENTER,
+                   10, 13}

@@ -675,44 +675,6 @@ class SessionBrowser:
 
 
 
-    def _match_text_ci(self, hay: str, expr: str) -> bool:
-        """
-        Case-insensitive matcher for NON-station fields.
-        Supports '|' (OR) and '&' (AND) like _match_stations(),
-        but comparisons are done case-insensitively.
-        """
-
-        text = expr.strip()
-        if not text:
-            return True
-
-        H = hay.lower()
-
-        def norm(s: str) -> str:
-            return s.lower()
-
-        has_or = '|' in text
-        has_and = '&' in text
-        if has_or or has_and:
-            or_parts = [p.strip() for p in re.split(r"\s*\|{1,2}\s*", text) if p.strip()]
-            for part in or_parts:
-                and_chunks = [c.strip() for c in re.split(r"\s*&{1,2}\s*", part) if c.strip()]
-                and_tokens: List[str] = []
-                for chunk in and_chunks:
-                    and_tokens.extend([t for t in re.split(r"[ ,+]+", chunk) if t])
-                if and_tokens and all(norm(tok) in H for tok in and_tokens):
-                    return True
-                if not and_tokens and part and norm(part) in H:
-                    return True1
-
-            return False
-
-        # No explicit | or &: treat split tokens as OR
-        tokens = [t for t in re.split(r"[ ,+]+", text) if t]
-        return any(norm(tok) in H for tok in tokens)
-    # --- END OF _match_text_ci() --------------------------------------------------------------------------------------
-
-
     def _apply_filter(self, _query: str) -> List[Row]:
         """
         Applies filter from user input to the session list
@@ -774,16 +736,12 @@ class SessionBrowser:
 
             hay = values[idx]
 
-            # Non-station fields: case-insensitive, support | and &,
-            # default to OR across tokens when neither is present.
-            return self._match_text_ci(hay, value)
+            # self.logger.debug(f"_clause_match().hay: {hay}")
 
-            # # self.logger.debug(f"_clause_match().hay: {hay}")
-            #
-            # tokens = self._split_tokens(value)
-            #
-            # # return any(tok in hay for tok in tokens)
-            # return all(tok in hay for tok in tokens)
+            tokens = self._split_tokens(value)
+
+            # return any(tok in hay for tok in tokens)
+            return all(tok in hay for tok in tokens)
 
         return any(_clause in col for col in values)
     # --- END OF _clause_match() ---------------------------------------------------------------------------------------
@@ -932,20 +890,24 @@ class SessionBrowser:
 
                 # --- apply filter from the user
                 case c if c == ord('/'):
+                    # prompt = self.current_filter if self.current_filter else "/ "
 
-                    prefill = self.current_filter or ""
-                    q       = self._get_input(stdscr, "/ ", initial = prefill)
+                    # prefill = self.current_filter or ""
+                    # q       = self._get_input(stdscr, "/ ", initial = prefill)
+
+                    q = "stations:Ns|Nn;type:IVS-R1|IVS-R4"
+
+                    # prompt = "/ "
+                    # q = self._get_input(stdscr, prompt)
 
                     self.current_filter = q;
-                    self.view_rows      = self._apply_filter(q)
+                    self.view_rows = self._apply_filter(q)
 
-                    self.highlight_tokens   = self._extract_station_tokens(self.current_filter)
-
-                    idx             = self._index_on_or_after_today(self.view_rows)
-                    self.selected   = idx
-                    self.offset     = idx
-
-                    # self.logger.debug(f"SessionBrowser._curses_main().whilenotquit.self.current_filter: {self.current_filter}")
+                    self.highlight_tokens = self._extract_station_tokens(self.current_filter)
+                    idx = self._index_on_or_after_today(self.view_rows)
+                    self.selected = idx
+                    self.offset = idx
+                    self.logger.debug(f"SessionBrowser._curses_main().whilenotquit.self.current_filter: {self.current_filter}")
 
                 # --- clear active filters
                 case c if c == (ord('F')):  self._clear_filters()
