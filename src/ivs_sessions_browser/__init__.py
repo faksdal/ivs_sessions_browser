@@ -1,14 +1,25 @@
-# from .session_parser import SessionParser  # if you want exports
-# from .whatever import ...
+# --- version (managed by setuptools-scm) ---
+try:
+    from ._version import version as __version__
+except ImportError:
+    __version__ = "0.0.0"
 
+# --- main entry point (used by pyproject.toml [project.scripts]) ---
 def main() -> None:
-    """
-    CLI entry point. Keep this thin: parse args, init logger, run the TUI.
-    """
-    # Example sketch — adapt to your existing v2 code structure:
-    # from .log_setup import setup_logger  # if you have this
-    # from .session_viewer import SessionBrowser  # if this is your TUI
+    """CLI entry point."""
+    # for now just a simple demo, later wire this to SessionBrowser
+    from .get_data_from_url import GetDataFromURL
 
-    # logger = setup_logger(level="INFO")  # or from args
-    # parse args here (argparse) if not already split out
-    # SessionBrowser(_logger=logger).run()
+    url = "https://ivscc.gsfc.nasa.gov/sessions/2025/"
+    fetcher = GetDataFromURL(url)
+    data = fetcher.fetch()
+    print(f"Downloaded {len(data)} bytes from {url}")
+
+# --- re-exports for convenience ---
+from .get_data_from_url import GetDataFromURL
+
+__all__ = [
+    "__version__",
+    "main",
+    "GetDataFromURL",
+]

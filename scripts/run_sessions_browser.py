@@ -1,13 +1,6 @@
 #!/usr/bin/env python3
 
-from ivs_sessions_browser.get_data_from_url import GetDataFromURL
-
-
-
-def main():
-    pass
-
-
+from ivs_sessions_browser import main
 
 if __name__ == "__main__":
     main()
