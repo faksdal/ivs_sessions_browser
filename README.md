@@ -1,6 +1,6 @@
 
 # File: README.md
-# IVS Sessions Browser v2
+# IVS Sessions Browser v3
 
 A terminal-based TUI browser for [IVS session schedules](https://ivscc.gsfc.nasa.gov/sessions/).
 
