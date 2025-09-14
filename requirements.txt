@@ -1,4 +1,9 @@
 
 # File: requirements.txt
-requests
-beautifulsoup4
+# requirements.txt
+requests>=2.0
+beautifulsoup4>=4.0
+
+# optional: specify Python version
+# python_version >= "3.10"
+
