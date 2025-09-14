@@ -11,5 +11,5 @@
 | **T**        | Go to today's date             |
 | `?`          | Help popup                     |
 | Enter        | Open session in browser        |
-| q / Esc      | Quit                           |
+| q / Q        | Quit                           |
 | ------------ | ------------------------------ |
