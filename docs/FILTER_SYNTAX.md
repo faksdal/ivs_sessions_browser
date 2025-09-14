@@ -1,5 +1,7 @@
 # File: docs/FILTER_SYNTAX.md
-# Filter Syntax (Case-Sensitive)
+# Filter Syntax:
+- stations: case sensitive
+- other:    case in-sensitive
 
 ## Clauses
 - Multiple clauses separated by `;` are AND across clauses.
