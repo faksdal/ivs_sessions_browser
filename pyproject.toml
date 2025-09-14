@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=61", "setuptools-scm>=8"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ivs-sessions-browser"
+dynamic = ["version"]
+requires-python = ">=3.10"
+# dependencies = ["requests", "beautifulsoup4"]  # add yours
+
+[project.scripts]
+ivs-sessions-browser = "ivs_sessions_browser:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools_scm]
+version_scheme = "guess-next-dev"
+local_scheme = "node-and-date"
+write_to = "src/ivs_sessions_browser/_version.py"
