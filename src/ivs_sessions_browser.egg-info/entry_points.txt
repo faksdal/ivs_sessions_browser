@@ -1,0 +1,2 @@
+[console_scripts]
+ivs-sessions-browser = ivs_sessions_browser:main

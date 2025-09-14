@@ -1,0 +1,6 @@
+Metadata-Version: 2.4
+Name: ivs-sessions-browser
+Version: 3.0.1.dev0+g14ae51fac.d20250914
+Requires-Python: >=3.10
+License-File: LICENSE
+Dynamic: license-file

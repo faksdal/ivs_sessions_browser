@@ -1,4 +1,4 @@
-from .session_parser import SessionParser  # if you want exports
+# from .session_parser import SessionParser  # if you want exports
 # from .whatever import ...
 
 def main() -> None:
