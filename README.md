@@ -20,7 +20,7 @@ Features:
     - `stations_removed:Ft|Ur` → sessions with Ft or Ur removed
     - `stations_all: Hb|Ht` → sessions with Hb or Ht active or removed
   
-  - Best viewed in a dark theme
+- Best viewed in a dark theme
 
 ---
 
