@@ -1,20 +1,18 @@
 #! ../.venv/bin/python3
+
 # --- This is a re-write of the ivs_sessions_browser.py script
 #
 # --- jole 2025
 
-## Import section ######################################################################################################
+# --- Import section ---------------------------------------------------------------------------------------------------
 import argparse
 import curses
 import webbrowser
 import re
-# import logging
-# from bs4                import BeautifulSoup
 from typing             import Optional, List, Tuple, Dict, Any
 from datetime           import datetime, date
 from log_helper         import *
 from url_helper         import URLHelper
-# from session_parser     import SessionParser
 from type_defs          import (Row,
                                 FIELD_INDEX,
                                 HEADERS,
@@ -25,15 +23,14 @@ from type_defs          import (Row,
                                 ARGUMENT_FORMATTER_CLASS,
                                 NAVIGATION_KEYS
                                )
-## END OF Import section ###############################################################################################
+# --- END OF Import section --------------------------------------------------------------------------------------------
 
 
 
-# --- class definition -------------------------------------------------------------------------------------------------
-#class SessionBrowser(SessionParser):
+# --- Class definition -------------------------------------------------------------------------------------------------
 class SessionBrowser:
     """
-    Class SessionBrowser
+    Class SessionBrowser: Holds most of the functionality for navigating and filtering the list
     """
 
     def __init__(self,
@@ -51,30 +48,27 @@ class SessionBrowser:
         :param _stations_filter:
         :param _sessions_filter:
         """
-        # assigning all parameters to local instance vars
+
+        # --- Assigning all parameters to local instance attributes ----------------------------------------------------
         self.year               = _year
         self.logger             = _logger
         self.scope              = _scope
         self.stations_filter    = _stations_filter
         self.sessions_filter    = _sessions_filter
 
-        # self.logger.debug(f"__init__().self.stations_filter: {self.stations_filter}")
-        # self.logger.debug(f"__init__().self.sessions_filter: {self.sessions_filter}")
-
-
-        # define and initialize some instance attributes ###############################################################
+        # --- Define and initialize some more instance attributes ------------------------------------------------------
         self.rows:              List[Row]   = []
         self.view_rows:         List[Row]   = []
         self.current_filter:    str         = ""
         self.selected:          int         = 0
         self.offset:            int         = 0
         self.has_colors:        bool        = False
-        self.show_removed:      bool        = True # --- flag for showing/hiding removed sessions in the list
-        self.highlight_tokens:  List[str]   = []    # --- tokens to highlight in the stations column when filtering
-        ################################################################################################################
 
-        # self.current_filter = self.stations_filter
-        # self.logger.debug(f"__init__().self.current_filter: {self.current_filter}")
+        # --- Flag for showing/hiding removed sessions in the list
+        self.show_removed:      bool        = True
+
+        # --- Tokens to highlight in the stations column when filtering
+        self.highlight_tokens:  List[str]   = []
     # this is the end of __init__() ------------------------------------------------------------------------------------
 
 
@@ -130,8 +124,6 @@ class SessionBrowser:
         win     = curses.newwin(height, width, y, x)
         win.box()
 
-        # title_attr  = curses.A_UNDERLINE|curses.A_BOLD
-
         for i, text in enumerate(help_text, start=1):
             attr = 0
             if i == 1:  # title
@@ -151,7 +143,7 @@ class SessionBrowser:
 
         win.refresh()
         win.getch()
-    # this is the end of _show_help() ----------------------------------------------------------------------------------
+    # --- END OF _show_help() ------------------------------------------------------------------------------------------
 
 
 
@@ -170,7 +162,7 @@ class SessionBrowser:
         for i in range(_col_idx):
             x += WIDTHS[i] + sep
         return x
-    # this is the end of _col_start_x() ################################################################################
+    # --- END OF _col_start_x() ----------------------------------------------------------------------------------------
 
 
 
@@ -241,12 +233,14 @@ class SessionBrowser:
             return curses.color_pair(4)
         if any(k in st for k in ("waiting on media", "ready for processing", "cleaning up", "processing session")):
             return curses.color_pair(5)
-        if "cancelled" in st or "canceled" in st:  # handle both spellings
+
+        # --- Handle both spellings...
+        if "cancelled" in st or "canceled" in st:
             return curses.color_pair(6)
         if st == "":
             return curses.color_pair(7)
         return 0
-    # --- END OF _status_color() ----------------------------------------------------------------------------------------
+    # --- END OF _status_color() ---------------------------------------------------------------------------------------
 
 
 
@@ -305,25 +299,18 @@ class SessionBrowser:
         elif self.selected >= self.offset + view_height:
             self.offset = self.selected - view_height + 1
 
-        # self.logger.debug(f"self.offset: {self.offset}")
-        # self.logger.debug(f"self.selected: {self.selected}")
-
         # --- Let the user know if we have nothing to show
         if not self.view_rows:
             self._addstr_clip(stdscr, 2, 0, "No sessions found.")
             return
 
         # --- Draw each visible row to terminal
-        # self.logger.debug(f"self.offset: {self.offset}")
-        # self.logger.debug(f"min(len(self.view_rows), self.offset + view_height): {min(len(self.view_rows), self.offset + view_height)}")
-        # self.logger.debug(f"self.offset + view_height: {self.offset + view_height}")
         for i in range(self.offset, min(len(self.view_rows), self.offset + view_height)):
 
             row_vals, _, meta = self.view_rows[i]
 
             # --- Copy, so we can override Stations column safely
             vals = list(row_vals)
-            # self.logger.debug(f"vals: {vals}")
 
             # --- If the user has chosen to hide removed stations, render only active in column 5
             # --- Column 5 is best accessed as index = FIELD_INDEX.get("stations", -1)
@@ -341,8 +328,12 @@ class SessionBrowser:
             row_color = self._status_color(self.has_colors, vals[FIELD_INDEX.get("status", -1)])
             self._addstr_clip(stdscr, y, 0, full_line, row_attr | row_color)
 
-            # --- Highlight "[...]" only if we are showing removed stations, after the active ones
-            if self.has_colors and self.show_removed and vals[FIELD_INDEX.get("stations", -1)]:
+            # [REMOVED] --- Highlight "[...]" only if we are showing removed stations, after the active ones
+            # --- This has changed: as a side effect, intensives that are also marked with [], will be
+            # --- colored by the same color as removed stations (becasue of the []. This is for convenience; in later
+            # --- versions intensives and removed should have separate colors.
+            # if self.has_colors and self.show_removed and vals[FIELD_INDEX.get("stations", -1)]:
+            if self.has_colors and vals[FIELD_INDEX.get("stations", -1)]:
                 lbr = full_line.find("[")
                 if lbr != -1:
                     rbr = full_line.find("]", lbr + 1)
@@ -351,10 +342,13 @@ class SessionBrowser:
 
             # --- Station token highlighting (from stations:* filter)
             if vals[FIELD_INDEX.get("stations", -1)] and self.highlight_tokens:
-                stations_text = vals[FIELD_INDEX.get("stations", -1)]        # padded field text as printed
-                col_x = self._col_start_x(FIELD_INDEX.get("stations", -1))  # "stations" field index
+                # --- Padded field text as printed
+                stations_text = vals[FIELD_INDEX.get("stations", -1)]
 
-                # Fallback without colors: underline+bold (shows even on selected/reversed rows)
+                # --- "stations" field index
+                col_x = self._col_start_x(FIELD_INDEX.get("stations", -1))
+
+                # --- Fallback without colors: underline+bold (shows even on selected/reversed rows)
                 hl_attr = (curses.color_pair(8) | curses.A_BOLD) if self.has_colors else (
                         curses.A_BOLD | curses.A_UNDERLINE)
                 for tok in self.highlight_tokens:
@@ -379,7 +373,7 @@ class SessionBrowser:
         :return:        None
         """
         max_y, max_x = stdscr.getmaxyx()
-        help_text = "↑↓-PgUp/PgDn-Home/End:Move Enter:Open /:Filter F:Clear filters ?:Help R:Hide/show removed [q/Q]:Quit"
+        help_text = "↑↓-PgUp/PgDn-Home/End:Move Enter:Open /:Filter F:Clear filters ?:Help R:Hide/show removed q/Q:Quit"
         right = f"row {min(self.selected + 1, len(self.view_rows))}/{len(self.view_rows)}"
         bar = (help_text + (f" Filter: {self.current_filter}" if self.current_filter else "") + "  " + right)[
             : max_x - 1]
@@ -400,9 +394,6 @@ class SessionBrowser:
 
         :return:    None
         """
-
-        # self.logger.debug(f"_navigate().self.selected: {self.selected}")
-        # self.logger.debug(f"_navigate().len(self.view_rows) - 1: {len(self.view_rows) - 1}")
 
         match key:
             case curses.KEY_UP if self.selected > 0:
@@ -428,13 +419,16 @@ class SessionBrowser:
                         webbrowser.open(url)
             case _:
                 pass
-
     # --- END OF _navigate() -------------------------------------------------------------------------------------------
+
+
 
     def _jump_to_today(self) -> None:
         """
         Small helper to jump to today's date. If there are several sessions for a given date, this function stops
         at the first one, such that the rest are visible below the selected.
+
+        If today's date is not in the list, it jumps to the next date.
 
         :return:    None
         """
@@ -446,66 +440,6 @@ class SessionBrowser:
 
 
 
-    # def _get_input(self, stdscr, prompt: str) -> str:
-    #     """
-    #     Get input from the user.
-    #
-    #     :param stdscr:  Where to print
-    #     :param prompt:  Prompt for the user, printed jsut behind the cursor
-    #
-    #     :return:        The entered text
-    #     """
-    #
-    #     curses.curs_set(1)
-    #     curses.noecho()
-    #     stdscr.keypad(True)  # <-- important for KEY_* codes
-    #     max_y, max_x = stdscr.getmaxyx()
-    #     # buffer: list[str] = self.current_filter if self.current_filter else ""
-    #     buffer: list[str] = []
-    #
-    #     # if self.current_filter:
-    #     #     buffer.append(self.current_filter)
-    #
-    #     while True:
-    #         line = (prompt + "".join(buffer))[: max_x - 1]
-    #         # clear the last line
-    #         stdscr.move(max_y - 1, 0)
-    #         stdscr.clrtoeol()
-    #         # draw prompt+buffer inverted
-    #         stdscr.addnstr(max_y - 1, 0, line, max_x - 1, curses.A_REVERSE)
-    #         # place cursor at end of visible line
-    #         stdscr.move(max_y - 1, min(len(line), max_x - 2))
-    #
-    #         ch = stdscr.getch()
-    #         match ch:
-    #             # Enter / Return
-    #             case 10 | 13 | curses.KEY_ENTER:
-    #                 break
-    #
-    #             # ESC → clear buffer and exit
-    #             case 27:
-    #                 buffer = []
-    #                 break
-    #
-    #             # Backspace (cover many terminals)
-    #             case 8 | 127 | curses.KEY_BACKSPACE:
-    #                 if buffer:
-    #                     buffer.pop()
-    #                 continue
-    #
-    #             # Printable ASCII
-    #             case c if 32 <= c <= 126:
-    #                 buffer.append(chr(c))
-    #
-    #             # Everything else ignored
-    #             case _:
-    #                 pass
-    #
-    #     curses.curs_set(0)
-    #     # stdscr.keypad(False) # disabling keypad here disables navigation. Keys entered will not be caught
-    #     curses.echo()
-    #     return "".join(buffer).strip()
-    #     # --- END OF while True ----------------------------------------------------------------------------------------
     def _get_input(self, stdscr, prompt: str, initial: str = "") -> str:
         """
         Get editable input from the user with an initial value pre-filled.
@@ -513,87 +447,96 @@ class SessionBrowser:
         :param stdscr:  Where to print
         :param prompt:  Prompt shown before the text
         :param initial: Initial text to prefill (e.g., current filter)
+
         :return:        The entered text
         """
         curses.curs_set(1)
         curses.noecho()
-        stdscr.keypad(True)  # important for KEY_* codes
+
+        # --- Important for KEY_* codes
+        stdscr.keypad(True)
 
         max_y, max_x = stdscr.getmaxyx()
 
-        # --- EDITABLE STATE ---
-        buffer: list[str] = list(initial)  # prefill with current filter
-        cursor: int = len(buffer)  # cursor index inside buffer
-        scroll: int = 0  # horizontal scroll of the *text* (not including prompt)
+        # --- EDITABLE STATE
+
+        # --- Prefill with current filter
+        buffer: list[str] = list(initial)
+
+        # --- Cursor index inside buffer
+        cursor: int = len(buffer)
+
+        # --- Horizontal scroll of the *text* (not including prompt)
+        scroll: int = 0
 
         def _recalc_scroll():
             """Keep the cursor visible by adjusting horizontal scroll."""
             nonlocal scroll
-            visible_width = max_x - 1  # how many cells we can draw
-            # Space available for the text after the prompt:
+
+            # --- How many cells we can draw
+            visible_width = max_x - 1
+
+            # --- Space available for the text after the prompt:
             text_space = visible_width - len(prompt)
             if text_space < 5:
-                # if the prompt is huge, fallback to at least a few chars of input area
+                # --- If the prompt is huge, fallback to at least a few chars of input area
                 text_space = 5
 
-            # If cursor goes left of the window, scroll left
+            # --- If cursor goes left of the window, scroll left
             if cursor < scroll:
                 scroll = cursor
-            # If cursor goes right of the window, scroll right
+            # --- If cursor goes right of the window, scroll right
             elif cursor > scroll + text_space - 1:
                 scroll = cursor - (text_space - 1)
-            # Clamp scroll
+            # --- Clamp scroll
             if scroll < 0:
                 scroll = 0
 
         while True:
             _recalc_scroll()
-            # Compose visible line
+
+            # --- Compose visible line
             text = "".join(buffer)
             visible_width = max_x - 1
             text_space = visible_width - len(prompt)
             if text_space < 5:
                 text_space = 5
 
-            # Take the slice of text that should be visible
+            # --- Take the slice of text that should be visible
             visible_text = text[scroll:scroll + text_space]
             line = (prompt + visible_text)[:visible_width]
 
-            # Clear last line and draw prompt + visible text inverted
+            # --- Clear last line and draw prompt + visible text inverted
             stdscr.move(max_y - 1, 0)
             stdscr.clrtoeol()
 
-            # stdscr.addnstr(max_y - 1, 0, line, visible_width, curses.A_REVERSE)
+            # [REMOVED]stdscr.addnstr(max_y - 1, 0, line, visible_width, curses.A_REVERSE)
+            # --- Added filter color to filter input field
             stdscr.addnstr(max_y - 1, 0, line, visible_width, curses.A_REVERSE|curses.color_pair(8))
 
-            # Compute on-screen cursor column
+            # --- Compute on-screen cursor column
             cursor_col = len(prompt) + (cursor - scroll)
             cursor_col = max(0, min(cursor_col, visible_width - 1))
             stdscr.move(max_y - 1, cursor_col)
 
             ch = stdscr.getch()
             match ch:
-                # Enter / Return
                 case 10 | 13 | curses.KEY_ENTER:
                     break
 
-                # ESC → clear buffer and exit
                 case 27:
                     buffer = []
                     break
 
-                # Backspace
                 case 8 | 127 | curses.KEY_BACKSPACE:
                     if cursor > 0:
                         cursor -= 1
                         buffer.pop(cursor)
 
-                # Delete (Del key)
                 case curses.KEY_DC:
                     if cursor < len(buffer):
                         buffer.pop(cursor)
 
-                # Left / Right
                 case curses.KEY_LEFT:
                     if cursor > 0:
                         cursor -= 1
@@ -601,7 +544,6 @@ class SessionBrowser:
                     if cursor < len(buffer):
                         cursor += 1
 
-                # Home / End
                 case curses.KEY_HOME:
                     cursor = 0
                 case curses.KEY_END:
@@ -622,6 +564,7 @@ class SessionBrowser:
     # --- END OF _get_input() ------------------------------------------------------------------------------------------
 
 
+
     def _split_tokens(self, val: str) -> List[str]:
         """
 
@@ -640,20 +583,13 @@ class SessionBrowser:
         """
         text = expr.strip()
 
-        # self.logger.debug(f"_match_stations().text: {text}")
-
         if not text:
             return True
         has_or = '|' in text
         has_and = '&' in text
 
-        # self.logger.debug(f"_match_stations().has_or: {has_or}")
-        # self.logger.debug(f"_match_stations().has_and: {has_and}")
-
         if has_or or has_and:
             or_parts = [p.strip() for p in re.split(r"\s*\|{1,2}\s*", text) if p.strip()]
-
-            # self.logger.debug(f"_match_stations().or_parts: {or_parts}")
 
             for part in or_parts:
                 and_chunks = [c.strip() for c in re.split(r"\s*&{1,2}\s*", part) if c.strip()]
@@ -661,8 +597,6 @@ class SessionBrowser:
 
                 for chunk in and_chunks:
                     and_tokens.extend([t for t in re.split(r"[ ,+]+", chunk) if t])
-
-                # self.logger.debug(f"_match_stations().and_chunks: {and_chunks}, _match_stations().and_tokens: {and_tokens}")
 
                 if and_tokens and all(tok in hay for tok in and_tokens):
                     return True
@@ -707,10 +641,11 @@ class SessionBrowser:
 
             return False
 
-        # No explicit | or &: treat split tokens as OR
+        # --- No explicit | or &: treat split tokens as OR
         tokens = [t for t in re.split(r"[ ,+]+", text) if t]
         return any(norm(tok) in H for tok in tokens)
     # --- END OF _match_text_ci() --------------------------------------------------------------------------------------
+
 
 
     def _apply_filter(self, _query: str) -> List[Row]:
@@ -727,13 +662,8 @@ class SessionBrowser:
 
         clauses = [c.strip() for c in _query.split(';') if c.strip()]
 
-        # self.logger.debug(f"_query.split(';'): {_query.split(';')}")
-        # self.logger.debug(f"clauses: {clauses}")
-
         if not clauses:
             return self.rows
-
-        # return [r for r in self.rows if all(self._clause_match(r, c) for c in clauses)]
 
         return_value: List[Row] = []
 
@@ -749,75 +679,32 @@ class SessionBrowser:
     def _clause_match(self, _row: Row, _clause: str) -> bool:
         values, _, meta = _row
 
-        # self.logger.debug(f"_row: {_row}")
-        # self.logger.debug(f"_clause: {_clause}")
-
         if ':' in _clause:
             field, value = [p.strip() for p in _clause.split(':', 1)]
 
             fld = field.lower()
 
-            # self.logger.debug(f"field: {field}, value: {value}, fld: {fld}")
-
             idx = FIELD_INDEX.get(fld)
             if fld in ("stations", "stations_active", "stations-active"):
-                # self.logger.debug(f"fld in('stations', 'stations_active', 'stations-active'")
                 return self._match_stations(meta["active"], value)
             if fld in ("stations_removed", "stations-removed"):
-                # self.logger.debug(f"fld in('stations_removed', 'stations-removed'")
                 return self._match_stations(meta["removed"], value)
             if fld in ("stations_all", "stations-all"):
-                # self.logger.debug(f"fld in('stations_all', 'stations-all'")
                 return self._match_stations(meta["active"] + " " + meta["removed"], value)
             if idx is None:
                 return False
 
             hay = values[idx]
 
-            # Non-station fields: case-insensitive, support | and &,
-            # default to OR across tokens when neither is present.
+            # --- Non-station fields: case-insensitive, support | and &,
+            # --- default to OR across tokens when neither is present.
             return self._match_text_ci(hay, value)
-
-            # # self.logger.debug(f"_clause_match().hay: {hay}")
-            #
-            # tokens = self._split_tokens(value)
-            #
-            # # return any(tok in hay for tok in tokens)
-            # return all(tok in hay for tok in tokens)
 
         return any(_clause in col for col in values)
     # --- END OF _clause_match() ---------------------------------------------------------------------------------------
 
 
 
-    # def _extract_station_tokens(self, _query: str) -> List[str]:
-    #     """
-    #     Pull station codes from any station-related clause in the current filter
-    #
-    #     :param _query:
-    #
-    #     :return:
-    #     """
-    #     if not _query:
-    #         return []
-    #
-    #     tokens: List[str] = []
-    #
-    #     clauses = [c.strip() for c in _query.split(';') if c.strip()]
-    #
-    #     for clause in clauses:
-    #         if ':' not in clause:
-    #             continue
-    #         field, value = [p.strip() for p in clause.split(':', 1)]
-    #         fld = field.lower()
-    #         if fld in ("stations", "stations_active", "stations-active",
-    #                    "stations_removed", "stations-removed",
-    #                    "stations_all", "stations-all"):
-    #             parts = re.split(r"[ ,+|&]", value)
-    #             tokens.extend([p for p in parts if p])
-    #
-    #     # Deduplicate; longer-first to avoid partial-overwrite visuals (e.g., 'Ny' vs 'Nya')
-    #     return sorted(set(tokens), key = lambda s: (-len(s), s))
     def _extract_station_tokens(self, _query: str) -> List[str]:
         """
         Highlight helper, pulls station codes from any station-related clause in the current filter.
@@ -829,16 +716,17 @@ class SessionBrowser:
         :return:        A list of strings
         """
 
-        # if we're passed an empty query, return with nothing
+        # --- If we're passed an empty query, return with nothing
         if not _query:
             return []
 
-        # define and initialize some local instance attributes #########################################################
-        tokens: List[str] = []  # empty list of strings
-        clauses = [c.strip() for c in _query.split(';') if c.strip()]  # splits _query by the ';', and
-        # strips away any whitespace, storing
-        # what's left in 'clauses'
-        ################################################################################################################
+        # --- Empty list of strings
+        tokens: List[str] = []
+
+        # --- Splits _query by the ';', and
+        clauses = [c.strip() for c in _query.split(';') if c.strip()]
+
+        # --- Strips away any whitespace, storing what's left in 'clauses'
         for clause in clauses:
             if ':' not in clause:
                 continue
@@ -850,7 +738,7 @@ class SessionBrowser:
                 parts = re.split(r"[ ,+|&]+", value)
                 tokens.extend([p for p in parts if p])
 
-        # Deduplicate; longer-first to avoid partial-overwrite visuals (e.g., 'Ny' vs 'Nya')
+        # --- Deduplicate; longer-first to avoid partial-overwrite visuals (e.g., 'Ny' vs 'Nya')
         return sorted(set(tokens), key=lambda s: (-len(s), s))
     # --- END OF _extract_station_tokens() ---------------------------------------------------------------------------------------
 
@@ -881,10 +769,10 @@ class SessionBrowser:
         :return: None
         """
 
-        # --- hide the cursor in the terminal
+        # --- Hide the cursor in the terminal
         curses.curs_set(0)
 
-        # --- clear the terminal window
+        # --- Clear the terminal window
         stdscr.clear()
 
         # --- Set up the colors, if any are available
@@ -901,19 +789,21 @@ class SessionBrowser:
             curses.init_pair(7, curses.COLOR_WHITE, -1)                 # none
             curses.init_pair(8, curses.COLOR_CYAN, -1)                  # station highlight in filter
 
-        # --- apply filters from command line args, if any
-        self.logger.debug(f"__init__().self.stations_filter: {self.stations_filter}")
-        if self.stations_filter:
-
+        # --- Apply filters from command line, if any
+        if self.stations_filter and not self.sessions_filter:
             # --- The difference between these two lines, made a big difference in the output from my filter logic!
             # --- Not having the "stations: " in front of my filter logic, made the list empty. Note to self!
             self.current_filter = "stations: " + self.stations_filter
-            # self.current_filter = self.stations_filter
 
-            self.view_rows = self._apply_filter(self.current_filter)
-            self.logger.debug(f"SessionBrowser._curses_main().self.current_filter: {self.current_filter}")
+        elif self.sessions_filter and not self.stations_filter:
+            self.current_filter = "code: " + self.sessions_filter
 
-        # --- start the main loop
+        elif self.stations_filter and self.sessions_filter:
+            self.current_filter = "stations: " + self.stations_filter + ";code: " + self.sessions_filter
+
+        self.view_rows = self._apply_filter(self.current_filter)
+
+        # --- Start the main loop
         quit = False
         while not quit:
             stdscr.clear()
@@ -924,13 +814,13 @@ class SessionBrowser:
             ch = stdscr.getch()
             match ch:
 
-                # --- handles all navigation keys, and enter
+                # --- Handles all navigation keys, and enter
                 case key if key in NAVIGATION_KEYS: self._navigate(ch, stdscr)
 
-                # --- jump to today's date
+                # --- Jump to today's date (or the next if today is not in list)
                 case c if c == ord('T'): self._jump_to_today()
 
-                # --- apply filter from the user
+                # --- Apply user filter
                 case c if c == ord('/'):
 
                     prefill = self.current_filter or ""
@@ -945,21 +835,19 @@ class SessionBrowser:
                     self.selected   = idx
                     self.offset     = idx
 
-                    # self.logger.debug(f"SessionBrowser._curses_main().whilenotquit.self.current_filter: {self.current_filter}")
-
-                # --- clear active filters
+                # --- Clear active filters
                 case c if c == (ord('F')):  self._clear_filters()
 
-                # --- hide/show removed stations
+                # --- Hide/show removed stations
                 case c if c == (ord('R')):  self.show_removed = not self.show_removed
 
-                # --- show help
+                # --- Show help
                 case c if c == (ord('?')):   self._show_help(stdscr)
 
-                # --- quit the script and return to terminal
+                # --- Quit the script and return to terminal
                 case c if c in (ord('q'), ord('Q')):    quit = True
 
-                # --- any other key we'll just pass
+                # --- Any other key we'll just pass
                 case _:                                 pass
             # --- END OF match ch --------------------------------------------------------------------------------------
         # --- END OF while not quit ------------------------------------------------------------------------------------
@@ -975,13 +863,10 @@ class SessionBrowser:
         :return: None
         """
 
-        # --- Create some local attributes to help us maintain the items list and TUI view
-        # saf:    SortAndFilter   = SortAndFilter(self.logger, self.stations_filter, self.sessions_filter)
+        # --- Get data from web, and store in 'html', using functionality from 'URLHelper' class
+        # --- We must differentiate between master and intensives, because we want to mark the intensives in the list
 
-        # Get data from web, and store in 'html', using functionality from 'URLHelper' class
-        # We must differentiate between master and intensives, because we want to mark the intensives
-
-        # --- fetch all items from web, based on year, scope, stations filter and sessions filter
+        # --- Fetch all items from web, based on year, scope, stations filter and sessions filter
         url_helper: URLHelper   = URLHelper(self.logger,
                                             self.year,
                                             self.scope,
@@ -993,15 +878,15 @@ class SessionBrowser:
         # --- in chronological order is needed.
         self.rows  = self.sort_by_start(self.rows)
 
-        # --- putting all rows into list form
+        # --- Putting all rows into list form
         self.view_rows = list(self.rows)
 
-        # --- setting indexing to today's date
+        # --- Setting indexing to today's date
         idx             = self._index_on_or_after_today(self.view_rows)
         self.selected   = idx
         self.offset     = idx
 
-        # --- using curses to call on the main loop, self._curses.main()
+        # --- Using curses to call on the main loop, self._curses.main()
         curses.wrapper(self._curses_main)
     # --- END OF run() -------------------------------------------------------------------------------------------------
 # --- END OF class SessionBrowser definition ---------------------------------------------------------------------------
@@ -1015,7 +900,7 @@ def main() -> None:
     :return:    None
     """
 
-    # --- define an argument parser for the user's convenience
+    # --- Define an argument parser for the user's command line args
     arg_parser = argparse.ArgumentParser(description     = ARGUMENT_DESCRIPTION,
                                          epilog          = ARGUMENT_EPILOG,
                                          formatter_class = ARGUMENT_FORMATTER_CLASS)
@@ -1031,7 +916,7 @@ def main() -> None:
                             help    = "Which schedules to include (default: both)")
     arg_parser.add_argument("--stations",
                             type    = str,
-                            help    ="Initial filter for stations:")
+                            help    ="Initial stations filter")
     # arg_parser.add_argument("--sessions",
     #                         type    = str,
     #                         help    = "Initial filter for sessions:")
@@ -1039,18 +924,16 @@ def main() -> None:
     args = arg_parser.parse_args()
 
     from log_setup import log_filename
-    # logger = setup_logger(filename = log_filename, to_stdout = False)
-    logger = setup_logger(filename=log_filename)
-    logger.info("Script started.")
+    logger = setup_logger(filename = log_filename)
+    # logger.info("Script started.")
 
-    # sb = SessionBrowser(_year=args.year, _logger=logger, _scope=args.scope, _stations_filter=args.stations).run()
-    SessionBrowser(_year=args.year,
-                   _logger=logger,
-                   _scope=args.scope,
-                   _stations_filter=args.stations,
-                   # _sessions_filter=args.stations,
+    SessionBrowser(_year                = args.year,
+                   _logger              = logger,
+                   _scope               = args.scope,
+                   _stations_filter     = args.stations,
+                   # _sessions_filter     = args.sessions,
                    ).run()
-    logger.info(f"Script ended.")
+    # logger.info(f"Script ended.")
 # --- END OF main() ----------------------------------------------------------------------------------------------------
 
 
