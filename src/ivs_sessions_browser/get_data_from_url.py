@@ -23,6 +23,7 @@ from typing import Callable, Optional, List #, Tuple, Dict, Any
 # --- Perhaps this class should just retrieve the data, and I make a different class, more specific to the transfers and
 # --- what I'd like to get out of that...
 class GetDataFromURL:
+    pass
     """
     Helper class to handle downloading from the web.
     This is called form the main, and has all the logic to download content.
