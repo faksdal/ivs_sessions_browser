@@ -30,3 +30,5 @@ repo/
 # Version info
 src/ivs_sessions_browser/_version.py
 
+# Others
+output.txt
