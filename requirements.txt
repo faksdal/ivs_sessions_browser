@@ -1,0 +1,15 @@
+
+# File: requirements.txt
+# requirements.txt
+
+# optional: specify Python version
+# python_version >= "3.10"
+
+# Runtime deps
+requests>=2.31
+beautifulsoup4>=4.12
+
+# If you prefer faster parsing, install one of these:
+# lxml>=5.0
+# html5lib>=1.1
+
