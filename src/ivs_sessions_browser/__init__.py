@@ -8,15 +8,17 @@ except ImportError:
 def main() -> None:
     """CLI entry point."""
     # for now just a simple demo, later wire this to SessionBrowser
-    from .get_data_from_url import GetDataFromURL
+    # from .get_data_from_url import GetDataFromURL
 
-    url = "https://ivscc.gsfc.nasa.gov/sessions/2025/"
-    fetcher = GetDataFromURL(url)
-    data = fetcher.fetch()
-    print(f"Downloaded {len(data)} bytes from {url}")
+    # url = "https://ivscc.gsfc.nasa.gov/sessions/2025/"
+    # fetcher = GetDataFromURL(url)
+    # data = fetcher.fetch()
+    # print(f"Downloaded {len(data)} bytes from {url}")
 
 # --- re-exports for convenience ---
-from .get_data_from_url import GetDataFromURL
+# from .get_data_from_url import GetDataFromURL
+    print("Hello Jon Leithe")
+    exit(0)
 
 __all__ = [
     "__version__",
