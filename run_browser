@@ -1,0 +1,20 @@
+# PYTHONPATH=src python3 scripts/run_sessions_browser.py
+
+#!/usr/bin/env bash
+# Run from anywhere; no need to cd first.
+
+set -euo pipefail
+
+# Resolve project root (folder that contains src/ and scripts/)
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+PROJECT_ROOT="$SCRIPT_DIR"  # if run_browser lives in project root
+# If you put run_browser under scripts/, uncomment this instead:
+# PROJECT_ROOT="$(cd -- "$SCRIPT_DIR/.." >/dev/null 2>&1 && pwd)"
+
+VENV_PY="$PROJECT_ROOT/.venv/bin/python3"
+[ -x "$VENV_PY" ] || { echo "Missing venv at $VENV_PY"; exit 1; }
+
+export PYTHONPATH="$PROJECT_ROOT/src"
+exec "$VENV_PY" "$PROJECT_ROOT/scripts/run_sessions_browser.py" "$@"
+
+
