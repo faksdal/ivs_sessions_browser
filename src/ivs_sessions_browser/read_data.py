@@ -1,15 +1,22 @@
-########################################################################################################################
-#   file:       url_helper.py
-#   author:     jole 2025
-#   content:    something
-########################################################################################################################
+"""
+Filename:       read_data.py
+Author:         jole
+Created:        15.09.2025
+
+Description:
+
+Notes:
+"""
 
 # --- Import section ---------------------------------------------------------------------------------------------------
 import time
 import requests
 import logging
 
+# import .defs
+
 from bs4    import BeautifulSoup
+from .defs import Row
 from typing import Callable, Optional, List #, Tuple, Dict, Any
 
 # from type_defs      import HEADERS, Row, FIELD_INDEX
@@ -18,41 +25,52 @@ from typing import Callable, Optional, List #, Tuple, Dict, Any
 
 
 
-# --- Classes in Python has methods and attributes ---------------------------------------------------------------------
-# --- and there's a difference between instance methods and attributes, and class methods and attributes ---------------
-# --- Perhaps this class should just retrieve the data, and I make a different class, more specific to the transfers and
-# --- what I'd like to get out of that...
-class GetDataFromURL:
-    pass
+class ReadData:
+
     """
-    Helper class to handle downloading from the web.
-    This is called form the main, and has all the logic to download content.
+    Generic helper class to handle downloading from the web.
+    This is called form the main, and has all the logic to download content, and give feedback to stdout
     """
 
-# --- END OF class GetDataFromURL --------------------------------------------------------------------------------------
 
-#     def __init__(self,
-#                  _logger:   logging.Logger,
-#                  _year:     int,
-#                  _scope:    str,
-#                  _stations_filter: Optional[str] = None,
-#                  _sessions_filter: Optional[str] = None
-#                  ) -> None:
-#         """
-#         ___init___() - initialises an instance of the URLHelper class
-#
-#         :param _logger: logger object
-#         :param _year:   which year to download, defaults to current
-#         :param _scope:  scope: master, intensives, both
-#         """
-#
-#         # self.url_string: str    = _url
-#         self.logger             = _logger
-#         self.year               = _year
-#         self.scope              = _scope
-#         self.stations_filter    = _stations_filter
-#         self.sessions_filter    = _sessions_filter
-#     # --- END OF __init__() method, or constructor if you like ---------------------------------------------------------
+    def __init__(self,
+                 _urls:     List[str],
+                 _year:     int,
+                 _scope:    str,
+                 _feedback: bool = True,
+                 _stations_filter: Optional[str] = None
+                 ) -> None:
+
+        self.urls               = _urls
+        self.year               = _year
+        self.scope              = _scope
+        self.feedback           = _feedback
+        self.stations_filter    = _stations_filter
+
+        print(f"{self.urls}-{self.year}-{self.scope}-{self.stations_filter}")
+#   # --- END OF __init__() method, or constructor if you like ---------------------------------------------------------
+
+
+
+    def fetch_all_urls(self) -> List[Row]:
+        """
+        todo: move the logic of ursl_for_scope in here.
+
+            This function is the calling function from the outside, and the one to return ALL the downloaded content
+        to the caller.
+
+        :return str:    List containing the downloaded data (html)
+        """
+
+        rows: List[Row] = []
+        # for url in self._urls_for_scope():
+        #     rows.extend(self._fetch_one_url(url))
+
+        # for r in rows:
+        #     self.logger.debug(f"URLHelper.fetch_all_urls(): row: {r}")
+
+        return rows
+    # this is the end of _fetch_all_urls() -----------------------------------------------------------------------------
 #
 #
 #
@@ -223,22 +241,7 @@ class GetDataFromURL:
 #
 #
 #
-#     def fetch_all_urls(self) -> List[Row]:
-#         """
-#         Goes through all the url's in the list constructed by _urls_for_scope(), appending results to the return value
-#
-#         :return str:    List containing the downloaded and parsed data
-#         """
-#
-#         rows: List[Row] = []
-#         for url in self._urls_for_scope():
-#             rows.extend(self._fetch_one_url(url))
-#
-#         # for r in rows:
-#         #     self.logger.debug(f"URLHelper.fetch_all_urls(): row: {r}")
-#
-#         return rows
-#     # this is the end of _fetch_all_urls() -----------------------------------------------------------------------------
+
 #
 #
 #
@@ -259,4 +262,4 @@ class GetDataFromURL:
 #         return [f"{base_url}/{year}/", f"{base_url}/intensive/{year}/"]
 #     # this is the end of _urls_for_scope() -----------------------------------------------------------------------------
 #
-# # --- END OF class URLHelper -------------------------------------------------------------------------------------------
+# --- END OF class ReadData --------------------------------------------------------------------------------------------
