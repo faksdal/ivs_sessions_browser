@@ -60,6 +60,8 @@ HEADERS                     = [("Type", 14),
                                ("Analysis", 10)
                               ]
 
+HELPBAR_TEXT = "↑↓-PgUp/PgDn-Home/End:Move Enter:Open /:Filter F:Clear filters ?:Help R:Hide/show removed q/Q:Quit"
+
 HEADER_LINE                 = " | ".join([f"{title:<{w}}" for title, w in HEADERS])
 
 WIDTHS                      = [w for _, w in HEADERS]

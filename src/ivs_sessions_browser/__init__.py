@@ -70,6 +70,7 @@ def main() -> None:
 __all__ = [
     "__version__",
     "main",
+    "UIState",
     "SessionsBrowser",
     "ReadData"
 ]

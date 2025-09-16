@@ -1,0 +1,128 @@
+"""
+Filename:       draw_tui.py
+Author:         jole
+Created:        15/09/2025
+
+Description:
+
+Notes:
+"""
+
+# --- Import section ---------------------------------------------------------------------------------------------------
+import curses
+
+# --- Project defined
+from .defs import Row, HEADER_LINE, HELPBAR_TEXT
+# --- END OF Import section --------------------------------------------------------------------------------------------
+
+
+
+class DrawTui:
+    """
+    This one is responsible for all the drawing to screen. By drawing I mean writing...
+    """
+
+    def __init__(self) -> None:
+        self.has_colors: bool       = False
+        self.horizontal_offset: int = 0
+    # --- END OF __init__() --------------------------------------------------------------------------------------------
+
+
+    def set_colors(self, _curses):
+        self.has_colors = True
+        _curses.start_color()
+        _curses.use_default_colors()
+        _curses.init_pair(1, _curses.COLOR_YELLOW, -1)                  # removed stations, intensives
+        _curses.init_pair(2, _curses.COLOR_CYAN, -1)                    # header
+        _curses.init_pair(3, _curses.COLOR_BLACK, _curses.COLOR_WHITE)  # help bar
+        _curses.init_pair(4, _curses.COLOR_GREEN, -1)                   # released
+        _curses.init_pair(5, _curses.COLOR_YELLOW, -1)                  # processing
+        _curses.init_pair(6, _curses.COLOR_MAGENTA, -1)                 # cancelled
+        _curses.init_pair(7, _curses.COLOR_WHITE, -1)                   # none
+        _curses.init_pair(8, _curses.COLOR_CYAN, -1)                    # station highlight in filter
+    # --- END OF set_colors() ------------------------------------------------------------------------------------------
+
+
+
+    def draw_header(self, _curses, _stdscr, _h_off: int = 0) -> None:
+        """
+        Draws up the header line on top of the terminal window using curses.
+        Sets up the test to write, and the attributes for the text.
+        Writes the header line and the dotted line underneath, at the top of the terminal
+
+        :param stdscr:  Which screen to draw on
+
+        :return:        None
+        """
+
+        header_attributes = _curses.A_BOLD | (_curses.color_pair(2) if self.has_colors else 0)
+        self._addstr_clip(_stdscr, 0, 0, HEADER_LINE, header_attributes)
+        self._addstr_clip(_stdscr, 1, 0, "-" * len(HEADER_LINE), _h_off)
+    # --- END OF draw_header() -----------------------------------------------------------------------------------------
+
+
+
+    def _draw_helpbar(self, _curses, _stdscr) -> None:
+        """
+        Draws up the help at the bottom of the terminal
+
+        :param _stdscr:  Where to write
+        :return:        None
+        """
+        max_y, max_x = _stdscr.getmaxyx()
+        # help_text = "↑↓-PgUp/PgDn-Home/End:Move Enter:Open /:Filter F:Clear filters ?:Help R:Hide/show removed q/Q:Quit"
+        right = f"row {min(self.selected + 1, len(self.view_rows))}/{len(self.view_rows)}"
+        bar = (HELPBAR_TEXT + (f" Filter: {self.current_filter}" if self.current_filter else "") + "  " + right)[
+            : max_x - 1]
+        bar_attr = _curses.color_pair(3) if self.has_colors else _curses.A_REVERSE
+        self._addstr_clip(_stdscr, max_y - 1, 0, bar, bar_attr)
+
+    # --- END OF _draw_helpbar() ---------------------------------------------------------------------------------------
+    # --- END OF draw_helpbar() ----------------------------------------------------------------------------------------
+
+
+
+    def _addstr_clip(self, _stdscr, _y: int, _x: int, _text: str, _attr: int = 0) -> None:
+        """
+        Writes a string to terminal, clipping if necessary
+
+        :param stdscr:  Which screen to write to
+        :param y:       y co-ordinate
+        :param x:       x co-ordinate
+        :param text:    What to write
+        :param attr:    Text attributes
+
+        :return:        None
+        """
+
+        max_y, max_x = _stdscr.getmaxyx()
+        if _y >= max_y or _x >= max_x:
+            return
+        _stdscr.addstr(_y, _x, _text[: max_x - _x - 1], _attr)
+    # def _addstr_clip(self, _stdscr, _y: int, _x: int, _text: str, _attr: int = 0, _h_off: int = 0) -> int:
+    #     """
+    #     Write a string clipped to the right edge, starting at horizontal offset _h_off.
+    #     Returns the maximum valid offset for this text in the current viewport.
+    #     """
+    #     max_y, max_x = _stdscr.getmaxyx()
+    #     if _y >= max_y or _x >= max_x:
+    #         return 0
+    #
+    #     width = max_x - _x - 1  # keep one col free to avoid BR-corner issues
+    #     if width <= 0:
+    #         return 0
+    #
+    #     # clamp offset, compute visible slice
+    #     max_off = max(0, len(_text) - width)
+    #     _h_off = max(0, min(_h_off, max_off))
+    #     vis = _text[_h_off:_h_off + width]
+    #     _stdscr.addstr(_y, _x, vis, _attr)
+    #
+    #     # optional left/right ellipsis indicators
+    #     if _h_off > 0 and width >= 1:
+    #         _stdscr.addch(_y, _x, ord('…') if '…' in '…' else ord('<'))
+    #     if _h_off < max_off and width >= 1:
+    #         _stdscr.addch(_y, _x + len(vis) - 1, ord('…') if '…' in '…' else ord('>'))
+    #
+    #     return max_off
+    # --- END OF _addstr_clip() ----------------------------------------------------------------------------------------

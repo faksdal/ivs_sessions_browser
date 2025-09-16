@@ -18,6 +18,7 @@ from typing     import Optional, List
 from .draw_tui  import DrawTui
 from .defs      import BASE_URL, Row
 from .read_data import ReadData
+from .ui_state  import *
 # --- END OF Import section --------------------------------------------------------------------------------------------
 
 
@@ -40,20 +41,21 @@ class SessionsBrowser:
         self.year               = _year
         self.scope              = _scope
         self.stations_filter    = _stations_filter
+        self.state              = UIState()
 
         # --- Create and populate the list of url's we want to download from.
         self.urls: List[str]    = self._urls_for_scope()
 
         # --- Create the object instance of teh ReadData class, to later handle the actual reading.
         # --- Also create the list of html data that are actually read
-        self.data: ReadData     = ReadData(self.urls, self.year, self.scope, True, self.stations_filter)
-        self.html: List[Row]    = []
+        # self.data: ReadData     = ReadData(self.urls, self.year, self.scope, True, self.stations_filter)
+        self.rows: List[Row]    = []
 
         # --- Instance of DrawTui class to handle all the screen drawing. All drawing operations will be called using
         # --- this instance. This is done to have to code outside of the main loop (this class, SessionBrowser, is
         # --- considered the main loop). Other attributes related to drawing are also defined here.
-        self.tui: DrawTui   = DrawTui()
-        self.h_off: int     = 0
+        # self.tui: DrawTui   = DrawTui()
+        # self.h_off: int     = 0
     # --- END OF __init__() --------------------------------------------------------------------------------------------
 
 
@@ -86,7 +88,9 @@ class SessionsBrowser:
         """
 
         # --- The return value from fetch_all_urls is a List[Row], containing all the html from web.
-        self.html = self.data.fetch_all_urls()
+        # self.rows = self.data.fetch_all_urls()
+        self.rows = ReadData(self.urls, self.year, self.scope, True, self.stations_filter)
+        # todo: list must be sorted
 
         # --- Using curses to call on the main loop, self._curses.main()
         curses.wrapper(self._curses_main)
@@ -108,22 +112,29 @@ class SessionsBrowser:
         _stdscr.clear()
 
         # --- Set up the colors, if any are available
-        self.has_colors = curses.has_colors()
-        if self.has_colors:
-            self.tui.set_colors(curses)
+        # self.has_colors = curses.has_colors()
+        # if self.has_colors:
+        #     self.tui.set_colors(curses)
 
         # --- Start the main loop
         quit: bool = False
         while not quit:
-            _stdscr.clear()
-            self.tui.draw_header(curses, _stdscr)
+            DrawTui.clear_screen(_stdscr)
+            DrawTui.draw_header(self,
+                                 _stdscr,
+                                 self.rows,
+                                 self.state)
+
+            # self.tui.draw_header(curses, _stdscr)
+            #
+            # self.tui._draw_helpbar(curses, _stdscr)
 
             # bar_y = y + 1  # or your status line row
             # width = _stdscr.getmaxyx()[1] - x - 1
             # self.tui._draw_hscrollbar(_stdscr, bar_y, x, len(text), width, self.h_off)
 
             # self._draw_rows(stdscr)
-            # self._draw_helpbar(stdscr)
+
 
             key = _stdscr.getch()
             match key:
@@ -135,9 +146,11 @@ class SessionsBrowser:
                 #     self.h_off = self.h_off + 1  # clamped after render
 
                 case curses.KEY_LEFT:
-                    self.h_off = max(0, self.h_off - 1)
+                    pass
+                    # self.h_off = max(0, self.h_off - 1)
                 case curses.KEY_RIGHT:
-                    self.h_off = self.h_off + 1
+                    pass
+                    # self.h_off = self.h_off + 1
 
                 # # --- Handles all navigation keys, and enter
                 # case key if key in NAVIGATION_KEYS:
