@@ -54,9 +54,17 @@ def main() -> None:
                             choices=("master", "intensive", "both"),
                             default="both",
                             help="Which schedules to include (default: both)")
-    arg_parser.add_argument("--stations",
+    arg_parser.add_argument("--stations", "--stations-all",
                             type=str,
-                            help="Initial stations filter (optional)")
+                            help="Initial stations filter")
+    arg_parser.add_argument("--stations-active",
+                            type=str,
+                            help="Initial stations filter")
+    # arg_parser.add_argument("--stations",
+    #                         choices=("all", "active", "removed"),
+    #                         default="all",
+    #                         help="Which stations to include (default: all)"
+
 
     args = arg_parser.parse_args()
 
@@ -72,5 +80,7 @@ __all__ = [
     "main",
     "UIState",
     "SessionsBrowser",
-    "ReadData"
+    "ReadData",
+    "IvsSessionParser",
+    "DrawTUI"
 ]

@@ -86,10 +86,12 @@ class ReadData:
             is_intensive = "/intensive/" in _url
 
             html        = self._get_text_with_progress_retry(_url, _status_cb = self._status_inline)
+
             parsed_html = IvsSessionParser(BeautifulSoup(html, "html.parser"),
                                            len(HEADERS),
                                            is_intensive,
                                            self.stations_filter).parse()
+
 
             return parsed_html
 

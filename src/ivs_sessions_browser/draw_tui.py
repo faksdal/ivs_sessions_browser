@@ -21,7 +21,7 @@ from .ui_state import UIState
 
 
 
-class DrawTui(Protocol):
+class DrawTUI(Protocol):
     """
     This one is responsible for all the drawing to screen. By drawing I mean writing...
     """
@@ -44,8 +44,8 @@ class DrawTui(Protocol):
         """
 
         header_attributes = curses.A_BOLD | (curses.color_pair(2) if _state.has_colors else 0)
-        DrawTui._addstr_clip(_stdscr, 0, 0, HEADER_LINE, header_attributes)
-        DrawTui._addstr_clip(stdscr, 1, 0, "-" * len(HEADER_LINE))
+        DrawTUI._addstr_clip(_stdscr, 0, 0, HEADER_LINE, header_attributes)
+        DrawTUI._addstr_clip(_stdscr, 1, 0, "-" * len(HEADER_LINE))
     # --- END OF draw_header -------------------------------------------------------------------------------------------
 
 
@@ -66,7 +66,7 @@ class DrawTui(Protocol):
         max_y, max_x = _stdscr.getmaxyx()
         if _y >= max_y or _x >= max_x:
             return
-        _stdscr.addstr(y, x, _text[: max_x - x - 1], _attr)
+        _stdscr.addstr(_y, _x, _text[: max_x - _x - 1], _attr)
 
     # --- END OF _addstr_clip() ----------------------------------------------------------------------------------------
 

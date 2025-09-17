@@ -3,18 +3,19 @@ Filename:       ive_session_parser.py
 Author:         jole
 Created:        15.09.2025
 
-Description:
+Description:        This class parses the soup object read from web. It's tailored to organize the information
+                within the ivs sessions web pages.
 
 Notes:
 """
 
 # --- Import section ---------------------------------------------------------------------------------------------------
 import re
-from typing     import List, Tuple, Optional, Dict, Any
+from typing     import List, Optional
 from bs4        import BeautifulSoup
 
 # --- Project defined
-from .defs      import Row, FIELD_INDEX, HEADERS, HEADER_LINE, WIDTHS
+from .defs      import Row, FIELD_INDEX, HEADERS
 # --- END OF Import section --------------------------------------------------------------------------------------------
 
 
@@ -24,7 +25,7 @@ class IvsSessionParser:
                  _soup:             BeautifulSoup,
                  _num_of_headers:   int,
                  _is_intensive:     bool,
-                 _stations_filter: Optional[str] = None,
+                 _stations_filter:  Optional[str] = None,
                  ) -> None:
 
 
@@ -42,6 +43,11 @@ class IvsSessionParser:
 
     def parse(self) -> List[Row]:
         """
+        The parser formats the rows in the list to our specifications.
+        What we want:
+            - The lines must match up with the header, each piece of info in its own column
+            - Intensives marked with [I] to the right in the Type column, highlighted
+            - Stations separated by active and removed, rendered as "active [removed]"
 
         """
 
@@ -53,28 +59,34 @@ class IvsSessionParser:
             if len(tds) < self.num_of_headers:
                 continue
 
-            # --- Stations: differentiate between active and removed. Render as "Active [Removed]"
-            # --- Find the current index of 'stations', and assign an attribute
+            # --- Stations: differentiate between active and removed. Render as "Active [Removed]".
+            # --- Find the current index of 'stations', and assign an attribute.
             index = FIELD_INDEX.get("stations", -1)
             if index == -1:
                 print("Index error on 'stations', exiting...")
                 exit(-1)
 
-            # this is the cell, or column, containing all the stations
+            # --- This is the cell, or column, containing all the stations, and we want to separate the
+            # --- active from the removed.
             stations_cell = tds[index]
 
-            # --- two empty lists to hold active vs removed stations
+            # --- Two empty lists to hold active vs removed stations.
             active_ids: List[str] = []
             removed_ids: List[str] = []
 
+            # --- This is the logic, going through all list items in the stations_cell column, extracting
+            # --- and sorting active and removed stations separately.
             for li in stations_cell.find_all("li", class_="station-id"):
                 classes = li.get("class", [])
                 code = li.get_text(strip=True)
                 removed_ids.append(code) if "removed" in classes else active_ids.append(code)
 
+            # --- And putting them into separate lists
             active_str = "".join(active_ids)
             removed_str = "".join(removed_ids)
 
+            # --- And now we're rendering the stations string, with the active and removed sessions
+            # -- separated. They will be written as "active [removed]", with the removed in square brackets.
             if active_str and removed_str:
                 stations_str = f"{active_str} [{removed_str}]"
             elif removed_str:
@@ -82,6 +94,7 @@ class IvsSessionParser:
             else:
                 stations_str = f"{active_str}"
 
+            # --- The various columns for each piece of info
             values = [
                 tds[0].get_text(strip=True),  # Type
                 tds[1].get_text(strip=True),  # Code

@@ -15,7 +15,7 @@ from typing     import Optional, List
 
 
 # --- Project defined
-from .draw_tui  import DrawTui
+from .draw_tui  import DrawTUI
 from .defs      import BASE_URL, Row
 from .read_data import ReadData
 from .ui_state  import *
@@ -46,10 +46,11 @@ class SessionsBrowser:
         # --- Create and populate the list of url's we want to download from.
         self.urls: List[str]    = self._urls_for_scope()
 
-        # --- Create the object instance of teh ReadData class, to later handle the actual reading.
-        # --- Also create the list of html data that are actually read
+        # --- Create the list of html data that are actually read
         # self.data: ReadData     = ReadData(self.urls, self.year, self.scope, True, self.stations_filter)
-        self.rows: List[Row]    = []
+        # print("SessionBrowser before read")
+        self.rows: List[Row]    = [] # ReadData(self.urls, self.year, self.scope, True, self.stations_filter).fetch_all_urls()
+
 
         # --- Instance of DrawTui class to handle all the screen drawing. All drawing operations will be called using
         # --- this instance. This is done to have to code outside of the main loop (this class, SessionBrowser, is
@@ -57,46 +58,6 @@ class SessionsBrowser:
         # self.tui: DrawTui   = DrawTui()
         # self.h_off: int     = 0
     # --- END OF __init__() --------------------------------------------------------------------------------------------
-
-
-
-    def _urls_for_scope(self) -> List[str]:
-        """
-        Constructing the list of URL's to read from, based on the users input at terminal.
-
-        :return List[str]:  List of url's from which we read our data. This will be 'master', and 'intensive' for
-                            a given year. It defaults to the current year and both master and intensives
-        """
-
-        base_url    = BASE_URL
-        year        = str(self.year)
-
-        if self.scope == "master":
-            return [f"{base_url}/{year}/"]
-        if self.scope == "intensive":
-            return [f"{base_url}/intensive/{year}/"]
-        return [f"{base_url}/{year}/", f"{base_url}/intensive/{year}/"]
-    # this is the end of _urls_for_scope() -----------------------------------------------------------------------------
-
-
-
-    def run(self) -> None:
-        """
-        Starting point for the application.
-
-        :return: None
-        """
-
-        # --- The return value from fetch_all_urls is a List[Row], containing all the html from web.
-        # self.rows = self.data.fetch_all_urls()
-        self.rows = ReadData(self.urls, self.year, self.scope, True, self.stations_filter)
-        # todo: list must be sorted
-
-        # --- Using curses to call on the main loop, self._curses.main()
-        curses.wrapper(self._curses_main)
-
-        exit(1)
-    # --- END OF run() -------------------------------------------------------------------------------------------------
 
 
 
@@ -119,11 +80,11 @@ class SessionsBrowser:
         # --- Start the main loop
         quit: bool = False
         while not quit:
-            DrawTui.clear_screen(_stdscr)
-            DrawTui.draw_header(self,
-                                 _stdscr,
-                                 self.rows,
-                                 self.state)
+            DrawTUI.clear_screen(_stdscr)
+            DrawTUI.draw_header(self,
+                                _stdscr,
+                                self.rows,
+                                self.state)
 
             # self.tui.draw_header(curses, _stdscr)
             #
@@ -197,6 +158,49 @@ class SessionsBrowser:
             # --- END OF match key -------------------------------------------------------------------------------------
         # --- END OF while not quit ------------------------------------------------------------------------------------
     # --- END OF _curses_main() ----------------------------------------------------------------------------------------
+
+
+
+    def run(self) -> None:
+        """
+        Starting point for the application.
+
+        :return: None
+        """
+
+        # --- The return value from fetch_all_urls is a List[Row], containing all the html from web.
+        data = ReadData(self.urls, self.year, self.scope, True, self.stations_filter)
+        self.rows = data.fetch_all_urls()
+
+
+        # todo: list must be sorted
+
+        # --- Using curses to call on the main loop, self._curses.main()
+        curses.wrapper(self._curses_main)
+
+        exit(1)
+    # --- END OF run() -------------------------------------------------------------------------------------------------
+
+
+
+    def _urls_for_scope(self) -> List[str]:
+        """
+        Constructing the list of URL's to read from, based on the users input at terminal.
+
+        :return List[str]:  List of url's from which we read our data. This will be 'master', and 'intensive' for
+                            a given year. It defaults to the current year and both master and intensives
+        """
+
+        base_url = BASE_URL
+        year = str(self.year)
+
+        if self.scope == "master":
+            return [f"{base_url}/{year}/"]
+        if self.scope == "intensive":
+            return [f"{base_url}/intensive/{year}/"]
+        return [f"{base_url}/{year}/", f"{base_url}/intensive/{year}/"]
+
+    # this is the end of _urls_for_scope() -----------------------------------------------------------------------------
 
 
 
