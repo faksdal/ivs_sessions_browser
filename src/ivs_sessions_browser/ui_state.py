@@ -11,27 +11,16 @@ from dataclasses import dataclass, field
 
 @dataclass
 class UIState:
-    # --- Assigning all parameters to local instance attributes ----------------------------------------------------
-    # self.year = _year
-    # self.logger = _logger
-    # self.scope = _scope
-    # self.stations_filter = _stations_filter
-    # self.sessions_filter = _sessions_filter
-    #
     # # --- Define and initialize some more instance attributes ------------------------------------------------------
     # self.rows: List[Row] = []
     # self.view_rows: List[Row] = []
-    current_filter: str     = ""
-    selected:       int     = 0
-    offset:         int     = 0
-    page:           int     = 0
-    top:            int     = 0  # scroll offset
+    # current_filter: str     = ""
+    selected:       int     = 0     # the currently selected element in the list
+    offset:         int     = 0     # the element currently at top of the view
+    h_off:          int     = 0
     page_size:      int     = 20
     show_removed:   bool    = False
     has_colors:     bool    = False
-
-    # # --- Flag for showing/hiding removed sessions in the list
-    # self.show_removed: bool = True
 # --- END OF class ITState ----------------------------------------------------------------------------------------
 
 
