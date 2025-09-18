@@ -18,7 +18,7 @@ from typing     import Optional, List
 from .draw_tui  import DrawTUI
 from .defs      import BASE_URL, Row
 from .read_data import ReadData
-from .ui_state  import *
+from .tui_state import *
 # --- END OF Import section --------------------------------------------------------------------------------------------
 
 
@@ -34,9 +34,9 @@ class SessionsBrowser:
     """
 
     def __init__(self,
-                 _year: int,
-                 _scope: str,
-                 _stations_filter: Optional[str] = None
+                 _year:             int,
+                 _scope:            str,
+                 _stations_filter:  Optional[str] = None
                  ) -> None:
         self.year               = _year
         self.scope              = _scope
@@ -61,6 +61,7 @@ class SessionsBrowser:
 
 
 
+
     def _curses_main(self, _stdscr) -> None:
         """
         This constitutes the main loop of the application.
@@ -71,6 +72,7 @@ class SessionsBrowser:
 
         # --- Clear the terminal window
         _stdscr.clear()
+
 
         # --- Set up the colors, if any are available
         # self.has_colors = curses.has_colors()
@@ -83,7 +85,7 @@ class SessionsBrowser:
             DrawTUI.clear_screen(_stdscr)
             DrawTUI.draw_header(self,
                                 _stdscr,
-                                self.rows,
+                                # self.rows,
                                 self.state)
 
             # self.tui.draw_header(curses, _stdscr)
@@ -161,31 +163,10 @@ class SessionsBrowser:
 
 
 
-    def run(self) -> None:
-        """
-        Starting point for the application.
-
-        :return: None
-        """
-
-        # --- The return value from fetch_all_urls is a List[Row], containing all the html from web.
-        data = ReadData(self.urls, self.year, self.scope, True, self.stations_filter)
-        self.rows = data.fetch_all_urls()
-
-
-        # todo: list must be sorted
-
-        # --- Using curses to call on the main loop, self._curses.main()
-        curses.wrapper(self._curses_main)
-
-        exit(1)
-    # --- END OF run() -------------------------------------------------------------------------------------------------
-
-
-
     def _urls_for_scope(self) -> List[str]:
         """
         Constructing the list of URL's to read from, based on the users input at terminal.
+        This is being called from the SessionsBrowser __init__() function.
 
         :return List[str]:  List of url's from which we read our data. This will be 'master', and 'intensive' for
                             a given year. It defaults to the current year and both master and intensives
@@ -199,45 +180,30 @@ class SessionsBrowser:
         if self.scope == "intensive":
             return [f"{base_url}/intensive/{year}/"]
         return [f"{base_url}/{year}/", f"{base_url}/intensive/{year}/"]
-
     # this is the end of _urls_for_scope() -----------------------------------------------------------------------------
 
 
 
-    def _draw_hscrollbar(self,
-                         _stdscr,
-                         _y: int,
-                         _x: int,
-                         total_len: int,
-                         width: int,
-                         _h_off: int,
-                         _track_attr = 0,
-                         _thumb_attr = 0):
+    def run(self) -> None:
         """
-        Draw a proportional scrollbar for one line of text.
-        Put it on a status line or just below the scrolled text.
+        Starting point for the application.
+
+        :return: None
         """
 
-        max_y, max_x = _stdscr.getmaxyx()
-        if _y >= max_y or width <= 0 or total_len <= width:
-            return
+        # --- The return value from fetch_all_urls is a List[Row], containing all the html from web.
+        # data = ReadData(self.urls, self.year, self.scope, True, self.stations_filter)
+        # self.rows = data.fetch_all_urls()
+        self.rows= ReadData(self.urls, self.year, self.scope, True, self.stations_filter).fetch_all_urls()
 
-        # track
-        try:
-            _stdscr.hline(_y, _x, curses.ACS_HLINE, max(0, width))
-        except Exception:
-            _stdscr.addstr(_y, _x, "-" * max(0, width), _track_attr)
+        # todo: list must be sorted
 
-        # thumb size/pos
-        thumb_len = max(1, (width * width) // max(1, total_len))
-        max_thumb_pos = max(0, width - thumb_len)
-        max_off = max(0, total_len - width)
-        thumb_pos = (0 if max_off == 0 else (_h_off * max_thumb_pos) // max_off)
+        # --- Using curses to call on the main loop, self._curses.main()
+        curses.wrapper(self._curses_main)
 
-        # draw thumb as reversed spaces (easy to see)
-        _stdscr.addstr(_y, _x + thumb_pos, " " * thumb_len,
-                       _thumb_attr or curses.A_REVERSE)
-        # --- END OF _draw_hscrollbar() --------------------------------------------------------------------------------
+        exit(1)
+    # --- END OF run() -------------------------------------------------------------------------------------------------
+
 # --- END OF class SessionsBrowser -------------------------------------------------------------------------------------
 
 
