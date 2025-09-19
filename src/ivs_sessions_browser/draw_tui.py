@@ -13,10 +13,9 @@ import curses
 
 from typing import Protocol, Sequence
 
-
 # --- Project defined
-from .defs import Row, HEADER_LINE, HELPBAR_TEXT
-from .tui_state import UIState
+from .defs      import HEADER_LINE, HELPBAR_TEXT
+from .tui_state import UIState, TUITheme
 # --- END OF Import section --------------------------------------------------------------------------------------------
 
 
@@ -25,12 +24,6 @@ class DrawTUI(Protocol):
     """
     This one is responsible for all the drawing to screen. By drawing I mean writing...
     """
-
-    # def draw(self, stdscr, rows: Sequence[str], state: UiState) -> None: ...
-
-    # def read_event(self, stdscr) -> Optional[Event]: ...  # translate keys -> Event
-
-
 
     def _draw_hscrollbar(self,
                          _stdscr,
@@ -69,10 +62,11 @@ class DrawTUI(Protocol):
 
 
 
-    def _draw_rows(self,
-                   _stdscr,
-                   _rows: Sequence[str],
-                    _state: UIState) -> None:
+    def draw_rows(self,
+                  _stdscr,
+                  _rows:    Sequence[str],
+                  _state:  UIState,
+                  _theme:   TUITheme) -> None:
         """
         Draws all the rows to terminal
 
@@ -156,23 +150,22 @@ class DrawTUI(Protocol):
 
 
 
-    def draw_header(self,
-                    _stdscr,
-                    # _rows: Sequence[str],
+    def draw_header(_stdscr,
+                    _theme: TUITheme,
                     _state: UIState) -> None:
         """
         Draws up the header line on top of the terminal window using curses.
         Sets up the test to write, and the attributes for the text.
         Writes the header line and the dotted line underneath, at the top of the terminal
 
-        :param stdscr:  Which screen to draw on
+        :param _stdscr:
+        :param _theme:
+        :param _state:
 
-        :return:        None
+        :return:    None
         """
 
-        header_attributes = curses.A_BOLD | (curses.color_pair(2) if _state.has_colors else 0)
-        # DrawTUI._addstr_clip(_stdscr, 0, 0, HEADER_LINE, header_attributes)
-        DrawTUI._addstr_clip(_stdscr, 0, 0, HEADER_LINE, header_attributes)
+        DrawTUI._addstr_clip(_stdscr, 0, 0, HEADER_LINE, _theme.header)
         DrawTUI._addstr_clip(_stdscr, 1, 0, "-" * len(HEADER_LINE))
     # --- END OF draw_header -------------------------------------------------------------------------------------------
 
@@ -194,6 +187,7 @@ class DrawTUI(Protocol):
         max_y, max_x = _stdscr.getmaxyx()
         if _y >= max_y or _x >= max_x:
             return
+
         _stdscr.addstr(_y, _x, _text[: max_x - _x - 1], _attr)
     # --- END OF _addstr_clip() ----------------------------------------------------------------------------------------
 

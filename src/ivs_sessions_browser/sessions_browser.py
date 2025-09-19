@@ -42,6 +42,8 @@ class SessionsBrowser:
         self.scope              = _scope
         self.stations_filter    = _stations_filter
         self.state              = UIState()
+        # curses.initscr()
+        self.theme: TUITheme    = None
 
         # --- Create and populate the list of url's we want to download from.
         self.urls: List[str]    = self._urls_for_scope()
@@ -67,26 +69,14 @@ class SessionsBrowser:
         This constitutes the main loop of the application.
         """
 
-        # --- Hide the cursor in the terminal
-        curses.curs_set(0)
-
-        # --- Clear the terminal window
-        _stdscr.clear()
-
-
-        # --- Set up the colors, if any are available
-        # self.has_colors = curses.has_colors()
-        # if self.has_colors:
-        #     self.tui.set_colors(curses)
+        self.theme              = TUITheme.init_theme() # <- use class, not instance
+        self.state.has_colors   = curses.has_colors()   # keep state in sync
 
         # --- Start the main loop
         quit: bool = False
         while not quit:
             DrawTUI.clear_screen(_stdscr)
-            DrawTUI.draw_header(self,
-                                _stdscr,
-                                # self.rows,
-                                self.state)
+            DrawTUI.draw_header(_stdscr, self.theme, self.state)
 
             # self.tui.draw_header(curses, _stdscr)
             #
@@ -195,7 +185,6 @@ class SessionsBrowser:
         # data = ReadData(self.urls, self.year, self.scope, True, self.stations_filter)
         # self.rows = data.fetch_all_urls()
         self.rows= ReadData(self.urls, self.year, self.scope, True, self.stations_filter).fetch_all_urls()
-
         # todo: list must be sorted
 
         # --- Using curses to call on the main loop, self._curses.main()
