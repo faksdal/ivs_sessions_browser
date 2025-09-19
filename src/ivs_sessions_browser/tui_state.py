@@ -42,6 +42,18 @@ class ApplyFilter(Event):
 
 
 class TUITheme:
+    # self.has_colors = curses.has_colors()
+    # if self.has_colors:
+    #     curses.start_color()
+    #     curses.use_default_colors()
+    #     curses.init_pair(1, curses.COLOR_YELLOW, -1)  # removed stations, intensives
+    #     curses.init_pair(2, curses.COLOR_CYAN, -1)  # header
+    #     curses.init_pair(3, curses.COLOR_BLACK, curses.COLOR_WHITE)  # help bar
+    #     curses.init_pair(4, curses.COLOR_GREEN, -1)  # released
+    #     curses.init_pair(5, curses.COLOR_YELLOW, -1)  # processing
+    #     curses.init_pair(6, curses.COLOR_MAGENTA, -1)  # cancelled
+    #     curses.init_pair(7, curses.COLOR_WHITE, -1)  # none
+    #     curses.init_pair(8, curses.COLOR_CYAN, -1)  # station highlight in filter
     pass
 # --- END OF class TUITheme --------------------------------------------------------------------------------------------
 
