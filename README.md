@@ -6,7 +6,7 @@ A terminal-based TUI for browsing [IVS session schedules](https://ivscc.gsfc.nas
 - **Filters**: powerful, composable query language
 - **Colors**: quick status scanning (Released / Processing / Waiting / Cancelled / None)
 - **Open in browser**: jump to the IVS page for a session
-- **Toggle “removed” stations**: see active vs. removed or both
+- **Toggle removed stations**: see active, removed or both
 - **Jump to today**: one-key shortcut to the current session row
 
 See also:
