@@ -20,53 +20,53 @@ from .tui_state import UIState, TUITheme
 
 
 
-class DrawTUI(Protocol):
+class DrawTUI():
     """
     This one is responsible for all the drawing to screen. By drawing I mean writing...
     """
 
-    def _draw_hscrollbar(self,
-                         _stdscr,
-                         _y: int,
-                         _x: int,
-                         total_len: int,
-                         width: int,
-                         _h_off: int,
-                         _track_attr = 0,
-                         _thumb_attr = 0):
-        """
-        Draw a proportional scrollbar for one line of text.
-        Put it on a status line or just below the scrolled text.
-        """
-
-        max_y, max_x = _stdscr.getmaxyx()
-        if _y >= max_y or width <= 0 or total_len <= width:
-            return
-
-        # track
-        try:
-            _stdscr.hline(_y, _x, curses.ACS_HLINE, max(0, width))
-        except Exception:
-            _stdscr.addstr(_y, _x, "-" * max(0, width), _track_attr)
-
-        # thumb size/pos
-        thumb_len = max(1, (width * width) // max(1, total_len))
-        max_thumb_pos = max(0, width - thumb_len)
-        max_off = max(0, total_len - width)
-        thumb_pos = (0 if max_off == 0 else (_h_off * max_thumb_pos) // max_off)
-
-        # draw thumb as reversed spaces (easy to see)
-        _stdscr.addstr(_y, _x + thumb_pos, " " * thumb_len,
-                       _thumb_attr or curses.A_REVERSE)
-    # --- END OF _draw_hscrollbar() --------------------------------------------------------------------------------
+    # def _draw_hscrollbar(self,
+    #                      _stdscr,
+    #                      _y: int,
+    #                      _x: int,
+    #                      total_len: int,
+    #                      width: int,
+    #                      _h_off: int,
+    #                      _track_attr = 0,
+    #                      _thumb_attr = 0):
+    #     """
+    #     Draw a proportional scrollbar for one line of text.
+    #     Put it on a status line or just below the scrolled text.
+    #     """
+    #
+    #     max_y, max_x = _stdscr.getmaxyx()
+    #     if _y >= max_y or width <= 0 or total_len <= width:
+    #         return
+    #
+    #     # track
+    #     try:
+    #         _stdscr.hline(_y, _x, curses.ACS_HLINE, max(0, width))
+    #     except Exception:
+    #         _stdscr.addstr(_y, _x, "-" * max(0, width), _track_attr)
+    #
+    #     # thumb size/pos
+    #     thumb_len = max(1, (width * width) // max(1, total_len))
+    #     max_thumb_pos = max(0, width - thumb_len)
+    #     max_off = max(0, total_len - width)
+    #     thumb_pos = (0 if max_off == 0 else (_h_off * max_thumb_pos) // max_off)
+    #
+    #     # draw thumb as reversed spaces (easy to see)
+    #     _stdscr.addstr(_y, _x + thumb_pos, " " * thumb_len,
+    #                    _thumb_attr or curses.A_REVERSE)
+    # # --- END OF _draw_hscrollbar() --------------------------------------------------------------------------------
 
 
 
     def draw_rows(self,
                   _stdscr,
                   _rows:    Sequence[str],
-                  _state:  UIState,
-                  _theme:   TUITheme) -> None:
+                  _theme: TUITheme,
+                  _state:  UIState) -> None:
         """
         Draws all the rows to terminal
 
@@ -75,34 +75,33 @@ class DrawTUI(Protocol):
         """
 
         # --- Determine the view height of the current terminal screen
-        max_y, _    = _stdscr.getmaxyx()
-        view_height = max(1, max_y - 3)
+        # max_y, _    = _stdscr.getmaxyx()
+        # view_height = max(1, max_y - 3)
 
         # --- Normalize state attributes if we're outside view boundaries.
         if _state.selected < _state.offset:
             _state.offset = _state.selected
-        elif _state.selected >= _state.offset + view_height:
-            _state.offset = _state.selected - view_height + 1
+        elif _state.selected >= _state.offset + _state.view_height:
+            _state.offset = _state.selected - _state.view_height + 1
 
         # --- Let the user know if we have nothing to show.
-        if not self.view_rows:
+        if not _rows:
             self._addstr_clip(_stdscr, 2, 0, "No sessions found.")
             return
 
-        # # --- Draw each visible row to terminal
-        # for i in range(self.offset, min(len(self.view_rows), self.offset + view_height)):
-        #
-        #     row_vals, _, meta = self.view_rows[i]
-        #
-        #     # --- Copy, so we can override Stations column safely
-        #     vals = list(row_vals)
-        #
-        #     # --- If the user has chosen to hide removed stations, render only active in column 5
-        #     # --- Column 5 is best accessed as index = FIELD_INDEX.get("stations", -1)
-        #     if not self.show_removed:
-        #         active_only = meta.get("active", "")
-        #         field_index: int = FIELD_INDEX.get("stations", -1)
-        #         vals[field_index] = f"{active_only:<{WIDTHS[field_index]}}"
+        # --- Draw each visible row to terminal
+        for i in range(_state.offset, min(len(_rows), _state.offset + _state.view_height)):
+            row_vals, _, meta = _rows[i]
+
+            # --- Copy, so we can override Stations column safely
+            vals = list(row_vals)
+
+            # --- If the user has chosen to hide removed stations, render only active in column 5
+            # --- Column 5 is best accessed as index = FIELD_INDEX.get("stations", -1)
+            if not _state.show_removed:
+                active_only = meta.get("active", "")
+                field_index: int = FIELD_INDEX.get("stations", -1)
+                vals[field_index] = f"{active_only:<{WIDTHS[field_index]}}"
         #
         #     # --- Construct full lines from parts
         #     parts       = [f"{val:<{WIDTHS[c]}}" for c, val in enumerate(vals)]
@@ -150,7 +149,8 @@ class DrawTUI(Protocol):
 
 
 
-    def draw_header(_stdscr,
+    def draw_header(self,
+                    _stdscr,
                     _theme: TUITheme,
                     _state: UIState) -> None:
         """
@@ -165,13 +165,15 @@ class DrawTUI(Protocol):
         :return:    None
         """
 
-        DrawTUI._addstr_clip(_stdscr, 0, 0, HEADER_LINE, _theme.header)
-        DrawTUI._addstr_clip(_stdscr, 1, 0, "-" * len(HEADER_LINE))
+        self._addstr_clip(_stdscr, 0, 0, HEADER_LINE, _theme.header)
+        self._addstr_clip(_stdscr, 1, 0, "-" * len(HEADER_LINE))
+
+        # self._addstr_clip(_stdscr, 3, 0, "Jon Leithe", _theme.header)
     # --- END OF draw_header -------------------------------------------------------------------------------------------
 
 
 
-    def _addstr_clip(_stdscr, _y: int, _x: int, _text: str, _attr: int = 0) -> None:
+    def _addstr_clip(self, _stdscr, _y: int, _x: int, _text: str, _attr: int = 0) -> None:
         """
         Writes a string to terminal, clipping if necessary
 
@@ -193,7 +195,7 @@ class DrawTUI(Protocol):
 
 
 
-    def clear_screen(_stdscr) -> None:
+    def clear_screen(self, _stdscr) -> None:
         """
         Clears the screen _stdscr
 

@@ -42,23 +42,13 @@ class SessionsBrowser:
         self.scope              = _scope
         self.stations_filter    = _stations_filter
         self.state              = UIState()
-        # curses.initscr()
         self.theme: TUITheme    = None
+        self.draw: DrawTUI      = DrawTUI()
 
         # --- Create and populate the list of url's we want to download from.
         self.urls: List[str]    = self._urls_for_scope()
 
-        # --- Create the list of html data that are actually read
-        # self.data: ReadData     = ReadData(self.urls, self.year, self.scope, True, self.stations_filter)
-        # print("SessionBrowser before read")
-        self.rows: List[Row]    = [] # ReadData(self.urls, self.year, self.scope, True, self.stations_filter).fetch_all_urls()
-
-
-        # --- Instance of DrawTui class to handle all the screen drawing. All drawing operations will be called using
-        # --- this instance. This is done to have to code outside of the main loop (this class, SessionBrowser, is
-        # --- considered the main loop). Other attributes related to drawing are also defined here.
-        # self.tui: DrawTui   = DrawTui()
-        # self.h_off: int     = 0
+        self.rows: List[Row]    = []    # populated in run()
     # --- END OF __init__() --------------------------------------------------------------------------------------------
 
 
@@ -75,8 +65,16 @@ class SessionsBrowser:
         # --- Start the main loop
         quit: bool = False
         while not quit:
-            DrawTUI.clear_screen(_stdscr)
-            DrawTUI.draw_header(_stdscr, self.theme, self.state)
+            # --- Determine the view height of the current terminal screen
+            max_y, _ = _stdscr.getmaxyx()
+            self.state.view_height = max(1, max_y - 3)
+
+            self.draw.clear_screen(_stdscr)
+            self.draw.draw_header(_stdscr, self.theme, self.state)
+
+            # --- We pass a filtered list to draw_rows. draw_rows stays "dumb", meaning it just prints whatever
+            # --- we send it.
+            self.draw.draw_rows(_stdscr, self.rows, self.theme, self.state)
 
             # self.tui.draw_header(curses, _stdscr)
             #
@@ -86,7 +84,7 @@ class SessionsBrowser:
             # width = _stdscr.getmaxyx()[1] - x - 1
             # self.tui._draw_hscrollbar(_stdscr, bar_y, x, len(text), width, self.h_off)
 
-            # self._draw_rows(stdscr)
+            #
 
 
             key = _stdscr.getch()

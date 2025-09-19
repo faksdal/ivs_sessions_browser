@@ -28,6 +28,7 @@ class UIState:
     offset:         int     = 0     # the element currently at top of the view
     h_off:          int     = 0
     page_size:      int     = 20
+    view_height:    int     = 0
     show_removed:   bool    = True
     has_colors:     bool    = False
 # --- END OF class UIState ----------------------------------------------------------------------------------------

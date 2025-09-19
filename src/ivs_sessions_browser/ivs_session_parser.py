@@ -136,8 +136,10 @@ class IvsSessionParser:
             # if self.sessions_filter and self.sessions_filter not in values[1]:
             #     continue
 
-            # if we are here, we're good to append the current r in rows to the parsed List[Row]
+            # ---
             meta = {"active": active_str, "removed": removed_str}
+
+            # --- Append the three separate strings into one new row item
             parsed.append((values, session_url, meta))
 
         return parsed
