@@ -199,7 +199,6 @@ Examples:
 - `code:R1|R4` → codes matching R1 **or** R4
 - `stations:Nn&Ns` → requires **both** Nn **and** Ns present
 - `stations_removed:Ft|Ur` → removed stations include Ft **or** Ur
-- `stations_all:Hb|Ht` → either Hb or Ht present (active or removed)
 
 More: [`docs/FILTER_SYNTAX.md`](docs/FILTER_SYNTAX.md)
 
