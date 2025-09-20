@@ -55,6 +55,7 @@ class TUITheme:
     cancelled:  int = 0
     none:       int = 0
     filtered:   int = 0
+    reversed:   int = 0
 
     @staticmethod
     def init_theme() -> "TUITheme":
@@ -75,6 +76,7 @@ class TUITheme:
         curses.init_pair(7, curses.COLOR_WHITE, -1)  # none
         curses.init_pair(8, curses.COLOR_CYAN, -1)  # filtered highlight
 
+
         return TUITheme(
             intensives  = curses.color_pair(1),
             header      = curses.A_BOLD | curses.color_pair(2),
@@ -83,7 +85,8 @@ class TUITheme:
             processing  = curses.color_pair(5),
             cancelled   = curses.color_pair(6),
             none        = curses.color_pair(7),
-            filtered    = curses.color_pair(8)
+            filtered    = curses.color_pair(8),
+            reversed    = curses.A_REVERSE
             )
     # --- END OF init_theme() ------------------------------------------------------------------------------------------
 # --- END OF class TUITheme --------------------------------------------------------------------------------------------
