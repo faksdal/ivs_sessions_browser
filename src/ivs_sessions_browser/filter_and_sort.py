@@ -42,7 +42,7 @@ class FilterAndSort:
               _ascending: bool      = True,
               ) -> List[Row]:
 
-        preds   = self._predicates_from_query(_query)
+        preds       = self._predicates_from_query(_query)
         filtered    = [r for r in _rows if all(p(r) for p in preds)]
 
         # --- optional post-filter projection when hiding removed stations
@@ -134,8 +134,8 @@ class FilterAndSort:
 
     
     def _predicate_any_field_contains(self, _needle: str) -> Callable[[Row], bool]:
-        n = _needle
-        return lambda r: any(n in v for v in r[0])
+        n = _needle.lower()
+        return lambda r: any(n in v.lower() for v in r[0])
     # --- END OF _predicate_any_field_contains() -----------------------------------------------------------------------
 
 
@@ -146,8 +146,8 @@ class FilterAndSort:
             # unknown field: match nothing (alternatively: any_field_contains)
             return lambda _r: False
         # tokens separated by space/comma/plus/pipe are OR
-        tokens = [t for t in re.split(r"[ ,+|]+", _value) if t]
-        return lambda r: any(tok in r[0][idx] for tok in tokens)
+        tokens = [t.lower() for t in re.split(r"[ ,+|]+", _value) if t]
+        return lambda r: any(tok in r[0][idx].lower() for tok in tokens)
     # --- END OF _predicate_field_tokens_or() --------------------------------------------------------------------------
 
 

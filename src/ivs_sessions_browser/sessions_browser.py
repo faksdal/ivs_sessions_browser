@@ -66,6 +66,21 @@ class SessionsBrowser:
 
 
 
+    def _clear_filters(self) -> None:
+        """
+        Clears all active filters
+
+        :return: None
+        """
+        self.current_filter = ""
+        self.view_rows = self.rows
+        self.highlight_tokens = []
+        idx = self.fs.index_on_or_after_today(self.view_rows)
+        self.state.selected = self.state.offset = idx
+    # --- END OF _clear_filters() --------------------------------------------------------------------------------------
+
+
+
     def _get_input(self, _stdscr, _theme: TUITheme, _prompt: str, _initial: str = "") -> str:
         """
         Get editable input from the user with an initial value pre-filled.
@@ -256,9 +271,10 @@ class SessionsBrowser:
 
             # --- We pass a filtered list to draw_rows. draw_rows stays "dumb", meaning it just prints whatever
             # --- we send it.
-            self.draw.draw_rows(_stdscr, self.view_rows, self.theme, self.state)
+            self.draw.draw_rows(_stdscr, self.view_rows, self.highlight_tokens, self.theme, self.state)
 
-            # self.tui._draw_helpbar(curses, _stdscr)
+            # --- Draw a help-bar at thw bottom of the screen
+            self.draw.draw_helpbar(_stdscr, self.view_rows, self.current_filter, self.theme, self.state)
 
             # bar_y = y + 1  # or your status line row
             # width = _stdscr.getmaxyx()[1] - x - 1
@@ -266,8 +282,6 @@ class SessionsBrowser:
 
             key = _stdscr.getch()
             match key:
-
-
                 # elif ch in (curses.KEY_LEFT, ord('h')):
                 #     self.h_off = max(0, self.h_off - 1)
                 # elif ch in (curses.KEY_RIGHT, ord('l')):
@@ -284,9 +298,10 @@ class SessionsBrowser:
                 case key if key in NAVIGATION_KEYS:
                     self._navigate(key, _stdscr)
 
-                # # --- Jump to today's date (or the next if today is not in list)
-                # case c if c == ord('T'):
-                #     self._jump_to_today()
+                # --- Jump to today's date (or the next if today is not in list)
+                case c if c == ord('T'):
+                    idx = self.fs.index_on_or_after_today(self.view_rows)
+                    self.state.selected = self.state.offset = idx
                 #
                 # --- Apply user filter
                 case c if c == ord('/'):
@@ -298,30 +313,24 @@ class SessionsBrowser:
                     new_filter = self._get_input(_stdscr, self.theme, "/ ", _initial = prefill)
 
                     self.current_filter = new_filter
-                    self.view_rows = self.fs.apply(self.rows,
-                                                   _query           = self.current_filter,
-                                                   _show_removed    = self.state.show_removed,
-                                                   _sort_key        = "start",
-                                                   _ascending       = True,
-                                                   )
+                    self.view_rows      = self.fs.apply(self.rows,
+                                                        _query           = self.current_filter,
+                                                        _show_removed    = self.state.show_removed,
+                                                        _sort_key        = "start",
+                                                        _ascending       = True,
+                                                        )
 
-                    # --- Optional: jump to today
+                    # --- Jump to today
                     idx = self.fs.index_on_or_after_today(self.view_rows)
                     self.state.selected = self.state.offset = idx
-                    # optional: tokens for future highlight feature
-                    # self.highlight_tokens = self.fs.extract_station_tokens(self.current_filter)
-                #     self.view_rows = self._apply_filter(new_filter)
-                #
-                #     self.highlight_tokens = self._extract_station_tokens(self.current_filter)
-                #
-                #     idx = self._index_on_or_after_today(self.view_rows)
-                #     self.selected = idx
-                #     self.offset = idx
-                #
-                # # --- Clear active filters
-                # case c if c == (ord('F')):
-                #     self._clear_filters()
-                #
+
+                    # --- Highlight stations when filtered
+                    self.highlight_tokens = self.fs.extract_station_tokens(self.current_filter)
+
+                # --- Clear active filters
+                case c if c == (ord('C')):
+                    self._clear_filters()
+
                 # # --- Hide/show removed stations
                 # case c if c == (ord('R')):
                 #     self.show_removed = not self.show_removed

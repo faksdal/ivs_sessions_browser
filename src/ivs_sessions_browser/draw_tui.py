@@ -11,10 +11,10 @@ Notes:
 # --- Import section ---------------------------------------------------------------------------------------------------
 import curses
 
-from typing import Protocol, Sequence
+from typing import List
 
 # --- Project defined
-from .defs      import HEADER_LINE, WIDTHS, FIELD_INDEX
+from .defs      import HEADER_LINE, WIDTHS, FIELD_INDEX, Row, HEADER_DICT
 from .tui_state import UIState, TUITheme
 # --- END OF Import section --------------------------------------------------------------------------------------------
 
@@ -62,11 +62,58 @@ class DrawTUI():
 
 
 
+    def draw_helpbar(self,
+                     _stdscr,
+                     _view_rows: List[Row],
+                     _current_filter,
+                     _theme,
+                     _state
+                     ) -> None:
+        """
+        Draws up the help at the bottom of the terminal
+
+        :param stdscr:  Where to write
+        :return:        None
+        """
+
+        max_y, max_x = _stdscr.getmaxyx()
+        # help_text = "↑↓-PgUp/PgDn-Home/End:Move Enter:Open /:Filter F:Clear filters ?:Help R:Hide/show removed q/Q:Quit"
+        help_text = "/:Filter C:Clear filters T: Jump to today R:Hide/show removed ?:Help q/Q:Quit"
+        right = f"row {min(_state.selected + 1, len(_view_rows))}/{len(_view_rows)}"
+        bar = (help_text + (f" Filter: {_current_filter}" if _current_filter else "") + "  " + right)[
+            : max_x - 1]
+        bar_attr = _theme.help_bar if _state.has_colors else _theme.reversed
+        self._addstr_clip(_stdscr, max_y - 1, 0, bar, bar_attr)
+    # --- END OF _draw_helpbar() ---------------------------------------------------------------------------------------
+
+
+
+    def _col_start_x(self, _col_idx: int) -> int:
+        """
+        Computes the x offset where column _col_idx starts in the printed line.
+        Each column is printed left-padded to WIDTHS[c], joined by " | " (3 chars).
+
+        :param _col_idx:
+
+        :return:
+        """
+
+        sep = 3
+        x   = 0
+        for i in range(_col_idx):
+            x += WIDTHS[i] + sep
+        return x
+    # --- END OF _col_start_x() ----------------------------------------------------------------------------------------
+
+
+
     def draw_rows(self,
                   _stdscr,
-                  _rows:    Sequence[str],
-                  _theme: TUITheme,
-                  _state:  UIState) -> None:
+                  _rows:                List[Row],
+                  _highlight_tokens:    List[str],
+                  _theme:               TUITheme,
+                  _state:               UIState
+                  ) -> None:
         """
         Draws all the rows to terminal
 
@@ -92,13 +139,12 @@ class DrawTUI():
             # --- Copy, so we can override Stations column safely
             vals = list(row_vals)
 
-            # --- If the user has chosen to hide removed stations, render only active in column 5
-            # --- Column 5 is best accessed as index = FIELD_INDEX.get("stations", -1)
+            # --- If the user has chosen to hide removed stations, render only active in "stations" column (5)
             if not _state.show_removed:
-                active_only = meta.get("active", "")
-                field_index: int = FIELD_INDEX.get("stations", -1)
-                vals[field_index] = f"{active_only:<{WIDTHS[field_index]}}"
-        #
+                active_only         = meta.get("active", "")
+                field_index: int    = FIELD_INDEX.get("stations", -1)
+                vals[field_index]   = f"{active_only:<{WIDTHS[field_index]}}"
+
             # --- Construct full lines from parts
             parts       = [f"{val:<{WIDTHS[c]}}" for c, val in enumerate(vals)]
             full_line   = " | ".join(parts)
@@ -117,28 +163,36 @@ class DrawTUI():
                 if lbr != -1:
                     rbr = full_line.find("]", lbr + 1)
                     if rbr != -1 and rbr > lbr:
+                        self._addstr_clip(_stdscr, y, lbr, full_line[lbr:rbr + 1], row_attr | _theme.removed)
+
+            # --- Highlight intensives. They are found in the "Type" column, which spans full_line[0:13]
+            # --- Length of "Type" column can be determined with length = HEADER_DICT["Type"]
+            search_length = HEADER_DICT["Type"]
+            if _state.has_colors:
+                lbr = full_line.find("[", 0, search_length)
+                if lbr != -1:
+                    rbr = full_line.find("]", lbr + 1)
+                    if rbr != -1 and rbr > lbr:
                         self._addstr_clip(_stdscr, y, lbr, full_line[lbr:rbr + 1], row_attr | _theme.intensives)
 
-        #     # --- Station token highlighting (from stations:* filter)
-        #     if vals[FIELD_INDEX.get("stations", -1)] and self.highlight_tokens:
-        #         # --- Padded field text as printed
-        #         stations_text = vals[FIELD_INDEX.get("stations", -1)]
-        #
-        #         # --- "stations" field index
-        #         col_x = self._col_start_x(FIELD_INDEX.get("stations", -1))
-        #
-        #         # --- Fallback without colors: underline+bold (shows even on selected/reversed rows)
-        #         hl_attr = (curses.color_pair(8) | curses.A_BOLD) if self.has_colors else (
-        #                 curses.A_BOLD | curses.A_UNDERLINE)
-        #         for tok in self.highlight_tokens:
-        #             start = 0
-        #             while True:
-        #                 j = stations_text.find(tok, start)
-        #                 if j == -1:
-        #                     break
-        #                 self._addstr_clip(_stdscr, y, col_x + j, tok, row_attr | hl_attr)
-        #                 start = j + len(tok)
+            # --- Station token highlighting (from stations:Xx filter)
+            if vals[FIELD_INDEX.get("stations", -1)] and _highlight_tokens:
+                # --- Padded field text as printed
+                stations_text = vals[FIELD_INDEX.get("stations", -1)]
 
+                # --- "stations" field index
+                col_x = self._col_start_x(FIELD_INDEX.get("stations", -1))
+
+                # --- Fallback without colors: underline+bold (shows even on selected/reversed rows)
+                hl_attr = (_theme.filtered | curses.A_BOLD) if _state.has_colors else (curses.A_BOLD | curses.A_UNDERLINE)
+                for tok in _highlight_tokens:
+                    start = 0
+                    while True:
+                        j = stations_text.find(tok, start)
+                        if j == -1:
+                            break
+                        self._addstr_clip(_stdscr, y, col_x + j, tok, row_attr | hl_attr)
+                        start = j + len(tok)
         # --- END OF for i in range ------------------------------------------------------------------------------------
     # --- END OF _draw_rows() ------------------------------------------------------------------------------------------
 
@@ -197,13 +251,13 @@ class DrawTUI():
 
     def _addstr_clip(self, _stdscr, _y: int, _x: int, _text: str, _attr: int = 0) -> None:
         """
-        Writes a string to terminal, clipping if necessary
+        Writes a string to curses _stdscr, clipping if necessary
 
-        :param stdscr:  Which screen to write to
-        :param y:       y co-ordinate
-        :param x:       x co-ordinate
-        :param text:    What to write
-        :param attr:    Text attributes
+        :param _stdscr:  Which screen to write to
+        :param _y:       y co-ordinate
+        :param _x:       x co-ordinate
+        :param _text:    What to write
+        :param _attr:    Text attributes
 
         :return:        None
         """

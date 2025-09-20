@@ -56,6 +56,7 @@ class TUITheme:
     none:       int = 0
     filtered:   int = 0
     reversed:   int = 0
+    removed:    int = 0
 
     @staticmethod
     def init_theme() -> "TUITheme":
@@ -67,14 +68,15 @@ class TUITheme:
         curses.use_default_colors()
         curses.curs_set(0)
 
-        curses.init_pair(1, curses.COLOR_YELLOW, -1)  # intensives / removed
-        curses.init_pair(2, curses.COLOR_CYAN, -1)  # header
-        curses.init_pair(3, curses.COLOR_BLACK, curses.COLOR_WHITE)  # help bar
-        curses.init_pair(4, curses.COLOR_GREEN, -1)  # released
-        curses.init_pair(5, curses.COLOR_YELLOW, -1)  # processing
-        curses.init_pair(6, curses.COLOR_MAGENTA, -1)  # cancelled
-        curses.init_pair(7, curses.COLOR_WHITE, -1)  # none
-        curses.init_pair(8, curses.COLOR_CYAN, -1)  # filtered highlight
+        curses.init_pair(1, curses.COLOR_MAGENTA, -1)               # intensives
+        curses.init_pair(2, curses.COLOR_CYAN, -1)                  # header
+        curses.init_pair(3, curses.COLOR_BLACK, curses.COLOR_WHITE) # help bar
+        curses.init_pair(4, curses.COLOR_GREEN, -1)                 # released
+        curses.init_pair(5, curses.COLOR_YELLOW, -1)                # processing
+        curses.init_pair(6, curses.COLOR_MAGENTA, -1)               # cancelled
+        curses.init_pair(7, curses.COLOR_WHITE, -1)                 # none
+        curses.init_pair(8, curses.COLOR_CYAN, -1)                  # filtered highlight
+        curses.init_pair(9, curses.COLOR_YELLOW, -1)                # removed
 
 
         return TUITheme(
@@ -86,6 +88,7 @@ class TUITheme:
             cancelled   = curses.color_pair(6),
             none        = curses.color_pair(7),
             filtered    = curses.color_pair(8),
+            removed     = curses.color_pair(9),
             reversed    = curses.A_REVERSE
             )
     # --- END OF init_theme() ------------------------------------------------------------------------------------------

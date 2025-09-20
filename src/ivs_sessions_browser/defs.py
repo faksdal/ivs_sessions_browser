@@ -19,12 +19,15 @@ from typing import List, Tuple, Optional, Dict, Any
 
 ARGUMENT_DESCRIPTION = "IVS Sessions TUI Browser"
 
-ARGUMENT_EPILOG = ("Filters (case-sensitive):\n"
-                   "  Clauses separated by ';' are AND.\n"
-                   "  Non-stations fields: tokens split by space/comma/plus/pipe are OR (e.g. code: R1|R4)\n"
-                   "  Stations active: stations: Nn&Ns  or  stations: Nn|Ns\n"
-                   "  Stations removed/any: stations_removed: Ft|Ur   stations_all: Hb|Ht\n"
-                   "\nCLI:\n")
+ARGUMENT_EPILOG =   ("Filters:\n"
+                     "  Clauses separated by ';' are AND.\n"
+                     "  Non-stations fields: tokens split by space/comma/plus/pipe are OR "
+                     "(e.g. code: r1|r4, case-insensitive)\n"
+                     "  Stations active: stations: Nn&Ns  or  stations: Nn|Ns (case-sensitive)\n"
+                     "  Stations removed/any: stations_removed: Ft|Ur   stations_all: Hb|Ht "
+                     "(case-sensitive)\n"
+                     "\nCLI:\n"
+                    )
 
 ARGUMENT_FORMATTER_CLASS = argparse.RawDescriptionHelpFormatter
 
@@ -59,14 +62,13 @@ HEADERS                     = [("Type", 14),
                                ("Status", 20),
                                ("Analysis", 10)
                               ]
+HEADER_DICT = dict(HEADERS)
 
 HELPBAR_TEXT = "↑↓-PgUp/PgDn-Home/End:Move Enter:Open /:Filter F:Clear filters ?:Help R:Hide/show removed q/Q:Quit"
 
-HEADER_LINE                 = " | ".join([f"{title:<{w}}" for title, w in HEADERS])
+HEADER_LINE = " | ".join([f"{title:<{w}}" for title, w in HEADERS])
 
-WIDTHS                      = [w for _, w in HEADERS]
-
-
+WIDTHS = [w for _, w in HEADERS]
 
 NAVIGATION_KEYS = {curses.KEY_UP,
                    curses.KEY_DOWN,
