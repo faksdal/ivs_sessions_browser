@@ -186,12 +186,8 @@ Navigation:
 
 Filtering:
   /                        Enter a filter expression
-  C                        Clear current filters
-  Enter filters as 'tag:value', all headers are available for filtering.
-  AND and OR are includded as & and | (ampersand and pipe)
-
-  *NOTE: 'stations' are case-sensitive - all else not!*
-
+  C                        Clear current filters  
+  R                        Toggle show/hide removed stations
   Examples:
     code:R1|R4             → match sessions with code R1 or R4
     stations:Nn&Ns         → sessions including both Nn and Ns
