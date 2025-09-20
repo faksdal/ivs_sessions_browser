@@ -29,6 +29,38 @@ ARGUMENT_EPILOG =   ("Filters:\n"
                      "\nCLI:\n"
                     )
 
+HELP_TEXT = [
+            "IVS Session Browser Help",
+            "",
+            "Navigation:",
+            "  ↑/↓ : Move selection",
+            "  PgUp/PgDn : Page up/down",
+            "  Home/End : Jump to first/last",
+            "  T : Jump to today's session",
+            "  Enter : Open session in browser",
+            "",
+            "Filtering:",
+            "  / : Enter filter (field:value, supports AND/OR)",
+            "  C : Clear filters",
+            "  R : Toggle show/hide removed stations",
+            "",
+            "Other:",
+            "  q or Q : Quit",
+            "  ? : Show this help",
+            "",
+            "Color legend:",
+            "  Green    = Released",
+            "  Yellow   = Processing / Waiting",
+            "  Magenta  = Cancelled",
+            "  White    = No status",
+            "  Cyan     = Active filters",
+            "",
+            "",
+            "Hit any key to close this help",
+            "",
+            "Well, maybe not ANY key—Ctrl/Shift/Alt usually won’t register ;-)"
+        ]
+
 ARGUMENT_FORMATTER_CLASS = argparse.RawDescriptionHelpFormatter
 
 Row         = Tuple[List[str], Optional[str], Dict[str, Any]]
@@ -50,12 +82,12 @@ FIELD_INDEX                 = {"type": 0,
                                "analysis": 10
                                }
 
-HEADERS                     = [("Type", 14),
+HEADERS                     = [("Type", 14),    # 16 in 2022
                                ("Code", 8),
                                ("Start", 18),
                                ("DOY", 3),
                                ("Dur", 5),
-                               ("Stations", 44),
+                               ("Stations", 10), # 56 in 2022
                                ("DB Code", 14),
                                ("Ops Center", 10),
                                ("Correlator", 10),
@@ -80,3 +112,74 @@ NAVIGATION_KEYS = {curses.KEY_UP,
                    10, 13}
 
 DATEFORMAT = "%Y-%m-%d %H:%M"
+
+
+
+# --- Dynamic width recompute ---------------------------------------------------
+def recompute_header_widths(rows: List[Row]) -> None:
+    """
+    Recompute HEADERS/HEADER_DICT/WIDTHS/HEADER_LINE from data.
+    Ensures 'Type' has room for a right-justified '[I]' if any intensive exists.
+    """
+    global HEADERS, HEADER_DICT, WIDTHS, HEADER_LINE
+
+    titles = [t for t, _ in HEADERS]
+    mins   = [w for _, w in HEADERS]
+    num    = len(titles)
+
+    # observed content lengths per column
+    obs = [0]*num
+    any_intensive = False
+    for values, _url, meta in rows:
+        any_intensive = any_intensive or bool(meta.get("intensive"))
+        for i in range(min(num, len(values))):
+            obs[i] = max(obs[i], len(values[i]))
+
+    name_lens = [len(t) for t in titles]
+    widths = [max(mins[i], name_lens[i], obs[i]) for i in range(num)]
+
+    # Add 3 chars for "[I]" if any intensive is present
+    type_idx = FIELD_INDEX.get("type", 0)
+    if any_intensive:
+        widths[type_idx] = max(widths[type_idx], name_lens[type_idx], mins[type_idx]) + 2
+
+    HEADERS = list(zip(titles, widths))
+    HEADER_DICT = dict(HEADERS)
+    WIDTHS = widths
+    HEADER_LINE = " | ".join([f"{title:<{w}}" for title, w in HEADERS])
+# --- END OF recompute_header_widths() ---------------------------------------------------------------------------------
+# def recompute_header_widths(rows: List[Row]) -> None:
+#     """
+#     Recompute column widths from data+headers+minimums and refresh globals:
+#       - HEADERS (title, width)
+#       - HEADER_DICT
+#       - WIDTHS
+#       - HEADER_LINE
+#     """
+#     global HEADERS, HEADER_DICT, WIDTHS, HEADER_LINE
+#
+#     # 1) Titles and minimums from current HEADERS
+#     titles = [t for t, _ in HEADERS]
+#     mins   = [w for _, w in HEADERS]
+#
+#     # 2) Observed max content length per column
+#     num_cols    = len(titles)
+#     obs         = [0] * num_cols
+#
+#     for r in rows:
+#         vals = r[0]
+#         # guard: some rows may be short if the source table is odd
+#         for i in range(min(num_cols, len(vals))):
+#             obs[i] = max(obs[i], len(vals[i]))
+#
+#     # 3) Also protect header labels themselves
+#     name_lens = [len(t) for t in titles]
+#
+#     # 4) Final widths
+#     new_widths = [max(mins[i], name_lens[i], obs[i]) for i in range(num_cols)]
+#
+#     # 5) Update globals
+#     HEADERS = list(zip(titles, new_widths))
+#     HEADER_DICT = dict(HEADERS)
+#     WIDTHS = new_widths
+#     HEADER_LINE = " | ".join([f"{title:<{w}}" for title, w in HEADERS])

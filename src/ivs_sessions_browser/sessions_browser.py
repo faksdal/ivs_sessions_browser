@@ -17,7 +17,7 @@ from datetime   import datetime
 
 # --- Project defined
 from .draw_tui          import DrawTUI
-from .defs              import BASE_URL, Row, NAVIGATION_KEYS
+from .defs              import BASE_URL, Row, NAVIGATION_KEYS, recompute_header_widths
 from .read_data         import ReadData
 from .tui_state         import *
 from .filter_and_sort   import FilterAndSort
@@ -276,17 +276,9 @@ class SessionsBrowser:
             # --- Draw a help-bar at thw bottom of the screen
             self.draw.draw_helpbar(_stdscr, self.view_rows, self.current_filter, self.theme, self.state)
 
-            # bar_y = y + 1  # or your status line row
-            # width = _stdscr.getmaxyx()[1] - x - 1
-            # self.tui._draw_hscrollbar(_stdscr, bar_y, x, len(text), width, self.h_off)
-
+            # --- Parse user input
             key = _stdscr.getch()
             match key:
-                # elif ch in (curses.KEY_LEFT, ord('h')):
-                #     self.h_off = max(0, self.h_off - 1)
-                # elif ch in (curses.KEY_RIGHT, ord('l')):
-                #     self.h_off = self.h_off + 1  # clamped after render
-
                 case curses.KEY_LEFT:
                     pass
                     # self.h_off = max(0, self.h_off - 1)
@@ -331,17 +323,19 @@ class SessionsBrowser:
                 case c if c == (ord('C')):
                     self._clear_filters()
 
-                # # --- Hide/show removed stations
-                # case c if c == (ord('R')):
-                #     self.show_removed = not self.show_removed
-                #     self.state.show_removed = not self.state.show_removed
-                #     self.view_rows = self.fs.apply(self.rows, query=self.current_filter,
-                #                                    show_removed=self.state.show_removed, sort_key="start")
+                # --- Hide/show removed stations
+                case c if c == (ord('R')):
+                    self.state.show_removed = not self.state.show_removed
+                    self.view_rows = self.fs.apply(self.rows,
+                                                   _query           = self.current_filter,
+                                                   _show_removed    = self.state.show_removed,
+                                                   _sort_key        = "start",
+                                                   _ascending       = True)
 
-                #
-                # # --- Show help
-                # case c if c == (ord('?')):
-                #     self._show_help(stdscr)
+
+                # --- Show help
+                case c if c == (ord('?')):
+                    self.draw.show_help(_stdscr, self.theme)
 
                 # --- Quit the script and return to terminal
                 case c if c in (ord('q'), ord('Q')):
@@ -385,6 +379,11 @@ class SessionsBrowser:
 
         # --- The return value from ReadData.fetch_all_urls is a List[Row], containing all the html from web.
         self.rows = ReadData(self.urls, self.year, self.scope, True, self.stations_filter).fetch_all_urls()
+
+        # --- This is the place to recompute HEADER widths
+        # --- Compute dynamic column widths once, based on ALL fetched rows
+        # --- Set final column widths based on all rows (adds 3 for '[I]' if present)
+        recompute_header_widths(self.rows)
 
         # --- Applying filter and sort to the list
         self.view_rows = self.fs.apply(self.rows,

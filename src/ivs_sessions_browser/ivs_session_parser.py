@@ -96,28 +96,37 @@ class IvsSessionParser:
 
             # --- The various columns for each piece of info
             values = [
-                tds[0].get_text(strip=True),  # Type
-                tds[1].get_text(strip=True),  # Code
-                tds[2].get_text(strip=True),  # Start
-                tds[3].get_text(strip=True),  # DOY
-                tds[4].get_text(strip=True),  # Dur
-                stations_str.ljust(44),  # Stations (fixed width for alignment)
-                tds[6].get_text(strip=True),  # DB Code
-                tds[7].get_text(strip=True),  # Ops Center
-                tds[8].get_text(strip=True),  # Correlator
-                tds[9].get_text(strip=True),  # Status
-                tds[10].get_text(strip=True),  # Analysis
+                tds[0].get_text(strip=True),    # Type
+                tds[1].get_text(strip=True),    # Code
+                tds[2].get_text(strip=True),    # Start
+                tds[3].get_text(strip=True),    # DOY
+                tds[4].get_text(strip=True),    # Dur
+                # stations_str.ljust(44),  # Stations (fixed width for alignment)
+                stations_str,                   # Stations (no padding; renderer will align)
+                tds[6].get_text(strip=True),    # DB Code
+                tds[7].get_text(strip=True),    # Ops Center
+                tds[8].get_text(strip=True),    # Correlator
+                tds[9].get_text(strip=True),    # Status
+                tds[10].get_text(strip=True),   # Analysis
             ]
 
-            # Column width for Type (class attribute, so prefix with the class)
-            TYPE_WIDTH = next(w for title, w in HEADERS if title == "Type")
-
-            # Tag intensives directly in Type column (right-align "[I]" in the Type field)
+        ### FOLLOWING LINES REMOVED DUE TO RE-STRUCTURE HEADERS ###
+            # # Column width for Type (class attribute, so prefix with the class)
+            # TYPE_WIDTH = next(w for title, w in HEADERS if title == "Type")
+            #
+            # # Tag intensives directly in Type column (right-align "[I]" in the Type field)
+            # if self.is_intensive:
+            #     base_width = max(0, TYPE_WIDTH - 3)  # room for "[I]"
+            #     values[0] = f"{values[0]:<{base_width}}[I]"
+            # else:
+            #     values[0] = f"{values[0]:<{TYPE_WIDTH}}"
+            # Keep raw type text; tag intensive in meta so UI can render "[I]" at the right edge
+            # values[0] stays unchanged here
+        ### THEY ARE REPLACED BY THE FOLLOWING ###
+            # Tag intensives directly (no padding here; alignment happens in the renderer)
             if self.is_intensive:
-                base_width = max(0, TYPE_WIDTH - 3)  # room for "[I]"
-                values[0] = f"{values[0]:<{base_width}}[I]"
-            else:
-                values[0] = f"{values[0]:<{TYPE_WIDTH}}"
+                # values[0] = f"{values[0]}[I]"
+                values[0] = f"{values[0]}"
 
             # Session detail URL from Code column if present
             code_link = tds[1].find("a")
@@ -137,7 +146,8 @@ class IvsSessionParser:
             #     continue
 
             # ---
-            meta = {"active": active_str, "removed": removed_str}
+            # meta = {"active": active_str, "removed": removed_str}
+            meta = {"active": active_str, "removed": removed_str, "intensive": bool(self.is_intensive)}
 
             # --- Append the three separate strings into one new row item
             parsed.append((values, session_url, meta))

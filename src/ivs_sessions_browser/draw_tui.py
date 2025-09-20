@@ -10,11 +10,14 @@ Notes:
 
 # --- Import section ---------------------------------------------------------------------------------------------------
 import curses
+import textwrap
 
 from typing import List
 
+#from repo.scripts.type_defs import WIDTHS
 # --- Project defined
-from .defs      import HEADER_LINE, WIDTHS, FIELD_INDEX, Row, HEADER_DICT
+#  from .defs      import HEADER_LINE, WIDTHS, FIELD_INDEX, Row, HEADER_DICT, HELP_TEXT
+from . import defs as D
 from .tui_state import UIState, TUITheme
 # --- END OF Import section --------------------------------------------------------------------------------------------
 
@@ -25,46 +28,45 @@ class DrawTUI():
     This one is responsible for all the drawing to screen. By drawing I mean writing...
     """
 
-    # def _draw_hscrollbar(self,
-    #                      _stdscr,
-    #                      _y: int,
-    #                      _x: int,
-    #                      total_len: int,
-    #                      width: int,
-    #                      _h_off: int,
-    #                      _track_attr = 0,
-    #                      _thumb_attr = 0):
-    #     """
-    #     Draw a proportional scrollbar for one line of text.
-    #     Put it on a status line or just below the scrolled text.
-    #     """
-    #
-    #     max_y, max_x = _stdscr.getmaxyx()
-    #     if _y >= max_y or width <= 0 or total_len <= width:
-    #         return
-    #
-    #     # track
-    #     try:
-    #         _stdscr.hline(_y, _x, curses.ACS_HLINE, max(0, width))
-    #     except Exception:
-    #         _stdscr.addstr(_y, _x, "-" * max(0, width), _track_attr)
-    #
-    #     # thumb size/pos
-    #     thumb_len = max(1, (width * width) // max(1, total_len))
-    #     max_thumb_pos = max(0, width - thumb_len)
-    #     max_off = max(0, total_len - width)
-    #     thumb_pos = (0 if max_off == 0 else (_h_off * max_thumb_pos) // max_off)
-    #
-    #     # draw thumb as reversed spaces (easy to see)
-    #     _stdscr.addstr(_y, _x + thumb_pos, " " * thumb_len,
-    #                    _thumb_attr or curses.A_REVERSE)
-    # # --- END OF _draw_hscrollbar() --------------------------------------------------------------------------------
+    def show_help(self, _stdscr, _theme: TUITheme) -> None:
+        """
+        v2-style centered, boxed help screen. Dismiss with any key.
+        """
+
+        h, w = _stdscr.getmaxyx()
+        width = min(84, w - 4)
+        height = min(len(D.HELP_TEXT) + 4, h - 4)
+        y, x = (h - height) // 2, (w - width) // 2
+        win = curses.newwin(height, width, y, x)
+        win.box()
+
+        for i, text in enumerate(D.HELP_TEXT, start=1):
+            attr = 0
+            if i == 1:  # title
+                attr = curses.A_UNDERLINE | curses.A_BOLD
+            elif "Green" in text:
+                attr = _theme.released
+            elif "Yellow" in text:
+                attr = _theme.processing
+            elif "Magenta" in text:
+                attr = _theme.cancelled
+            elif "White" in text:
+                attr = _theme.none
+            elif "Cyan" in text:
+                attr = _theme.filtered
+
+            win.addnstr(i, 2, text, width - 4, attr)
+
+        win.refresh()
+        win.getch()
+
+    # --- END OF show_help() ------------------------------------------------------------
 
 
 
     def draw_helpbar(self,
                      _stdscr,
-                     _view_rows: List[Row],
+                     _view_rows: D.List[D.Row],
                      _current_filter,
                      _theme,
                      _state
@@ -79,7 +81,11 @@ class DrawTUI():
         max_y, max_x = _stdscr.getmaxyx()
         # help_text = "↑↓-PgUp/PgDn-Home/End:Move Enter:Open /:Filter F:Clear filters ?:Help R:Hide/show removed q/Q:Quit"
         help_text = "/:Filter C:Clear filters T: Jump to today R:Hide/show removed ?:Help q/Q:Quit"
+
+        # --- Part of recomputing HEADER widths
+        # right = f"row {min(_state.selected + 1, len(_view_rows))}/{len(_view_rows)}"
         right = f"row {min(_state.selected + 1, len(_view_rows))}/{len(_view_rows)}"
+
         bar = (help_text + (f" Filter: {_current_filter}" if _current_filter else "") + "  " + right)[
             : max_x - 1]
         bar_attr = _theme.help_bar if _state.has_colors else _theme.reversed
@@ -101,7 +107,7 @@ class DrawTUI():
         sep = 3
         x   = 0
         for i in range(_col_idx):
-            x += WIDTHS[i] + sep
+            x += D.WIDTHS[i] + sep
         return x
     # --- END OF _col_start_x() ----------------------------------------------------------------------------------------
 
@@ -109,7 +115,7 @@ class DrawTUI():
 
     def draw_rows(self,
                   _stdscr,
-                  _rows:                List[Row],
+                  _rows:                D.List[D.Row],
                   _highlight_tokens:    List[str],
                   _theme:               TUITheme,
                   _state:               UIState
@@ -142,23 +148,50 @@ class DrawTUI():
             # --- If the user has chosen to hide removed stations, render only active in "stations" column (5)
             if not _state.show_removed:
                 active_only         = meta.get("active", "")
-                field_index: int    = FIELD_INDEX.get("stations", -1)
-                vals[field_index]   = f"{active_only:<{WIDTHS[field_index]}}"
+                field_index: int    = D.FIELD_INDEX.get("stations", -1)
+                vals[field_index]   = f"{active_only:<{D.WIDTHS[field_index]}}"
 
             # --- Construct full lines from parts
-            parts       = [f"{val:<{WIDTHS[c]}}" for c, val in enumerate(vals)]
-            full_line   = " | ".join(parts)
+            ### Changed some when I put in HEADER length recomputing
+            ### The following lines are replaced
+            # parts       = [f"{val:<{D.WIDTHS[c]}}" for c, val in enumerate(vals)]
+            # full_line   = " | ".join(parts)
+
+            ### By these:
+            # --- Construct full line with a special rule for the "Type" column:
+            # --- left-justify the type text in (width-3)
+            # --- put "[I]" flush-right if meta["intensive"] is true
+            parts       = []
+            type_idx    = D.FIELD_INDEX.get("type", 0)
+            for c, val in enumerate(vals):
+                w = D.WIDTHS[c]
+                if c == type_idx and meta.get("intensive"):
+                    # reserve 3 chars for "[I]" at the right edge
+                    base_w = max(0, w - 3)
+                    parts.append(f"{val:<{base_w}}[I]")
+                else:
+                    parts.append(f"{val:<{w}}")
+
+                # if c == D.FIELD_INDEX["type"] and meta.get("intensive"):
+                #     base_width = D.WIDTHS[c] - 3  # room for [I]
+                #     formatted = f"{val:<{base_width}} [I]"
+                # else:
+                #     formatted = f"{val:<{D.WIDTHS[c]}}"
+                # parts.append(formatted)
+
+            full_line = " | ".join(parts)
+
             y           = i - _state.offset + 2
             row_attr    = _theme.reversed if i == _state.selected else 0
 
             # --- We only color the rows if _state.has_colors are set to True. This is done by checking
             # --- curses if curses.has_colors() in SessionsBrowser._curses_main()
-            row_color = self._status_color(_state.has_colors, vals[FIELD_INDEX.get("status", -1)], _theme)
+            row_color = self._status_color(_state.has_colors, vals[D.FIELD_INDEX.get("status", -1)], _theme)
             self._addstr_clip(_stdscr, y, 0, full_line, row_attr | row_color)
 
             # --- Highlight "[...]" in 'stations' column only if we are showing removed stations, after the active ones
-            if _state.has_colors and vals[FIELD_INDEX.get("stations", -1)]:
-                stations_offset = full_line.find(vals[FIELD_INDEX.get("stations", -1)])
+            if _state.has_colors and vals[D.FIELD_INDEX.get("stations", -1)]:
+                stations_offset = full_line.find(vals[D.FIELD_INDEX.get("stations", -1)])
                 lbr = full_line.find("[", stations_offset)
                 if lbr != -1:
                     rbr = full_line.find("]", lbr + 1)
@@ -167,7 +200,7 @@ class DrawTUI():
 
             # --- Highlight intensives. They are found in the "Type" column, which spans full_line[0:13]
             # --- Length of "Type" column can be determined with length = HEADER_DICT["Type"]
-            search_length = HEADER_DICT["Type"]
+            search_length = D.HEADER_DICT["Type"]
             if _state.has_colors:
                 lbr = full_line.find("[", 0, search_length)
                 if lbr != -1:
@@ -176,12 +209,12 @@ class DrawTUI():
                         self._addstr_clip(_stdscr, y, lbr, full_line[lbr:rbr + 1], row_attr | _theme.intensives)
 
             # --- Station token highlighting (from stations:Xx filter)
-            if vals[FIELD_INDEX.get("stations", -1)] and _highlight_tokens:
+            if vals[D.FIELD_INDEX.get("stations", -1)] and _highlight_tokens:
                 # --- Padded field text as printed
-                stations_text = vals[FIELD_INDEX.get("stations", -1)]
+                stations_text = vals[D.FIELD_INDEX.get("stations", -1)]
 
                 # --- "stations" field index
-                col_x = self._col_start_x(FIELD_INDEX.get("stations", -1))
+                col_x = self._col_start_x(D.FIELD_INDEX.get("stations", -1))
 
                 # --- Fallback without colors: underline+bold (shows even on selected/reversed rows)
                 hl_attr = (_theme.filtered | curses.A_BOLD) if _state.has_colors else (curses.A_BOLD | curses.A_UNDERLINE)
@@ -214,8 +247,8 @@ class DrawTUI():
         :return:    None
         """
 
-        self._addstr_clip(_stdscr, 0, 0, HEADER_LINE, _theme.header)
-        self._addstr_clip(_stdscr, 1, 0, "-" * len(HEADER_LINE))
+        self._addstr_clip(_stdscr, 0, 0, D.HEADER_LINE, _theme.header)
+        self._addstr_clip(_stdscr, 1, 0, "-" * len(D.HEADER_LINE))
 
         # self._addstr_clip(_stdscr, 3, 0, "Jon Leithe", _theme.header)
     # --- END OF draw_header -------------------------------------------------------------------------------------------
