@@ -76,3 +76,5 @@ NAVIGATION_KEYS = {curses.KEY_UP,
                    curses.KEY_END,
                    curses.KEY_ENTER,
                    10, 13}
+
+DATEFORMAT = "%Y-%m-%d %H:%M"
