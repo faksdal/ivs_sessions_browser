@@ -77,22 +77,22 @@ FIELD_INDEX                 = {"type": 0,
                                "db": 6,
                                "ops center": 7,
                                "ops": 7,
-                               "correlator": 8,
+                               "corr": 8,
                                "status": 9,
                                "analysis": 10
                                }
 
 HEADERS                     = [("Type", 14),    # 16 in 2022
                                ("Code", 8),
-                               ("Start", 18),
+                               ("Start", 16),
                                ("DOY", 3),
                                ("Dur", 5),
                                ("Stations", 10), # 56 in 2022
-                               ("DB Code", 14),
-                               ("Ops Center", 10),
-                               ("Correlator", 10),
-                               ("Status", 20),
-                               ("Analysis", 10)
+                               ("DB", 4),
+                               ("Ops", 10),
+                               ("Corr", 6),
+                               ("Status", 10),
+                               ("Analys", 10)
                               ]
 HEADER_DICT = dict(HEADERS)
 
