@@ -73,7 +73,12 @@ class SessionsBrowser:
         :return: None
         """
         self.current_filter = ""
-        self.view_rows = self.rows
+        self.view_rows      = self.fs.apply(self.rows,
+                                            _query=self.current_filter,
+                                            _show_removed=self.state.show_removed,
+                                            _sort_key="start",
+                                            _ascending=True,
+                                            )
         self.highlight_tokens = []
         idx = self.fs.index_on_or_after_today(self.view_rows)
         self.state.selected = self.state.offset = idx

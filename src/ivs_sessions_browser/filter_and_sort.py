@@ -178,13 +178,13 @@ class FilterAndSort:
 
 
     def _predicate_stations_removed(self, _expr: str) -> Callable[[Row], bool]:
-        return self._predicate_stations_side(_expr, side = "removed")
+        return self._predicate_stations_side(_expr, _side = "removed")
     # --- END OF _predicate_stations_removed() -------------------------------------------------------------------------
 
 
 
     def _predicate_stations_all(self, _expr: str) -> Callable[[Row], bool]:
-        return self._predicate_stations_side(_expr, side = "all")
+        return self._predicate_stations_side(_expr, _side = "all")
     # --- END OF _predicate_stations_all() -----------------------------------------------------------------------------
 
 

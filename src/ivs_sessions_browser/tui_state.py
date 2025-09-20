@@ -68,7 +68,7 @@ class TUITheme:
         curses.use_default_colors()
         curses.curs_set(0)
 
-        curses.init_pair(1, curses.COLOR_MAGENTA, -1)               # intensives
+        curses.init_pair(1, curses.COLOR_WHITE, -1)               # intensives
         curses.init_pair(2, curses.COLOR_CYAN, -1)                  # header
         curses.init_pair(3, curses.COLOR_BLACK, curses.COLOR_WHITE) # help bar
         curses.init_pair(4, curses.COLOR_GREEN, -1)                 # released
