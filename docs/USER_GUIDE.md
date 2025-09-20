@@ -13,10 +13,12 @@ This TUI fetches IVS session tables for a given year and lets you filter, scroll
 - `code: R1|R4`
 - `status: released`
 - `stations: Nn&Ns`
-- `stations_removed: Ft|Ur`
+- `stations-removed: Ft|Ur`
 - Combined: `code: R1|R4; stations: Nn&Ns`
+- Filters support `stations`, `stations-all`, `stations-active` and `stations-removed`
 
 ## Tips
 - Filters are case-sensitive for stations only.
 - Columns are fixed-width; widen your terminal for best results.
 - Removed stations appear in brackets and are highlighted.
+- Best user experience in dark theme

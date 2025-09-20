@@ -13,7 +13,6 @@ import sys
 import requests
 
 from typing     import Optional, List
-# from datetime   import datetime
 
 
 # --- Project defined
@@ -414,6 +413,7 @@ class SessionsBrowser:
                                        _sort_key        = "start",
                                        _ascending       = True)
         recompute_header_widths(self.view_rows)
+        # compute_headers(self.view_rows)
 
         # --- Update self.state, and jump to today
         self.state.selected = self.state.offset = self.fs.index_on_or_after_today(self.view_rows)
