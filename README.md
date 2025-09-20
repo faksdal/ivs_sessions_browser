@@ -161,10 +161,9 @@ Most usage is interactive (TUI). Command-line flags typically include:
 --year 2025            # which IVS year to fetch
 --scope master|intensive|both
 --stations "Ns|Nn"     # prefilter stations
---sessions "code:R1"   # prefilter non-station fields
 ```
 
-Run with `-h` (help) to see current options.
+Run with `-h/--help` (help) to see current options.
 
 Once inside the TUI:
 - Use arrow keys / PgUp / PgDn / Home / End to navigate
@@ -173,10 +172,10 @@ Once inside the TUI:
 - Press `C` to clear filters
 - Press `R` to show/hide removed stations
 - Press `Enter` to open the selected session in your browser
-- Press `?` or `#!` for inline help
-- Press `q` to quit
+- Press `?` for inline help
+- Press `q/Q` to quit
 
-### Inline help (`#!`)
+### Inline help (`?`)
 
 ```
 Navigation:
@@ -195,7 +194,7 @@ Filtering:
 
 Toggles:
   R                        Show/hide removed stations
-  ? or #!                  Show this help screen
+  ? or                     Show this help screen
 
 Notes:
 - Station names are **case-sensitive**
@@ -220,7 +219,9 @@ Full details:
 Examples:
 - `code:R1|R4` → codes matching R1 **or** R4
 - `stations:Nn&Ns` → requires **both** Nn **and** Ns present
-- `stations_removed:Ft|Ur` → removed stations include Ft **or** Ur
+- `stations-removed:Ag|Kk` → removed stations include Ag **or** Kk
+- `stations-active:Ft|Ur` → removed stations include Ft **or** Ur
+- `stations-all:Ke|Oe` → removed stations include Ke **or** Oe
 
 ---
 
