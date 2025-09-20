@@ -7,7 +7,7 @@
 | PgUp/PgDn    | Page navigation                |
 | Home/End     | Jump top/bottom                |
 | `/`          | Filter prompt                  |
-| **F**        | Clear current filter           |
+| **C**        | Clear current filter           |
 | **T**        | Go to today's date             |
 | `?`          | Help popup                     |
 | Enter        | Open session in browser        |
