@@ -9,16 +9,17 @@ Notes:
 """
 
 # --- Import section ---------------------------------------------------------------------------------------------------
-import curses
+import sys
+import requests
 
 from typing     import Optional, List
-from datetime   import datetime
+# from datetime   import datetime
 
 
 # --- Project defined
 from .draw_tui          import DrawTUI
 from .defs              import BASE_URL, Row, NAVIGATION_KEYS, recompute_header_widths
-from .read_data         import ReadData
+from .read_data         import ReadData, NoSessionsForYearError, DataFetchFailedError
 from .tui_state         import *
 from .filter_and_sort   import FilterAndSort
 # --- END OF Import section --------------------------------------------------------------------------------------------
@@ -377,13 +378,34 @@ class SessionsBrowser:
         :return: None
         """
 
-        # --- The return value from ReadData.fetch_all_urls is a List[Row], containing all the html from web.
-        self.rows = ReadData(self.urls, self.year, self.scope, True, self.stations_filter).fetch_all_urls()
+        try:
+            # --- The return value from ReadData.fetch_all_urls is a List[Row], containing all the html from web.
+            self.rows = ReadData(self.urls, self.year, self.scope, True, self.stations_filter).fetch_all_urls()
+        except NoSessionsForYearError as e:
+            print(f"No sessions found for year {e.year} (scope: {e.scope}).", file=sys.stderr)
+            # Option A: return to shell without starting TUI
+            return
+            # Option B: if you prefer an interactive prompt here, you could
+            # ask for a new year before continuing; but you said “immediately”
+            # and “without rendering an empty list”, so we exit early.
+        except DataFetchFailedError as e:
+            print(e, file = sys.stderr)
+            if e.errors:
+                print("Errors:", file = sys.stderr)
+                for line in e.errors:
+                    print(f"  - {line}", file = sys.stderr)
+            return
+        except requests.RequestException as e:
+            print(f"Network error while fetching sessions: {e}", file = sys.stderr)
+            return
+
+        # If we got here, we have rows — now start curses UI as usual.
+        # ... existing curses setup & draw loop ...
 
         # --- This is the place to recompute HEADER widths
         # --- Compute dynamic column widths once, based on ALL fetched rows
         # --- Set final column widths based on all rows (adds 3 for '[I]' if present)
-        recompute_header_widths(self.rows)
+        # recompute_header_widths(self.rows)
 
         # --- Applying filter and sort to the list
         self.view_rows = self.fs.apply(self.rows,
@@ -391,6 +413,7 @@ class SessionsBrowser:
                                        _show_removed    = self.state.show_removed,
                                        _sort_key        = "start",
                                        _ascending       = True)
+        recompute_header_widths(self.view_rows)
 
         # --- Update self.state, and jump to today
         self.state.selected = self.state.offset = self.fs.index_on_or_after_today(self.view_rows)

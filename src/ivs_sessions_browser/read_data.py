@@ -22,6 +22,33 @@ from .ivs_session_parser import IvsSessionParser
 
 
 
+class SessionNotFoundError(Exception):
+    """Raised when a requested session URL does not exist (HTTP 404)."""
+    pass
+# --- END OF class SessionNotFoundError --------------------------------------------------------------------------------
+
+
+
+class NoSessionsForYearError(Exception):
+    def __init__(self, year: int, scope: str, urls: list[str]):
+        super().__init__(f"No sessions found for year {year} (scope: {scope}).")
+        self.year = year
+        self.scope = scope
+        self.urls = urls
+# --- END OF class NoSessionsForYearError ------------------------------------------------------------------------------
+
+
+
+class DataFetchFailedError(Exception):
+    def __init__(self, year: int, scope: str, errors: list[str]):
+        super().__init__(f"Failed to fetch any data for year {year} (scope: {scope}).")
+        self.year = year
+        self.scope = scope
+        self.errors = errors
+# --- END OF class DataFetchFailedError --------------------------------------------------------------------------------
+
+
+
 class ReadData:
 
     """
@@ -60,11 +87,40 @@ class ReadData:
         :return str:    List containing the downloaded data (BeautifulSoup html)
         """
 
-        html: List[Row] = []
-        for url in self.urls:
-            html.extend(self._fetch_one_url(url))
+        html: List[Row]             = []
+        # rows: List[Row] = []
+        not_found_count             = 0
+        error_messages: list[str]   = []
 
-        return html
+        for url in self.urls:
+            try:
+                html.extend(self._fetch_one_url(url))
+            except SessionNotFoundError as e:
+                not_found_count += 1
+                # Optional: logger.info("No data at %s (404): %s", url, e)
+            except requests.RequestException as e:
+                error_messages.append(f"{url}: {e.__class__.__name__}: {e}")
+                # Optional: logger.warning("Error fetching %s: %s", url, e)
+
+        total = len(self.urls)
+        if html:
+            # We have some data; return it even if there were partial errors.
+            return html
+
+        # No rows at all — decide the cause
+        if not_found_count == total:
+            raise NoSessionsForYearError(self.year, self.scope, self.urls)
+
+        if len(error_messages) == total:
+            raise DataFetchFailedError(self.year, self.scope, error_messages)
+
+        # Mixed case but still zero rows (e.g., 404 + other errors)
+        raise DataFetchFailedError(self.year, self.scope, error_messages or ["Unknown error"])
+
+        # for url in self.urls:
+        #     html.extend(self._fetch_one_url(url))
+
+        # return html
     # this is the end of _fetch_all_urls() -----------------------------------------------------------------------------
 
 
@@ -95,10 +151,18 @@ class ReadData:
 
             return parsed_html
 
-        except requests.RequestException as exc:
-            print(f"Error fetching {_url}: {exc}")
-            print(f"ReadData._fetch_one_url(): Error fetching {_url}: {exc}")
-            return []
+        # except SessionNotFoundError as exc:
+        #     # --- Missing resource is a normal/expected condition for some years/paths.
+        #     print(f"ReadData._fetch_one_url(): No data at {_url} (404): {exc}")
+        #     return []
+        # except requests.RequestException as exc:
+        #     # --- Connection errors, timeouts, other HTTP errors (>=400 except 404 here).
+        #     print(f"ReadData._fetch_one_url(): Error fetching {_url}: {exc}")
+        #     return []
+        except SessionNotFoundError:
+            raise
+        except requests.RequestException:
+            raise
     # this is the end of _fetch_one_url() ------------------------------------------------------------------------------
 
 
@@ -144,13 +208,16 @@ class ReadData:
         cb = _status_cb or (lambda _msg: None)
 
         with requests.get(_url, stream=True, timeout=_timeout, headers={"User-Agent": UA}) as r:
+            # --- Raise for 4xx/5xx; map 404 to domain-specific exception, preserve others.
             try:
-                # raise for 4xx/5xx errors
                 r.raise_for_status()
             except requests.HTTPError as e:
-                # give useful context
-                raise RuntimeError(f"HTTP {r.status_code} {r.reason} for {r.url}") from e
-            # content length, may be missing or non-numeric
+                status = getattr(e.response, "status_code", None)
+                if status == 404:
+                    raise SessionNotFoundError(f"No data found at {r.url}") from e
+                # --- Keep original exception type for everything else.
+                raise
+
             try:
                 total = int(r.headers.get("Content-Length", ""))
             except ValueError:
@@ -174,24 +241,19 @@ class ReadData:
                         cb(f"Downloading… {got} bytes")
                     last_emit = now
 
-            # final progress line
             if total:
                 cb(f"Download complete: {got}/{total} bytes.")
-                # self.logger.info(f"URLHelper._get_text_with_progress(): Download complete: {got}/{total} bytes.")
-                # print a newline after it finishes to clean up user prompt
                 print()
             else:
                 cb(f"Download complete: {got} bytes.")
-                # self.logger.info(f"URLHelper._get_text_with_progress(): Download complete: {got} bytes.")
-                # print a newline after it finishes to clean up user prompt
                 print()
 
-            # Pick a sensible encoding
+            # --- Pick a sensible encoding
             enc = r.encoding or r.apparent_encoding or "utf-8"
             try:
                 return b"".join(chunks).decode(enc, errors="replace")
             except LookupError:
-                # Unknown codec name – fall back to utf-8
+                # --- Unknown codec name – fall back to utf-8
                 return b"".join(chunks).decode("utf-8", errors="replace")
     # --- END OF _get_text_with_progress() -----------------------------------------------------------------------------
 
@@ -218,14 +280,25 @@ class ReadData:
         cb = _status_cb or (lambda _msg: None)
         for attempt in range(_retries + 1):
             try:
-                return self._get_text_with_progress(_url, _status_cb = cb, **_kwargs)
+                return self._get_text_with_progress(_url, _status_cb=cb, **_kwargs)
+            except SessionNotFoundError:
+                # --- Don't retry a missing resource.
+                raise
+            except requests.HTTPError as e:
+                # --- Retry only on 5xx (server-side) errors; bail on other 4xx.
+                status = getattr(e.response, "status_code", None)
+                if status and 500 <= status < 600 and attempt < _retries:
+                    cb(f"Server error {status}. Retrying in {_backoff:.1f}s…")
+                    time.sleep(_backoff)
+                    _backoff *= 2
+                    continue
+                raise
             except (requests.Timeout, requests.ConnectionError) as e:
                 if attempt < _retries:
-                    self.logger.notice(f"URLHelper._get_text_with_progress(): {e.__class__.__name__}: {e}. Retrying in {_backoff:.1f}s…")
                     cb(f"{e.__class__.__name__}: {e}. Retrying in {_backoff:.1f}s…")
                     time.sleep(_backoff)
                     _backoff *= 2
-                else:
-                    raise
+                    continue
+                raise
     # --- END OF _get_text_with_progress_retry() -----------------------------------------------------------------------
 # --- END OF class ReadData --------------------------------------------------------------------------------------------

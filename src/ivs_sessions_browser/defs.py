@@ -127,7 +127,7 @@ def recompute_header_widths(rows: List[Row]) -> None:
     mins   = [w for _, w in HEADERS]
     num    = len(titles)
 
-    # observed content lengths per column
+    # --- Observed content lengths per column
     obs = [0]*num
     any_intensive = False
     for values, _url, meta in rows:
@@ -138,7 +138,7 @@ def recompute_header_widths(rows: List[Row]) -> None:
     name_lens = [len(t) for t in titles]
     widths = [max(mins[i], name_lens[i], obs[i]) for i in range(num)]
 
-    # Add 3 chars for "[I]" if any intensive is present
+    # --- Add some chars for "[I]" if any intensive is present
     type_idx = FIELD_INDEX.get("type", 0)
     if any_intensive:
         widths[type_idx] = max(widths[type_idx], name_lens[type_idx], mins[type_idx]) + 2
@@ -148,38 +148,3 @@ def recompute_header_widths(rows: List[Row]) -> None:
     WIDTHS = widths
     HEADER_LINE = " | ".join([f"{title:<{w}}" for title, w in HEADERS])
 # --- END OF recompute_header_widths() ---------------------------------------------------------------------------------
-# def recompute_header_widths(rows: List[Row]) -> None:
-#     """
-#     Recompute column widths from data+headers+minimums and refresh globals:
-#       - HEADERS (title, width)
-#       - HEADER_DICT
-#       - WIDTHS
-#       - HEADER_LINE
-#     """
-#     global HEADERS, HEADER_DICT, WIDTHS, HEADER_LINE
-#
-#     # 1) Titles and minimums from current HEADERS
-#     titles = [t for t, _ in HEADERS]
-#     mins   = [w for _, w in HEADERS]
-#
-#     # 2) Observed max content length per column
-#     num_cols    = len(titles)
-#     obs         = [0] * num_cols
-#
-#     for r in rows:
-#         vals = r[0]
-#         # guard: some rows may be short if the source table is odd
-#         for i in range(min(num_cols, len(vals))):
-#             obs[i] = max(obs[i], len(vals[i]))
-#
-#     # 3) Also protect header labels themselves
-#     name_lens = [len(t) for t in titles]
-#
-#     # 4) Final widths
-#     new_widths = [max(mins[i], name_lens[i], obs[i]) for i in range(num_cols)]
-#
-#     # 5) Update globals
-#     HEADERS = list(zip(titles, new_widths))
-#     HEADER_DICT = dict(HEADERS)
-#     WIDTHS = new_widths
-#     HEADER_LINE = " | ".join([f"{title:<{w}}" for title, w in HEADERS])
