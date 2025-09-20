@@ -14,7 +14,7 @@ import curses
 from typing import Protocol, Sequence
 
 # --- Project defined
-from .defs      import HEADER_LINE, HELPBAR_TEXT
+from .defs      import HEADER_LINE, WIDTHS, FIELD_INDEX
 from .tui_state import UIState, TUITheme
 # --- END OF Import section --------------------------------------------------------------------------------------------
 
@@ -74,10 +74,6 @@ class DrawTUI():
         :return:        None
         """
 
-        # --- Determine the view height of the current terminal screen
-        # max_y, _    = _stdscr.getmaxyx()
-        # view_height = max(1, max_y - 3)
-
         # --- Normalize state attributes if we're outside view boundaries.
         if _state.selected < _state.offset:
             _state.offset = _state.selected
@@ -103,27 +99,26 @@ class DrawTUI():
                 field_index: int = FIELD_INDEX.get("stations", -1)
                 vals[field_index] = f"{active_only:<{WIDTHS[field_index]}}"
         #
-        #     # --- Construct full lines from parts
-        #     parts       = [f"{val:<{WIDTHS[c]}}" for c, val in enumerate(vals)]
-        #     full_line   = " | ".join(parts)
-        #     y           = i - self.offset + 2
-        #     row_attr    = curses.A_REVERSE if i == self.selected else 0
-        #
-        #     row_color = self._status_color(self.has_colors, vals[FIELD_INDEX.get("status", -1)])
-        #     self._addstr_clip(_stdscr, y, 0, full_line, row_attr | row_color)
-        #
-        #     # [REMOVED] --- Highlight "[...]" only if we are showing removed stations, after the active ones
-        #     # --- This has changed: as a side effect, intensives that are also marked with [], will be
-        #     # --- colored by the same color as removed stations (becasue of the []. This is for convenience; in later
-        #     # --- versions intensives and removed should have separate colors.
-        #     # if self.has_colors and self.show_removed and vals[FIELD_INDEX.get("stations", -1)]:
-        #     if self.has_colors and vals[FIELD_INDEX.get("stations", -1)]:
-        #         lbr = full_line.find("[")
-        #         if lbr != -1:
-        #             rbr = full_line.find("]", lbr + 1)
-        #             if rbr != -1 and rbr > lbr:
-        #                 self._addstr_clip(_stdscr, y, lbr, full_line[lbr:rbr + 1], row_attr | curses.color_pair(1))
-        #
+            # --- Construct full lines from parts
+            parts       = [f"{val:<{WIDTHS[c]}}" for c, val in enumerate(vals)]
+            full_line   = " | ".join(parts)
+            y           = i - _state.offset + 2
+            row_attr    = _theme.reversed if i == _state.selected else 0
+
+            # --- We only color the rows if _state.has_colors are set to True. This is done by checking
+            # --- curses if curses.has_colors() in SessionsBrowser._curses_main()
+            row_color = self._status_color(_state.has_colors, vals[FIELD_INDEX.get("status", -1)], _theme)
+            self._addstr_clip(_stdscr, y, 0, full_line, row_attr | row_color)
+
+            # --- Highlight "[...]" in 'stations' column only if we are showing removed stations, after the active ones
+            if _state.has_colors and vals[FIELD_INDEX.get("stations", -1)]:
+                stations_offset = full_line.find(vals[FIELD_INDEX.get("stations", -1)])
+                lbr = full_line.find("[", stations_offset)
+                if lbr != -1:
+                    rbr = full_line.find("]", lbr + 1)
+                    if rbr != -1 and rbr > lbr:
+                        self._addstr_clip(_stdscr, y, lbr, full_line[lbr:rbr + 1], row_attr | _theme.intensives)
+
         #     # --- Station token highlighting (from stations:* filter)
         #     if vals[FIELD_INDEX.get("stations", -1)] and self.highlight_tokens:
         #         # --- Padded field text as printed
@@ -170,6 +165,33 @@ class DrawTUI():
 
         # self._addstr_clip(_stdscr, 3, 0, "Jon Leithe", _theme.header)
     # --- END OF draw_header -------------------------------------------------------------------------------------------
+
+
+
+    def _status_color(self, _has_colors: bool, _status_text: str, _theme: TUITheme) -> int:
+        """
+        Map status text to a curses color pair.
+        """
+
+        if not _has_colors:
+            return _theme.none
+        st = _status_text.strip().lower()
+        if "released" in st:
+            return _theme.released
+            # return curses.color_pair(4)
+        if any(k in st for k in ("waiting on media", "ready for processing", "cleaning up", "processing session")):
+            return _theme.processing
+            # return curses.color_pair(5)
+
+        # --- Handle both spellings...
+        if "cancelled" in st or "canceled" in st:
+            # return curses.color_pair(6)
+            return _theme.cancelled
+        if st == "":
+            # return curses.color_pair(7)
+            return _theme.none
+        return 0
+    # --- END OF _status_color() ---------------------------------------------------------------------------------------
 
 
 
