@@ -158,9 +158,9 @@ Click ▶️ to run, 🐞 to debug.
 Most usage is interactive (TUI). Command-line flags typically include:
 
 ```
---year 2025            # which IVS year to fetch
---scope master|intensive|both
---stations "Ns|Nn"     # prefilter stations
+--year 2025                    # which IVS year to fetch (1979 onwards)
+--scope master|intensive|both  # select scope
+--stations "Ns|Nn"             # prefilter stations
 ```
 
 Run with `-h/--help` (help) to see current options.
@@ -187,6 +187,11 @@ Navigation:
 Filtering:
   /                        Enter a filter expression
   C                        Clear current filters
+  Enter filters as 'tag:value', all headers are available for filtering.
+  AND and OR are includded as & and | (ampersand and pipe)
+
+  *NOTE: 'stations' are case-sensitive - all else not!*
+
   Examples:
     code:R1|R4             → match sessions with code R1 or R4
     stations:Nn&Ns         → sessions including both Nn and Ns
