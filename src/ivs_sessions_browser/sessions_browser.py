@@ -11,6 +11,7 @@ Notes:
 # --- Import section ---------------------------------------------------------------------------------------------------
 import sys
 import requests
+import webbrowser
 
 from typing     import Optional, List
 
@@ -243,11 +244,11 @@ class SessionsBrowser:
                 self.state.selected = 0;
             case curses.KEY_END:
                 self.state.selected = max(0, len(self.view_rows) - 1)
-            # case 10 | 13 | curses.KEY_ENTER:
-            #     if self.view_rows:
-            #         _, url, _ = self.view_rows[self.state.selected]
-            #         if url:
-            #             webbrowser.open(url)
+            case 10 | 13 | curses.KEY_ENTER:
+                if self.view_rows:
+                    _, url, _ = self.view_rows[self.state.selected]
+                    if url:
+                        webbrowser.open(url)
             case _:
                 pass
     # --- END OF _navigate() -------------------------------------------------------------------------------------------
