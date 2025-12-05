@@ -236,16 +236,16 @@ class ReadData:
                 now = time.monotonic()
                 if now - last_emit >= _min_update_interval:
                     if total:
-                        cb(f"Downloading… {got}/{total} bytes ({got / total * 100:.1f}%)")
+                        cb(f"Downloading from {_url} {got}/{total} bytes ({got / total * 100:.1f}%)")
                     else:
-                        cb(f"Downloading… {got} bytes")
+                        cb(f"Downloading from {_url} {got} bytes")
                     last_emit = now
 
             if total:
-                cb(f"Download complete: {got}/{total} bytes.")
+                cb(f"\nDownload complete: {got}/{total} bytes.")
                 print()
             else:
-                cb(f"Download complete: {got} bytes.")
+                cb(f"\nDownload complete: {got} bytes.")
                 print()
 
             # --- Pick a sensible encoding
