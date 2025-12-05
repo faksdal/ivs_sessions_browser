@@ -20,7 +20,8 @@ from typing import List, Tuple, Optional, Dict, Any
 ARGUMENT_DESCRIPTION = "IVS Sessions TUI Browser"
 
 ARGUMENT_EPILOG =   ("Filters:\n"
-                     "  Clauses separated by ';' are AND.\n"
+                     "  Filter by headers -> stations: Ns|Nn \n"
+                     "  Different filters separated by ';' are AND.\n"
                      "  Non-stations fields: tokens split by space/comma/plus/pipe are OR "
                      "(e.g. code: r1|r4, case-insensitive)\n"
                      "  Stations active: stations: Nn&Ns  or  stations: Nn|Ns (case-sensitive)\n"
@@ -40,7 +41,8 @@ HELP_TEXT = [
             "  Enter : Open session in browser",
             "",
             "Filtering:",
-            "  / : Enter filter (field:value, supports AND/OR)",
+            "  Filter by headers; type, code, start, etc.",
+            "  / : Enter filter (field:value, supports AND/OR (&,|))",
             "  C : Clear filters",
             "  R : Toggle show/hide removed stations",
             "",
