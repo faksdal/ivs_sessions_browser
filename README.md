@@ -54,7 +54,7 @@ ivs_sessions_browser/
 ## Requirements
 
 - Python **3.10+**
-- Linux/macOS terminal with curses support  
+- Linux/macOS terminal with curses support
   Windows users: `pip install windows-curses`
 - Internet access to fetch schedules from ivscc.gsfc.nasa.gov
 
@@ -63,7 +63,7 @@ ivs_sessions_browser/
 ## Installation
 
 ```bash
-git clone https://github.com/faksdal/ivs_sessions_browser.git
+git clone git@github.com:faksdal/ivs_sessions_browser.git
 cd ivs_sessions_browser
 
 python3 -m venv .venv
@@ -186,7 +186,7 @@ Navigation:
 
 Filtering:
   /                        Enter a filter expression
-  C                        Clear current filters  
+  C                        Clear current filters
   R                        Toggle show/hide removed stations
   Examples:
     code:R1|R4             → match sessions with code R1 or R4
@@ -228,23 +228,23 @@ Examples:
 
 ## Troubleshooting
 
-**`ModuleNotFoundError: No module named 'ivs_sessions_browser'`**  
+**`ModuleNotFoundError: No module named 'ivs_sessions_browser'`**
 Use one of:
 - `PYTHONPATH=src python3 scripts/run_sessions_browser.py`
 - `./run_browser` wrapper
 - In PyCharm, add `PYTHONPATH=$PROJECT_DIR$/src`
 
-**Windows: curses import error**  
+**Windows: curses import error**
 Install: `pip install windows-curses`.
 
-**No colors / weird characters**  
+**No colors / weird characters**
 Use a modern terminal with UTF-8 and 256-color support; ensure `$TERM` is e.g. `xterm-256color`.
 
 ---
 
 ## Versioning
 
-This project uses **setuptools-scm**. Version strings are derived from Git tags.  
+This project uses **setuptools-scm**. Version strings are derived from Git tags.
 To cut a release:
 ```bash
 git tag v3.0
