@@ -11,11 +11,12 @@ Notes:
 
 # --- Import section ---------------------------------------------------------------------------------------------------
 import re
-from typing     import List, Optional
+from typing     import List, Optional, Dict
 from bs4        import BeautifulSoup
 
 # --- Project defined
 from .defs      import Row, FIELD_INDEX, HEADERS
+from .operators import load_operators, save_operators
 # --- END OF Import section --------------------------------------------------------------------------------------------
 
 
@@ -26,6 +27,7 @@ class IvsSessionParser:
                  _num_of_headers:   int,
                  _is_intensive:     bool,
                  _stations_filter:  Optional[str] = None,
+                 _operator_map:     Optional[Dict[str, str]] = None,
                  ) -> None:
 
 
@@ -34,6 +36,7 @@ class IvsSessionParser:
         self.num_of_headers     = _num_of_headers
         self.is_intensive       = _is_intensive
         self.stations_filter    = _stations_filter
+        self.operator_map       = _operator_map or {}
 
         # --- declare an empty list to be populated and returned
         self.parsed: List[Row]  = []
@@ -68,7 +71,7 @@ class IvsSessionParser:
 
             # --- This is the cell, or column, containing all the stations, and we want to separate the
             # --- active from the removed.
-            stations_cell = tds[index]
+            stations_cell = tds[index-1]
 
             # --- Two empty lists to hold active vs removed stations.
             active_ids: List[str] = []
@@ -110,19 +113,11 @@ class IvsSessionParser:
                 tds[10].get_text(strip=True),   # Analysis
             ]
 
-        ### FOLLOWING LINES REMOVED DUE TO RE-STRUCTURE HEADERS ###
-            # # Column width for Type (class attribute, so prefix with the class)
-            # TYPE_WIDTH = next(w for title, w in HEADERS if title == "Type")
-            #
-            # # Tag intensives directly in Type column (right-align "[I]" in the Type field)
-            # if self.is_intensive:
-            #     base_width = max(0, TYPE_WIDTH - 3)  # room for "[I]"
-            #     values[0] = f"{values[0]:<{base_width}}[I]"
-            # else:
-            #     values[0] = f"{values[0]:<{TYPE_WIDTH}}"
-            # Keep raw type text; tag intensive in meta so UI can render "[I]" at the right edge
-            # values[0] stays unchanged here
-        ### THEY ARE REPLACED BY THE FOLLOWING ###
+            # --- Add header for "op"
+            session_code = values[FIELD_INDEX["code"]]
+            op = self.operator_map.get(session_code, "")
+            values.insert(0, op)
+
             # Tag intensives directly (no padding here; alignment happens in the renderer)
             if self.is_intensive:
                 # values[0] = f"{values[0]}[I]"
@@ -130,6 +125,8 @@ class IvsSessionParser:
 
             # Session detail URL from Code column if present
             code_link = tds[1].find("a")
+            # session_url = (f"https://ivscc-vcc.org{code_link['href']}"
+            # session_url = (f"https://ivscc.oan.es{code_link['href']}"
             session_url = (f"https://ivscc.gsfc.nasa.gov{code_link['href']}"
                            if code_link and code_link.has_attr("href")
                            else None)

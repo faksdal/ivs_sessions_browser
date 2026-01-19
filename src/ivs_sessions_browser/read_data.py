@@ -13,7 +13,7 @@ import time
 import requests
 
 from bs4    import BeautifulSoup
-from typing import Callable, Optional, List #, Tuple, Dict, Any
+from typing import Callable, Optional, List, Dict #, Tuple, Dict, Any
 
 # --- Project defined
 from .defs                      import Row, HEADERS
@@ -64,7 +64,8 @@ class ReadData:
                  _year:     int,
                  _scope:    str,
                  _feedback: bool = True,
-                 _stations_filter: Optional[str] = None
+                 _stations_filter: Optional[str] = None,
+                 _operator_map: Optional[Dict[str, str]] = None,
                  ) -> None:
 
         self.urls               = _urls
@@ -72,6 +73,7 @@ class ReadData:
         self.scope              = _scope
         self.feedback           = _feedback
         self.stations_filter    = _stations_filter
+        self.operator_map = _operator_map or {}
     # --- END OF __init__() method, or constructor if you like ---------------------------------------------------------
 
 
@@ -138,16 +140,24 @@ class ReadData:
         :return str:    List containing the downloaded and parsed data
         """
 
+        # Let the user know which site we're reading from'
+        print(f"Reading data from {_url}...")
+
         try:
             is_intensive = "/intensive/" in _url
 
             html        = self._get_text_with_progress_retry(_url, _status_cb = self._status_inline)
 
-            parsed_html = IvsSessionParser(BeautifulSoup(html, "html.parser"),
-                                           len(HEADERS),
-                                           is_intensive,
-                                           self.stations_filter).parse()
+            # parsed_html = IvsSessionParser(BeautifulSoup(html, "html.parser"),
+            #                                len(HEADERS),
+            #                                is_intensive,
+            #                                self.stations_filter).parse()
 
+            parsed_html = IvsSessionParser(BeautifulSoup(html, "html.parser"),
+                                           len(HEADERS) - 1,  # <-- Op is local-only, not on the website
+                                           is_intensive,
+                                           self.stations_filter,
+                                           self.operator_map).parse()
 
             return parsed_html
 

@@ -22,6 +22,7 @@ from .defs              import BASE_URL, Row, NAVIGATION_KEYS, recompute_header_
 from .read_data         import ReadData, NoSessionsForYearError, DataFetchFailedError
 from .tui_state         import *
 from .filter_and_sort   import FilterAndSort
+from .operators         import load_operators, save_operators
 # --- END OF Import section --------------------------------------------------------------------------------------------
 
 
@@ -63,6 +64,10 @@ class SessionsBrowser:
         self.current_filter: str = ""
 
         self.fs = FilterAndSort()
+
+
+        self.operators = load_operators()
+
     # --- END OF __init__() --------------------------------------------------------------------------------------------
 
 
@@ -385,7 +390,12 @@ class SessionsBrowser:
 
         try:
             # --- The return value from ReadData.fetch_all_urls is a List[Row], containing all the html from web.
-            self.rows = ReadData(self.urls, self.year, self.scope, True, self.stations_filter).fetch_all_urls()
+            self.rows = ReadData(self.urls,
+                                 self.year,
+                                 self.scope,
+                                 True,
+                                 self.stations_filter,
+                                 self.operators).fetch_all_urls()
         except NoSessionsForYearError as e:
             print(f"No sessions found for year {e.year} (scope: {e.scope}).", file=sys.stderr)
             # Option A: return to shell without starting TUI
@@ -431,5 +441,3 @@ class SessionsBrowser:
     # --- END OF run() -------------------------------------------------------------------------------------------------
 
 # --- END OF class SessionsBrowser -------------------------------------------------------------------------------------
-
-

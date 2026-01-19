@@ -84,7 +84,7 @@ class DrawTUI():
 
         # --- Part of recomputing HEADER widths
         # right = f"row {min(_state.selected + 1, len(_view_rows))}/{len(_view_rows)}"
-        right = f"row {min(_state.selected + 1, len(_view_rows))}/{len(_view_rows)}"
+        right = f"row {min(_state.selected + 1, len(_view_rows))}/{len(_view_rows)}({len(_view_rows) - (min(_state.selected + 1, len(_view_rows)))})"
 
         bar = (help_text + (f" Filter: {_current_filter}" if _current_filter else "") + "  " + right)[
             : max_x - 1]

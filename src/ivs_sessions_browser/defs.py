@@ -60,7 +60,7 @@ HELP_TEXT = [
             "",
             "Hit any key to close this help",
             "",
-            "Well, maybe not ANY key—Ctrl/Shift/Alt usually won’t register ;-)"
+            "Well, maybe not ANY key; Ctrl/Shift/Alt usually don’t work ;-)"
         ]
 
 ARGUMENT_FORMATTER_CLASS = argparse.RawDescriptionHelpFormatter
@@ -68,23 +68,25 @@ ARGUMENT_FORMATTER_CLASS = argparse.RawDescriptionHelpFormatter
 Row         = Tuple[List[str], Optional[str], Dict[str, Any]]
 
 BASE_URL    = "https://ivscc.gsfc.nasa.gov/sessions"
+# BASE_URL    = "https://ivscc-vcc.org/sessions"
 
-FIELD_INDEX                 = {"type": 0,
-                               "code": 1,
-                               "start": 2,
-                               "doy": 3,
-                               "dur": 4,
-                               "stations": 5,
-                               "db code": 6,
-                               "db": 6,
-                               "ops center": 7,
-                               "ops": 7,
-                               "corr": 8,
-                               "status": 9,
-                               "analysis": 10
+
+FIELD_INDEX                 = {"op": 0,
+                               "type": 1,
+                               "code": 2,
+                               "start": 3,
+                               "doy": 4,
+                               "dur": 5,
+                               "stations": 6,
+                               "db": 7,
+                               "ops": 8,
+                               "corr": 9,
+                               "status": 10,
+                               "analysis": 11
                                }
 
-HEADERS                     = [("Type", 14),    # 16 in 2022
+HEADERS                     = [("Op", 5),
+                               ("Type", 14),    # 16 in 2022
                                ("Code", 8),
                                ("Start", 16),
                                ("DOY", 3),
