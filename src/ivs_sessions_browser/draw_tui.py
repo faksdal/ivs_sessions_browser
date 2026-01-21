@@ -12,7 +12,7 @@ Notes:
 import curses
 import textwrap
 
-from typing import List
+from typing import List, Dict, Optional
 
 #from repo.scripts.type_defs import WIDTHS
 # --- Project defined
@@ -69,7 +69,8 @@ class DrawTUI():
                      _view_rows: D.List[D.Row],
                      _current_filter,
                      _theme,
-                     _state
+                     _state,
+                     _operator_bindings: Optional[Dict[str, str]] = None
                      ) -> None:
         """
         Draws up the help at the bottom of the terminal
@@ -80,13 +81,36 @@ class DrawTUI():
 
         max_y, max_x = _stdscr.getmaxyx()
         # help_text = "↑↓-PgUp/PgDn-Home/End:Move Enter:Open /:Filter F:Clear filters ?:Help R:Hide/show removed q/Q:Quit"
+        # help_text = "/:Filter C:Clear filters T: Jump to today R:Hide/show removed ?:Help q/Q:Quit"
         help_text = "/:Filter C:Clear filters T: Jump to today R:Hide/show removed ?:Help q/Q:Quit"
+        # --- Operator bindings (only show configured operators)
+        ops_text = ""
+        if _operator_bindings:
+            parts = []
+            for k in sorted(_operator_bindings.keys(), key=lambda s: int(s) if str(s).isdigit() else 99):
+                v = (_operator_bindings.get(k) or "").strip()
+                if k == "0":
+                    # Show 0 as "clear" if it's mapped to empty (recommended)
+                    if v == "":
+                        parts.append("0:Clr")
+                    else:
+                        parts.append(f"0:{v}")
+                else:
+                    if v:
+                        parts.append(f"{k}:{v}")
+                if parts:
+                    ops_text = "  Op: " + " ".join(parts)
 
         # --- Part of recomputing HEADER widths
         # right = f"row {min(_state.selected + 1, len(_view_rows))}/{len(_view_rows)}"
         right = f"row {min(_state.selected + 1, len(_view_rows))}/{len(_view_rows)}({len(_view_rows) - (min(_state.selected + 1, len(_view_rows)))})"
 
-        bar = (help_text + (f" Filter: {_current_filter}" if _current_filter else "") + "  " + right)[
+        # bar = (help_text + (f" Filter: {_current_filter}" if _current_filter else "") + "  " + right)[
+        bar = (help_text
+               + ops_text
+               + (f" Filter: {_current_filter}" if _current_filter else "")
+               + "  "
+               + right)[
             : max_x - 1]
         bar_attr = _theme.help_bar if _state.has_colors else _theme.reversed
         self._addstr_clip(_stdscr, max_y - 1, 0, bar, bar_attr)

@@ -12,17 +12,21 @@ Notes:
 import sys
 import requests
 import webbrowser
+import shutil
+import subprocess
 
 from typing     import Optional, List
-
+from pathlib    import Path
+from datetime   import datetime
 
 # --- Project defined
+from . import defs as D  # add this import near the top (recommended)
 from .draw_tui          import DrawTUI
-from .defs              import BASE_URL, Row, NAVIGATION_KEYS, recompute_header_widths
+from .defs              import BASE_URL, Row, NAVIGATION_KEYS, recompute_header_widths, FIELD_INDEX, HEADER_LINE, WIDTHS, HEADERS
 from .read_data         import ReadData, NoSessionsForYearError, DataFetchFailedError
 from .tui_state         import *
 from .filter_and_sort   import FilterAndSort
-from .operators         import load_operators, save_operators
+from .operators         import load_operators, save_operators, load_operator_bindings
 # --- END OF Import section --------------------------------------------------------------------------------------------
 
 
@@ -36,6 +40,11 @@ class SessionsBrowser:
         - Display organized data as lines, supporting navigation with keyboard in terminal.
         - Run the loop, catching users input and act appropriately.
     """
+
+    PRINT_COLUMNS = ["op", "type", "code", "start", "doy", "dur", "stations"]
+    PRINT_WIDTH_OVERRIDES = {
+        "stations": 48,  # pick what you like: 60, 80, 120...
+    }
 
     def __init__(self,
                  _year:             int,
@@ -66,9 +75,154 @@ class SessionsBrowser:
         self.fs = FilterAndSort()
 
 
-        self.operators = load_operators()
+        # self.operators = load_operators()
+        self.operator_bindings  = load_operator_bindings()
+        self.operators          = load_operators()
+
+        # --- For debugging
+        # print(self.operators)
+        # exit(0)
 
     # --- END OF __init__() --------------------------------------------------------------------------------------------
+
+
+
+    def _clip(self, s: str, w: int) -> str:
+        """Clip string to width w (no ellipsis; matches screen-like hard clipping)."""
+        s = s or ""
+        return s[:w] if w > 0 else ""
+    # --- END OF _clip() -----------------------------------------------------------------------------------------------
+
+
+
+    # def _print_header_for_columns(self) -> str:
+    #     parts = []
+    #     for col in self.PRINT_COLUMNS:
+    #         i = FIELD_INDEX.get(col, -1)
+    #         if i < 0:
+    #             continue
+    #         name = HEADERS[i]
+    #         w = WIDTHS[i]
+    #         parts.append(f"{name:<{w}}")
+    #     return " | ".join(parts)
+    def _print_header_for_columns(self) -> str:
+        parts = []
+        for col in self.PRINT_COLUMNS:
+            i = FIELD_INDEX.get(col, -1)
+            if i < 0:
+                continue
+
+            h = HEADERS[i]
+            # HEADERS[i] might be ("Op", "op") or similar; take the label part.
+            name = h[0] if isinstance(h, (tuple, list)) else h
+
+            w = self.PRINT_WIDTH_OVERRIDES.get(col, WIDTHS[i])
+            parts.append(f"{str(name):<{int(w)}}")
+        return " | ".join(parts)
+
+    # --- END OF _print_header_for_columns() ---------------------------------------------------------------------------
+
+
+
+    def _format_row_for_print(self, row: Row) -> str:
+        values, _url, meta = row
+        vals = list(values)
+
+        # Match screen behavior: when hiding removed, show only "active" string
+        if not self.state.show_removed:
+            active_only = meta.get("active", "")
+            stations_idx = FIELD_INDEX.get("stations", -1)
+            if 0 <= stations_idx < len(vals):
+                vals[stations_idx] = active_only
+
+        type_idx = FIELD_INDEX.get("type", 0)
+
+        parts = []
+        for col in self.PRINT_COLUMNS:
+            i = FIELD_INDEX.get(col, -1)
+            if i < 0 or i >= len(vals):
+                continue
+
+            # w = WIDTHS[i]
+            w = self.PRINT_WIDTH_OVERRIDES.get(col, WIDTHS[i])
+
+            val = vals[i]
+
+            # Match screen behavior for intensives: reserve 3 chars for "[I]"
+            if i == type_idx and meta.get("intensive"):
+                base_w = max(0, w - 3)
+                left = self._clip(val, base_w)
+                parts.append(f"{left:<{base_w}}[I]")
+            else:
+                clipped = self._clip(val, w)
+                parts.append(f"{clipped:<{w}}")
+
+        return " | ".join(parts)
+    # --- END OF _format_row_for_print() -------------------------------------------------------------------------------
+
+
+
+    def _print_visible_range(self) -> None:
+        if not self.view_rows:
+            return
+
+        start = self.state.offset
+        end = min(len(self.view_rows), self.state.offset + self.state.view_height)
+
+        lines = []
+        # lines.append(HEADER_LINE)
+        # lines.append("-" * len(HEADER_LINE))
+        hdr = self._print_header_for_columns()
+        lines.append(hdr)
+        lines.append("-" * len(hdr))
+
+        for i in range(start, end):
+            lines.append(self._format_row_for_print(self.view_rows[i]))
+
+        # Write to a temp-ish file under ~/.cache so user can reprint/debug
+        cache_dir = Path.home() / ".cache" / "ivs_sessions_browser"
+        cache_dir.mkdir(parents=True, exist_ok=True)
+
+        latest_path = cache_dir / "sessions_range_latest.txt"
+        latest_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+        # Optional: keep history (set to False to disable)
+        keep_history = False
+        if keep_history:
+            ts = datetime.now().strftime("%Y%m%d-%H%M%S")
+            hist_path = cache_dir / f"sessions_range_{ts}.txt"
+            hist_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+            # Keep only the newest N history files
+            keep_n = 5
+            files = sorted(
+                cache_dir.glob("sessions_range_*.txt"),
+                key=lambda p: p.stat().st_mtime,
+                reverse=True,
+            )
+            for old in files[keep_n:]:
+                try:
+                    old.unlink()
+                except OSError:
+                    pass
+
+        # Print the latest file
+        # out_path = latest_path
+
+
+        # ts = datetime.now().strftime("%Y%m%d-%H%M%S")
+        # out_path = cache_dir / f"sessions_range_{ts}.txt"
+        # out_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+        # Send to printer
+        # if shutil.which("lp"):
+        #     subprocess.run(["lp", str(out_path)], check=False)
+        # elif shutil.which("lpr"):
+        #     subprocess.run(["lpr", str(out_path)], check=False)
+        # else:
+            # No print tool available; at least leave the file behind
+            # pass
+    # --- END OF _print_visible_range() --------------------------------------------------------------------------------
 
 
 
@@ -258,7 +412,41 @@ class SessionsBrowser:
                 pass
     # --- END OF _navigate() -------------------------------------------------------------------------------------------
 
+    def _apply_operator_assignment(self, _session_code: str, _operator_label: str) -> None:
+        """
+        Assign (or clear) an operator label for a given session code.
 
+        Updates:
+          - self.operators (persisted mapping)
+          - the rendered row values in both self.rows and self.view_rows
+        """
+
+        session_code = (_session_code or "").strip()
+        if not session_code:
+            return
+
+        op_label = (_operator_label or "").strip()
+
+        # --- Update persistent mapping (in-memory; saving handled by caller)
+        if op_label:
+            self.operators[session_code] = op_label
+        else:
+            # treat empty label as "clear"
+            self.operators.pop(session_code, None)
+
+        code_idx = FIELD_INDEX.get("code", 2)
+        op_idx = FIELD_INDEX.get("op", 0)
+
+        def _update_rows(rows: List[Row]) -> None:
+            for values, _url, _meta in rows:
+                if len(values) > max(code_idx, op_idx) and values[code_idx] == session_code:
+                    # values[op_idx] = op_label
+                    values[op_idx] = f" {op_label}" if op_label else ""
+
+        _update_rows(self.rows)
+        _update_rows(self.view_rows)
+
+    # --- END OF _apply_operator_assignment() -------------------------------------------------------------------------------------------
 
     def _curses_main(self, _stdscr) -> None:
         """
@@ -285,7 +473,7 @@ class SessionsBrowser:
             self.draw.draw_rows(_stdscr, self.view_rows, self.highlight_tokens, self.theme, self.state)
 
             # --- Draw a help-bar at thw bottom of the screen
-            self.draw.draw_helpbar(_stdscr, self.view_rows, self.current_filter, self.theme, self.state)
+            self.draw.draw_helpbar(_stdscr, self.view_rows, self.current_filter, self.theme, self.state, self.operator_bindings)
 
             # --- Parse user input
             key = _stdscr.getch()
@@ -301,6 +489,28 @@ class SessionsBrowser:
                 case key if key in NAVIGATION_KEYS:
                     self._navigate(key, _stdscr)
 
+                # -- Catches keystrokes 0-9, used to assign an operator to a session
+                # --- Operator assignment: digit 0-9
+                # ---  - translate digit -> operator label using operator_bindings
+                # ---  - set session_code -> operator label in self.operators
+                # ---  - persist immediately so it's available on next startup
+                case c if ord('0') <= c <= ord('5'):
+                    if self.view_rows and 0 <= self.state.selected < len(self.view_rows):
+                        digit = chr(c)
+                        operator_label = self.operator_bindings.get(digit, "")
+
+                        values, _, _ = self.view_rows[self.state.selected]
+                        code_idx = FIELD_INDEX.get("code", 2)
+                        session_code = values[code_idx] if len(values) > code_idx else ""
+
+                        if session_code:
+                            self._apply_operator_assignment(session_code, operator_label)
+                            save_operators(self.operators)
+
+                            # Advance selection by one unless we're already on the last row
+                            if self.state.selected < len(self.view_rows) - 1:
+                                self._navigate(curses.KEY_DOWN, _stdscr)
+
                 # --- Jump to today's date (or the next if today is not in list)
                 case c if c == ord('T'):
                     idx = self.fs.index_on_or_after_today(self.view_rows)
@@ -308,7 +518,6 @@ class SessionsBrowser:
                 #
                 # --- Apply user filter
                 case c if c == ord('/'):
-
                     # --- If we have a filter already, prefill prompt with it as a convenience to the user
                     prefill = self.current_filter or ""
 
@@ -347,6 +556,10 @@ class SessionsBrowser:
                 # --- Show help
                 case c if c == (ord('?')):
                     self.draw.show_help(_stdscr, self.theme)
+
+                # --- Print visible range (Ctrl+P)
+                case 16:
+                    self._print_visible_range()
 
                 # --- Quit the script and return to terminal
                 case c if c in (ord('q'), ord('Q')):

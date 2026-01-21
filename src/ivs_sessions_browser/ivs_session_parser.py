@@ -113,10 +113,13 @@ class IvsSessionParser:
                 tds[10].get_text(strip=True),   # Analysis
             ]
 
-            # --- Add header for "op"
-            session_code = values[FIELD_INDEX["code"]]
+            # --- Add header for "op", as well as render from file
+            # session_code = values[FIELD_INDEX["code"]]
+            # values currently has no "Op" column yet, so Code is at index 1 here
+            session_code = values[1]
             op = self.operator_map.get(session_code, "")
-            values.insert(0, op)
+            # values.insert(0, op)
+            values.insert(0, f" {op}" if op else "")
 
             # Tag intensives directly (no padding here; alignment happens in the renderer)
             if self.is_intensive:
