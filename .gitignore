@@ -32,3 +32,23 @@ src/ivs_sessions_browser/_version.py
 
 # Others
 output.txt
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.coverage
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual env
+.venv/
+
+# VS Code (keep the folder, ignore user-local files if you want)
+.vscode/*.log
+
+# OS
+.DS_Store
+

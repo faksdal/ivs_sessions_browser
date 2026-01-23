@@ -9,26 +9,35 @@ Notes:
 """
 
 # --- Import section ---------------------------------------------------------------------------------------------------
-import sys
-import requests
-import webbrowser
 import shutil
 import subprocess
+import sys
+import webbrowser
+from datetime import datetime
+from pathlib import Path
+from typing import List, Optional
 
-from typing     import Optional, List
-from pathlib    import Path
-from datetime   import datetime
+import requests
 
 # --- Project defined
 from . import defs as D  # add this import near the top (recommended)
-from .draw_tui          import DrawTUI
-from .defs              import BASE_URL, Row, NAVIGATION_KEYS, recompute_header_widths, FIELD_INDEX, HEADER_LINE, WIDTHS, HEADERS
-from .read_data         import ReadData, NoSessionsForYearError, DataFetchFailedError
-from .tui_state         import *
-from .filter_and_sort   import FilterAndSort
-from .operators         import load_operators, save_operators, load_operator_bindings
-# --- END OF Import section --------------------------------------------------------------------------------------------
+from .defs import (
+    BASE_URL,
+    FIELD_INDEX,
+    HEADER_LINE,
+    HEADERS,
+    NAVIGATION_KEYS,
+    WIDTHS,
+    Row,
+    recompute_header_widths,
+)
+from .draw_tui import DrawTUI
+from .filter_and_sort import FilterAndSort
+from .operators import load_operator_bindings, load_operators, save_operators
+from .read_data import DataFetchFailedError, NoSessionsForYearError, ReadData
+from .tui_state import *
 
+# --- END OF Import section --------------------------------------------------------------------------------------------
 
 
 class SessionsBrowser:
@@ -46,25 +55,21 @@ class SessionsBrowser:
         "stations": 48,  # pick what you like: 60, 80, 120...
     }
 
-    def __init__(self,
-                 _year:             int,
-                 _scope:            str,
-                 _stations_filter:  Optional[str] = None
-                 ) -> None:
-        self.year               = _year
-        self.scope              = _scope
-        self.stations_filter    = _stations_filter
-        self.state              = UIState()
-        self.theme: TUITheme    = None
-        self.draw: DrawTUI      = DrawTUI()
+    def __init__(self, _year: int, _scope: str, _stations_filter: Optional[str] = None) -> None:
+        self.year = _year
+        self.scope = _scope
+        self.stations_filter = _stations_filter
+        self.state = UIState()
+        self.theme: TUITheme = None
+        self.draw: DrawTUI = DrawTUI()
 
         # --- Create and populate the list of url's we want to download from.
-        self.urls: List[str]    = self._urls_for_scope()
+        self.urls: List[str] = self._urls_for_scope()
 
         # --- self.rows contains all rosw read from web
         # --- self.view_rows contains the filtered list
-        self.rows:      List[Row]   = []    # populated in run()
-        self.view_rows: List[Row]   = []
+        self.rows: List[Row] = []  # populated in run()
+        self.view_rows: List[Row] = []
 
         # --- Tokens to highlight in the stations column when filtering
         self.highlight_tokens: List[str] = []
@@ -74,10 +79,9 @@ class SessionsBrowser:
 
         self.fs = FilterAndSort()
 
-
         # self.operators = load_operators()
-        self.operator_bindings  = load_operator_bindings()
-        self.operators          = load_operators()
+        self.operator_bindings = load_operator_bindings()
+        self.operators = load_operators()
 
         # --- For debugging
         # print(self.operators)
@@ -85,15 +89,12 @@ class SessionsBrowser:
 
     # --- END OF __init__() --------------------------------------------------------------------------------------------
 
-
-
     def _clip(self, s: str, w: int) -> str:
         """Clip string to width w (no ellipsis; matches screen-like hard clipping)."""
         s = s or ""
         return s[:w] if w > 0 else ""
+
     # --- END OF _clip() -----------------------------------------------------------------------------------------------
-
-
 
     # def _print_header_for_columns(self) -> str:
     #     parts = []
@@ -121,8 +122,6 @@ class SessionsBrowser:
         return " | ".join(parts)
 
     # --- END OF _print_header_for_columns() ---------------------------------------------------------------------------
-
-
 
     def _format_row_for_print(self, row: Row) -> str:
         values, _url, meta = row
@@ -158,9 +157,8 @@ class SessionsBrowser:
                 parts.append(f"{clipped:<{w}}")
 
         return " | ".join(parts)
+
     # --- END OF _format_row_for_print() -------------------------------------------------------------------------------
-
-
 
     def _print_visible_range(self) -> None:
         if not self.view_rows:
@@ -209,7 +207,6 @@ class SessionsBrowser:
         # Print the latest file
         # out_path = latest_path
 
-
         # ts = datetime.now().strftime("%Y%m%d-%H%M%S")
         # out_path = cache_dir / f"sessions_range_{ts}.txt"
         # out_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -220,11 +217,10 @@ class SessionsBrowser:
         # elif shutil.which("lpr"):
         #     subprocess.run(["lpr", str(out_path)], check=False)
         # else:
-            # No print tool available; at least leave the file behind
-            # pass
+        # No print tool available; at least leave the file behind
+        # pass
+
     # --- END OF _print_visible_range() --------------------------------------------------------------------------------
-
-
 
     def _clear_filters(self) -> None:
         """
@@ -233,18 +229,18 @@ class SessionsBrowser:
         :return: None
         """
         self.current_filter = ""
-        self.view_rows      = self.fs.apply(self.rows,
-                                            _query=self.current_filter,
-                                            _show_removed=self.state.show_removed,
-                                            _sort_key="start",
-                                            _ascending=True,
-                                            )
+        self.view_rows = self.fs.apply(
+            self.rows,
+            _query=self.current_filter,
+            _show_removed=self.state.show_removed,
+            _sort_key="start",
+            _ascending=True,
+        )
         self.highlight_tokens = []
         idx = self.fs.index_on_or_after_today(self.view_rows)
         self.state.selected = self.state.offset = idx
+
     # --- END OF _clear_filters() --------------------------------------------------------------------------------------
-
-
 
     def _get_input(self, _stdscr, _theme: TUITheme, _prompt: str, _initial: str = "") -> str:
         """
@@ -312,7 +308,7 @@ class SessionsBrowser:
                 text_space = 5
 
             # --- Take the slice of text that should be visible
-            visible_text = text[scroll:scroll + text_space]
+            visible_text = text[scroll : scroll + text_space]
             line = (_prompt + visible_text)[:visible_width]
 
             # --- Clear last line and draw prompt + visible text inverted
@@ -369,9 +365,8 @@ class SessionsBrowser:
         curses.curs_set(0)
         curses.echo()
         return "".join(buffer).strip()
+
     # --- END OF _get_input() ------------------------------------------------------------------------------------------
-
-
 
     def _navigate(self, _key: int, _stdscr) -> None:
         """
@@ -400,7 +395,7 @@ class SessionsBrowser:
                 page = max(1, max_y - 3)
                 self.state.selected = max(self.state.selected - page, 0)
             case curses.KEY_HOME:
-                self.state.selected = 0;
+                self.state.selected = 0
             case curses.KEY_END:
                 self.state.selected = max(0, len(self.view_rows) - 1)
             case 10 | 13 | curses.KEY_ENTER:
@@ -410,6 +405,7 @@ class SessionsBrowser:
                         webbrowser.open(url)
             case _:
                 pass
+
     # --- END OF _navigate() -------------------------------------------------------------------------------------------
 
     def _apply_operator_assignment(self, _session_code: str, _operator_label: str) -> None:
@@ -453,10 +449,10 @@ class SessionsBrowser:
         This constitutes the main loop of the application.
         """
 
-        self.theme              = TUITheme.init_theme() # <- use class, not instance
+        self.theme = TUITheme.init_theme()  # <- use class, not instance
 
         # --- Set global has_colors in TUIState instance
-        self.state.has_colors   = curses.has_colors()
+        self.state.has_colors = curses.has_colors()
 
         # --- Start the main loop
         quit: bool = False
@@ -470,10 +466,19 @@ class SessionsBrowser:
 
             # --- We pass a filtered list to draw_rows. draw_rows stays "dumb", meaning it just prints whatever
             # --- we send it.
-            self.draw.draw_rows(_stdscr, self.view_rows, self.highlight_tokens, self.theme, self.state)
+            self.draw.draw_rows(
+                _stdscr, self.view_rows, self.highlight_tokens, self.theme, self.state
+            )
 
             # --- Draw a help-bar at thw bottom of the screen
-            self.draw.draw_helpbar(_stdscr, self.view_rows, self.current_filter, self.theme, self.state, self.operator_bindings)
+            self.draw.draw_helpbar(
+                _stdscr,
+                self.view_rows,
+                self.current_filter,
+                self.theme,
+                self.state,
+                self.operator_bindings,
+            )
 
             # --- Parse user input
             key = _stdscr.getch()
@@ -494,7 +499,7 @@ class SessionsBrowser:
                 # ---  - translate digit -> operator label using operator_bindings
                 # ---  - set session_code -> operator label in self.operators
                 # ---  - persist immediately so it's available on next startup
-                case c if ord('0') <= c <= ord('5'):
+                case c if ord("0") <= c <= ord("5"):
                     if self.view_rows and 0 <= self.state.selected < len(self.view_rows):
                         digit = chr(c)
                         operator_label = self.operator_bindings.get(digit, "")
@@ -512,25 +517,26 @@ class SessionsBrowser:
                                 self._navigate(curses.KEY_DOWN, _stdscr)
 
                 # --- Jump to today's date (or the next if today is not in list)
-                case c if c == ord('T'):
+                case c if c == ord("T"):
                     idx = self.fs.index_on_or_after_today(self.view_rows)
                     self.state.selected = self.state.offset = idx
                 #
                 # --- Apply user filter
-                case c if c == ord('/'):
+                case c if c == ord("/"):
                     # --- If we have a filter already, prefill prompt with it as a convenience to the user
                     prefill = self.current_filter or ""
 
                     # --- Get new filter from user
-                    new_filter = self._get_input(_stdscr, self.theme, "/ ", _initial = prefill)
+                    new_filter = self._get_input(_stdscr, self.theme, "/ ", _initial=prefill)
 
                     self.current_filter = new_filter
-                    self.view_rows      = self.fs.apply(self.rows,
-                                                        _query           = self.current_filter,
-                                                        _show_removed    = self.state.show_removed,
-                                                        _sort_key        = "start",
-                                                        _ascending       = True,
-                                                        )
+                    self.view_rows = self.fs.apply(
+                        self.rows,
+                        _query=self.current_filter,
+                        _show_removed=self.state.show_removed,
+                        _sort_key="start",
+                        _ascending=True,
+                    )
 
                     # --- Jump to today
                     idx = self.fs.index_on_or_after_today(self.view_rows)
@@ -540,21 +546,22 @@ class SessionsBrowser:
                     self.highlight_tokens = self.fs.extract_station_tokens(self.current_filter)
 
                 # --- Clear active filters
-                case c if c == (ord('C')):
+                case c if c == (ord("C")):
                     self._clear_filters()
 
                 # --- Hide/show removed stations
-                case c if c == (ord('R')):
+                case c if c == (ord("R")):
                     self.state.show_removed = not self.state.show_removed
-                    self.view_rows = self.fs.apply(self.rows,
-                                                   _query           = self.current_filter,
-                                                   _show_removed    = self.state.show_removed,
-                                                   _sort_key        = "start",
-                                                   _ascending       = True)
-
+                    self.view_rows = self.fs.apply(
+                        self.rows,
+                        _query=self.current_filter,
+                        _show_removed=self.state.show_removed,
+                        _sort_key="start",
+                        _ascending=True,
+                    )
 
                 # --- Show help
-                case c if c == (ord('?')):
+                case c if c == (ord("?")):
                     self.draw.show_help(_stdscr, self.theme)
 
                 # --- Print visible range (Ctrl+P)
@@ -562,7 +569,7 @@ class SessionsBrowser:
                     self._print_visible_range()
 
                 # --- Quit the script and return to terminal
-                case c if c in (ord('q'), ord('Q')):
+                case c if c in (ord("q"), ord("Q")):
                     quit = True
 
                 # --- Any other key we'll just pass
@@ -570,9 +577,8 @@ class SessionsBrowser:
                     pass
             # --- END OF match key -------------------------------------------------------------------------------------
         # --- END OF while not quit ------------------------------------------------------------------------------------
+
     # --- END OF _curses_main() ----------------------------------------------------------------------------------------
-
-
 
     def _urls_for_scope(self) -> List[str]:
         """
@@ -583,16 +589,17 @@ class SessionsBrowser:
                             a given year. It defaults to the current year and both master and intensives
         """
 
-        base_url    = BASE_URL
-        year        = str(self.year)
+        base_url = BASE_URL
+        year = str(self.year)
 
-        if self.scope == "master":      return [f"{base_url}/{year}/"]
-        if self.scope == "intensive":   return [f"{base_url}/intensive/{year}/"]
+        if self.scope == "master":
+            return [f"{base_url}/{year}/"]
+        if self.scope == "intensive":
+            return [f"{base_url}/intensive/{year}/"]
 
         return [f"{base_url}/{year}/", f"{base_url}/intensive/{year}/"]
+
     # this is the end of _urls_for_scope() -----------------------------------------------------------------------------
-
-
 
     def run(self) -> None:
         """
@@ -603,12 +610,9 @@ class SessionsBrowser:
 
         try:
             # --- The return value from ReadData.fetch_all_urls is a List[Row], containing all the html from web.
-            self.rows = ReadData(self.urls,
-                                 self.year,
-                                 self.scope,
-                                 True,
-                                 self.stations_filter,
-                                 self.operators).fetch_all_urls()
+            self.rows = ReadData(
+                self.urls, self.year, self.scope, True, self.stations_filter, self.operators
+            ).fetch_all_urls()
         except NoSessionsForYearError as e:
             print(f"No sessions found for year {e.year} (scope: {e.scope}).", file=sys.stderr)
             # Option A: return to shell without starting TUI
@@ -617,14 +621,14 @@ class SessionsBrowser:
             # ask for a new year before continuing; but you said “immediately”
             # and “without rendering an empty list”, so we exit early.
         except DataFetchFailedError as e:
-            print(e, file = sys.stderr)
+            print(e, file=sys.stderr)
             if e.errors:
-                print("Errors:", file = sys.stderr)
+                print("Errors:", file=sys.stderr)
                 for line in e.errors:
-                    print(f"  - {line}", file = sys.stderr)
+                    print(f"  - {line}", file=sys.stderr)
             return
         except requests.RequestException as e:
-            print(f"Network error while fetching sessions: {e}", file = sys.stderr)
+            print(f"Network error while fetching sessions: {e}", file=sys.stderr)
             return
 
         # If we got here, we have rows — now start curses UI as usual.
@@ -636,11 +640,13 @@ class SessionsBrowser:
         # recompute_header_widths(self.rows)
 
         # --- Applying filter and sort to the list
-        self.view_rows = self.fs.apply(self.rows,
-                                       _query           = self.current_filter,
-                                       _show_removed    = self.state.show_removed,
-                                       _sort_key        = "start",
-                                       _ascending       = True)
+        self.view_rows = self.fs.apply(
+            self.rows,
+            _query=self.current_filter,
+            _show_removed=self.state.show_removed,
+            _sort_key="start",
+            _ascending=True,
+        )
         recompute_header_widths(self.view_rows)
         # compute_headers(self.view_rows)
 
@@ -650,7 +656,10 @@ class SessionsBrowser:
         # --- Using curses to call on the main loop, self._curses.main()
         curses.wrapper(self._curses_main)
 
-        exit(1)
+        # exit(1)
+        raise SystemExit(0)  # or: return
+
     # --- END OF run() -------------------------------------------------------------------------------------------------
+
 
 # --- END OF class SessionsBrowser -------------------------------------------------------------------------------------
