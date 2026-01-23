@@ -10,14 +10,18 @@ Notes:
 
 # --- Import section ---------------------------------------------------------------------------------------------------
 from __future__ import annotations
-from datetime import datetime
-from typing import Callable, Dict, Iterable, List, Optional, Tuple, Any
-from .defs import Row, FIELD_INDEX  # row = (values: List[str], url: Optional[str], meta: Dict[str, Any])
 
 import re
+from datetime import datetime
+from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
 
 # --- Project defined
-from .defs import DATEFORMAT
+from .defs import (  # row = (values: List[str], url: Optional[str], meta: Dict[str, Any])
+    DATEFORMAT,
+    FIELD_INDEX,
+    Row,
+)
+
 # --- END OF Import section --------------------------------------------------------------------------------------------
 
 

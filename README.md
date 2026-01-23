@@ -1,4 +1,4 @@
-# IVS Sessions Browser v4 (beta)
+# IVS Sessions Browser v4 (dev)
 
 A terminal-based TUI for browsing [IVS session schedules](https://ivscc.gsfc.nasa.gov/sessions/): master and intensives, with fast filtering, keyboard navigation, and colorized status.
 

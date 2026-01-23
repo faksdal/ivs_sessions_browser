@@ -2,12 +2,14 @@
 
 # --- Import section ---------------------------------------------------------------------------------------------------
 
-from .defs import ARGUMENT_EPILOG, ARGUMENT_DESCRIPTION, ARGUMENT_FORMATTER_CLASS
 import argparse
-from datetime           import datetime
-from .sessions_browser  import SessionsBrowser
-# --- END OF Import section --------------------------------------------------------------------------------------------
+from datetime import datetime
 
+from .defs import ARGUMENT_DESCRIPTION, ARGUMENT_EPILOG, ARGUMENT_FORMATTER_CLASS
+
+# from .sessions_browser import SessionsBrowser
+
+# --- END OF Import section --------------------------------------------------------------------------------------------
 
 
 # --- Version (managed by setuptools-scm)
@@ -15,7 +17,6 @@ try:
     from ._version import version as __version__
 except ImportError:
     __version__ = "0.0.0"
-
 
 
 # --- Main entry point (used by pyproject.toml [project.scripts])
@@ -41,39 +42,40 @@ def main() -> None:
     # ARGUMENT_FORMATTER_CLASS = argparse.RawDescriptionHelpFormatter
 
     # --- Define an argument parser for the user's command line args
-    arg_parser = argparse.ArgumentParser(description=ARGUMENT_DESCRIPTION,
-                                         epilog=ARGUMENT_EPILOG,
-                                         formatter_class=ARGUMENT_FORMATTER_CLASS)
+    arg_parser = argparse.ArgumentParser(
+        description=ARGUMENT_DESCRIPTION,
+        epilog=ARGUMENT_EPILOG,
+        formatter_class=ARGUMENT_FORMATTER_CLASS,
+    )
 
-    arg_parser.add_argument("--year",
-                            type=int,
-                            default=datetime.now().year,
-                            help="Year (default: current year)")
+    arg_parser.add_argument(
+        "--year", type=int, default=datetime.now().year, help="Year (default: current year)"
+    )
 
-    arg_parser.add_argument("--scope",
-                            choices=("master", "intensive", "both"),
-                            default="both",
-                            help="Which schedules to include (default: both)")
-    arg_parser.add_argument("--stations", "--stations-all",
-                            type=str,
-                            help="Initial stations filter")
-    arg_parser.add_argument("--stations-active",
-                            type=str,
-                            help="Initial stations filter")
+    arg_parser.add_argument(
+        "--scope",
+        choices=("master", "intensive", "both"),
+        default="both",
+        help="Which schedules to include (default: both)",
+    )
+    arg_parser.add_argument(
+        "--stations", "--stations-all", type=str, help="Initial stations filter"
+    )
+    arg_parser.add_argument("--stations-active", type=str, help="Initial stations filter")
     # arg_parser.add_argument("--stations",
     #                         choices=("all", "active", "removed"),
     #                         default="all",
     #                         help="Which stations to include (default: all)"
 
-
     args = arg_parser.parse_args()
 
-    sb: SessionsBrowser = SessionsBrowser(_year             = args.year,
-                                          _scope            = args.scope,
-                                          _stations_filter  = args.stations)
-    sb.run()
+    # sb: SessionsBrowser = SessionsBrowser(_year             = args.year,
+    #   _scope            = args.scope,
+    #   _stations_filter  = args.stations)
+    # sb.run()
 
     exit(0)
+
 
 __all__ = [
     "__version__",
@@ -82,5 +84,5 @@ __all__ = [
     "SessionsBrowser",
     "ReadData",
     "IvsSessionParser",
-    "DrawTUI"
+    "DrawTUI",
 ]
