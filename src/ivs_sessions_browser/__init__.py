@@ -1,25 +1,34 @@
 # --- file: __init__.py
 
-# --- Import section ---------------------------------------------------------------------------------------------------
-
+# ──────────────────────────────────────────────────────────────────────────────
+# Import section
+# ──────────────────────────────────────────────────────────────────────────────
 import argparse
 from datetime import datetime
 
+# Project defined imports
 from .defs import ARGUMENT_DESCRIPTION, ARGUMENT_EPILOG, ARGUMENT_FORMATTER_CLASS
+from .sessions_browser import SessionsBrowser
 
 # from .sessions_browser import SessionsBrowser
+# ─── END OF Import section ────────────────────────────────────────────────────
 
-# --- END OF Import section --------------------------------------------------------------------------------------------
 
 
-# --- Version (managed by setuptools-scm)
+# ──────────────────────────────────────────────────────────────────────────────
+# Version (managed by setuptools-scm)
+# ──────────────────────────────────────────────────────────────────────────────
 try:
     from ._version import version as __version__
 except ImportError:
     __version__ = "0.0.0"
+# ─── END OF Version ───────────────────────────────────────────────────────────
 
 
-# --- Main entry point (used by pyproject.toml [project.scripts])
+
+# ──────────────────────────────────────────────────────────────────────────────
+# main(); Main entry point (used by pyproject.toml [project.scripts])
+# ──────────────────────────────────────────────────────────────────────────────
 def main() -> None:
     """
     CLI entry point.
@@ -48,41 +57,113 @@ def main() -> None:
         formatter_class=ARGUMENT_FORMATTER_CLASS,
     )
 
-    arg_parser.add_argument(
-        "--year", type=int, default=datetime.now().year, help="Year (default: current year)"
+    arg_parser.add_argument("--year",
+                            type=int,
+                            default=datetime.now().year,
+                            help="Year (default: current year)"
     )
+    arg_parser.add_argument("--scope",
+                            choices=("master", "intensive", "both"),
+                            default="both",
+                            help="Which schedules to include (default: both)"
+    )
+    arg_parser.add_argument("--filters",
+                            type=str,
+                            help="Initial filters (see help for syntax)")
 
-    arg_parser.add_argument(
-        "--scope",
-        choices=("master", "intensive", "both"),
-        default="both",
-        help="Which schedules to include (default: both)",
-    )
-    arg_parser.add_argument(
-        "--stations", "--stations-all", type=str, help="Initial stations filter"
-    )
-    arg_parser.add_argument("--stations-active", type=str, help="Initial stations filter")
-    # arg_parser.add_argument("--stations",
-    #                         choices=("all", "active", "removed"),
-    #                         default="all",
-    #                         help="Which stations to include (default: all)"
+    arg_parser.add_argument('-o', '--output', metavar='FILE',
+                            help='write textual output to FILE (use - for stdout)')
+    arg_parser.add_argument('--format', choices=('text', 'json', 'csv'),
+                            default='text', help='output format (default: text)')
+    arg_parser.add_argument('-a', '--append', action='store_true',
+                            help='append to output file instead of overwriting')
 
     args = arg_parser.parse_args()
+    # --- Create the SessionsBrowser instance
+    sb: SessionsBrowser = SessionsBrowser(_year     = args.year,
+                                          _scope    = args.scope,
+                                          _filters  = args.filters)
 
-    # sb: SessionsBrowser = SessionsBrowser(_year             = args.year,
-    #   _scope            = args.scope,
-    #   _stations_filter  = args.stations)
-    # sb.run()
+    # If user requested output to file/stdout, produce textual output and exit
+    if args.output:
+        # Only 'text' format implemented for now
+        if args.format != 'text':
+            print(f"Requested format '{args.format}' not implemented; only 'text' is supported.")
+            raise SystemExit(2)
+
+        # Generate textual output
+        lines = sb.render_sessions_list()
+
+        # Write to stdout
+        if args.output == '-':
+            import sys
+            out = sys.stdout
+            for ln in lines:
+                print(ln, file=out)
+            raise SystemExit(0)
+
+        # Write to file: support append vs atomic overwrite
+        import os
+        import tempfile
+
+        if args.append:
+            # append directly
+            try:
+                with open(args.output, 'a', encoding='utf-8') as fh:
+                    for ln in lines:
+                        fh.write(ln + "\n")
+            except OSError as exc:
+                print(f"Failed to write output file: {exc}")
+                raise SystemExit(2) from exc
+        else:
+            # atomic write: write to temp file in same dir then replace
+            target_dir = os.path.dirname(args.output) or '.'
+            tmp_name = None
+            try:
+                with tempfile.NamedTemporaryFile('w', delete=False, dir=target_dir, encoding='utf-8') as tf:  # noqa: E501
+                    tmp_name = tf.name
+                    for ln in lines:
+                        tf.write(ln + "\n")
+                if tmp_name is not None:
+                    os.replace(tmp_name, args.output)
+            except OSError as exc:
+                print(f"Failed to write output file: {exc}")
+                # attempt cleanup
+                try:
+                    if tmp_name and os.path.exists(tmp_name):
+                        os.remove(tmp_name)
+                except Exception:
+                    pass
+                raise SystemExit(2) from exc
+
+        raise SystemExit(0)
+    # ─── END OF textual output logic ──────────────────────────────────────────
+
+
+
+    # No output - start TUI if available
+    attr = getattr(sb, "run", None)
+    if callable(attr):
+        attr()
+    else:
+        print('TUI start not implemented; created SessionsBrowser instance.')
+
+    #if hasattr(sb, 'run'):
+    #    sb.run()    # callable() is also possible to use, for added safety
+    #else:
+    #    print('TUI start not implemented; created SessionsBrowser instance.')
 
     exit(0)
+# ─── END OF main() ────────────────────────────────────────────────────────────
 
 
-__all__ = [
-    "__version__",
-    "main",
-    "UIState",
-    "SessionsBrowser",
-    "ReadData",
-    "IvsSessionParser",
-    "DrawTUI",
-]
+#__all__ = [
+#    "__version__",
+#    "main",
+#    "UIState",
+#    "SessionsBrowser",
+#    "ReadData",
+#    "IvsSessionParser",
+#    "DrawTUI",
+#]
+
