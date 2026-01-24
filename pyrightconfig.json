@@ -1,8 +1,0 @@
-{
-  "include": ["src", "scripts"],
-  "venvPath": ".",
-  "venv": ".venv",
-  "reportMissingImports": true,
-  "pythonVersion": "3.10"
-}
-
