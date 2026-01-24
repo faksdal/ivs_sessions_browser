@@ -31,12 +31,17 @@ from typing import Any, Protocol
 # ──────────────────────────────────────────────────────────────────────────────
 # CLI blurb + help
 # ──────────────────────────────────────────────────────────────────────────────
-ARGUMENT_DESCRIPTION        = "IVS Sessions TUI Browser"
+ARGUMENT_DESCRIPTION        = "IVS Sessions TUI Browser; browse IVS session data in a terminal interface."  # noqa: E501
 ARGUMENT_EPILOG             = ("Filters:\n"
-                               "  Clauses separated by ';' are AND.\n"
-                               "  Non-stations fields: tokens split by space/comma/plus/pipe are OR "
-                               "(e.g. code: r1|r4, case-insensitive)\n"
-                               "  Stations active: stations: Nn&Ns  or  stations: Nn|Ns (case-sensitive)\n")  # noqa: E501
+                               "   ─ Added as key:value pair, several key:value pair are separated by ';'\n"  # noqa: E501
+                               "   ─ Valid keys equals to the column headers (case-sensitive only for stations).\n"  # noqa: E501
+                               "   ─ Non-stations fields: tokens split by space/comma/plus/pipe are OR (e.g. code: r1|r4)\n"  # noqa: E501
+                               "   ─ Stations active: stations: Nn&Ns  or  stations: Nn|Ns\n"  # noqa: E501
+                               "   ─ Filters must be escaped with \" or \'\n"
+                               "   ─ | (pipe) means OR, & (ampersand) means AND\n"
+                               "   Example: --filters \'code: r1|r4; stations: Nn&Ns\'\n\nCLI:\n"  # noqa: E501
+                               )
+
 ARGUMENT_FORMATTER_CLASS    = argparse.RawDescriptionHelpFormatter
 # ─── END OF CLI blurb + help ──────────────────────────────────────────────────
 

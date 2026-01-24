@@ -51,32 +51,33 @@ def main() -> None:
     # ARGUMENT_FORMATTER_CLASS = argparse.RawDescriptionHelpFormatter
 
     # --- Define an argument parser for the user's command line args
-    arg_parser = argparse.ArgumentParser(
-        description=ARGUMENT_DESCRIPTION,
-        epilog=ARGUMENT_EPILOG,
-        formatter_class=ARGUMENT_FORMATTER_CLASS,
-    )
+    arg_parser = argparse.ArgumentParser(description        = ARGUMENT_DESCRIPTION,
+                                         epilog             = ARGUMENT_EPILOG,
+                                         formatter_class    = ARGUMENT_FORMATTER_CLASS)
 
     arg_parser.add_argument("--year",
                             type=int,
                             default=datetime.now().year,
-                            help="Year (default: current year)"
+                            help="Year (yyyy) (default: current year)"
     )
     arg_parser.add_argument("--scope",
                             choices=("master", "intensive", "both"),
                             default="both",
-                            help="Which schedules to include (default: both)"
+                            help="Which schedules to include (master, intensive, both) (default: both)"  # noqa: E501
     )
     arg_parser.add_argument("--filters",
                             type=str,
                             help="Initial filters (see help for syntax)")
 
     arg_parser.add_argument('-o', '--output', metavar='FILE',
-                            help='write textual output to FILE (use - for stdout)')
+                            help='write textual output to FILE (use - for stdout), and exit')
     arg_parser.add_argument('--format', choices=('text', 'json', 'csv'),
                             default='text', help='output format (default: text)')
     arg_parser.add_argument('-a', '--append', action='store_true',
                             help='append to output file instead of overwriting')
+
+    # Provide a standard --version flag exposing package version
+    # arg_parser.add_argument('--version', action='version', version=__version__)
 
     args = arg_parser.parse_args()
     # --- Create the SessionsBrowser instance
@@ -153,7 +154,7 @@ def main() -> None:
     #else:
     #    print('TUI start not implemented; created SessionsBrowser instance.')
 
-    exit(0)
+    raise SystemExit(0)
 # ─── END OF main() ────────────────────────────────────────────────────────────
 
 
