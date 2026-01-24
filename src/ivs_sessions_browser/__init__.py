@@ -39,18 +39,9 @@ def main() -> None:
         * --stations    {[station code: Xx]}, supports |(OR), &(AND), defaults to all stations
     """
 
-    # ARGUMENT_DESCRIPTION = "IVS Sessions TUI Browser"
-    #
-    # ARGUMENT_EPILOG = ("Filters (case-sensitive):\n"
-    #                    "  Clauses separated by ';' are AND.\n"
-    #                    "  Non-stations fields: tokens split by space/comma/plus/pipe are OR (e.g. code: R1|R4)\n"
-    #                    "  Stations active: stations: Nn&Ns  or  stations: Nn|Ns\n"
-    #                    "  Stations removed/any: stations_removed: Ft|Ur   stations_all: Hb|Ht\n"
-    #                    "\nCLI:\n")
-    #
-    # ARGUMENT_FORMATTER_CLASS = argparse.RawDescriptionHelpFormatter
 
-    # --- Define an argument parser for the user's command line args
+
+    # Define an argument parser for the users command line args
     arg_parser = argparse.ArgumentParser(description        = ARGUMENT_DESCRIPTION,
                                          epilog             = ARGUMENT_EPILOG,
                                          formatter_class    = ARGUMENT_FORMATTER_CLASS)
@@ -77,10 +68,11 @@ def main() -> None:
                             help='append to output file instead of overwriting')
 
     # Provide a standard --version flag exposing package version
-    # arg_parser.add_argument('--version', action='version', version=__version__)
+    arg_parser.add_argument('--version', action='version', version=__version__)
 
     args = arg_parser.parse_args()
-    # --- Create the SessionsBrowser instance
+
+    # Define the SessionsBrowser instance
     sb: SessionsBrowser = SessionsBrowser(_year     = args.year,
                                           _scope    = args.scope,
                                           _filters  = args.filters)
@@ -108,7 +100,7 @@ def main() -> None:
         import tempfile
 
         if args.append:
-            # append directly
+            # Append directly
             try:
                 with open(args.output, 'a', encoding='utf-8') as fh:
                     for ln in lines:
@@ -117,7 +109,7 @@ def main() -> None:
                 print(f"Failed to write output file: {exc}")
                 raise SystemExit(2) from exc
         else:
-            # atomic write: write to temp file in same dir then replace
+            # Atomic write: write to temp file in same dir then replace
             target_dir = os.path.dirname(args.output) or '.'
             tmp_name = None
             try:
@@ -129,7 +121,7 @@ def main() -> None:
                     os.replace(tmp_name, args.output)
             except OSError as exc:
                 print(f"Failed to write output file: {exc}")
-                # attempt cleanup
+                # Attempt cleanup
                 try:
                     if tmp_name and os.path.exists(tmp_name):
                         os.remove(tmp_name)
