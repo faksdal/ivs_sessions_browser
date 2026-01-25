@@ -17,7 +17,7 @@ Purpose:
 from __future__ import annotations
 
 import argparse
-from typing import Any, Protocol
+from typing import Any
 
 # from dataclasses import dataclass
 
@@ -45,16 +45,28 @@ ARGUMENT_EPILOG             = ("Filters:\n"
 ARGUMENT_FORMATTER_CLASS    = argparse.RawDescriptionHelpFormatter
 # ─── END OF CLI blurb + help ──────────────────────────────────────────────────
 
+# ──────────────────────────────────────────────────────────────────────────────
+# IVSCC related constants
+# ──────────────────────────────────────────────────────────────────────────────
+IVSCC_BASE_URLS = [
+  "https://ivscc.gsfc.nasa.gov/sessions",   # Primary site
+  "https://ivscc.oan.es/sessions",
+  "https://ivscc-vcc.org/sessions",
+]
+# ─── END OF IVSCC related constants and Protocol ──────────────────────────────
+
 
 
 # Protocol describing the minimal attributes used by render mixins and other
 # components that operate on a SessionsBrowser-like object. Place here so mixins
 # can import a single shared Protocol and avoid repeating definitions.
-class SessionsBrowserLike(Protocol):
-    year:       int
-    scope:      str
-    filters:    str | None
+#class SessionsBrowserLike(Protocol):
+#    year:       int
+#    scope:      str
+#    filters:    str | None
+#    url_list:   list[str]
 # ─── END OF class SessionsBrowserLike() ───────────────────────────────────────
+
 
 
 # Re-export commonly used typing aliases and placeholders so other modules can
