@@ -66,6 +66,8 @@ def main() -> None:
                             default='text', help='output format (default: text)')
     arg_parser.add_argument('-a', '--append', action='store_true',
                             help='append to output file instead of overwriting')
+    arg_parser.add_argument('-m', '--mirrors', action='store_true',
+                            help='check mirror websites for last update; default is use only primary IVSCC site (https://ivscc.gsfc.nasa.gov)')  # noqa: E501
 
     # Provide a standard --version flag exposing package version
     arg_parser.add_argument('--version', action='version', version=__version__)
@@ -75,6 +77,7 @@ def main() -> None:
     # Define the SessionsBrowser instance
     sb: SessionsBrowser = SessionsBrowser(_year     = args.year,
                                           _scope    = args.scope,
+                                          _mirrors  = args.mirrors,
                                           _filters  = args.filters)
 
     # If user requested output to file/stdout, produce textual output and exit
