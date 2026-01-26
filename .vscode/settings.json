@@ -1,0 +1,50 @@
+{
+  // Use the repo venv
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+  // Make 'src' layout import-friendly for analysis/autocomplete
+  "python.analysis.extraPaths": [
+    "${workspaceFolder}/src"
+  ],
+  // Testing
+  "python.testing.pytestEnabled": true,
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestArgs": [
+    "-q"
+  ],
+  // Editor hygiene
+  "files.exclude": {
+    "**/__pycache__": true,
+    "**/*.pyc": true
+  },
+  "search.exclude": {
+    "**/__pycache__": true,
+    "**/*.pyc": true,
+    ".venv": true
+  },
+  // Optional but strongly recommended: format-on-save
+  "editor.formatOnSave": false,
+  "editor.codeActionsOnSave": {
+    "source.organizeImports": "never",
+    "source.fixAll": "never"
+},
+  "editor.tabSize": 4,
+  "editor.insertSpaces": true,
+  "editor.detectIndentation": false,
+  // Show vertical ruler at column 80
+  "editor.rulers": [80],
+  "editor.wordWrap": "off",
+  // Configure the multi-command sequences (requires ryuta46.multi-command extension)
+  "multiCommand.commands": [
+    {
+      "command": "extension.multiCommand.toggleCommentAndDown",
+      "sequence": [
+        "editor.action.commentLine",
+        "cursorDown"
+      ]
+    }
+  ],
+  // Workbench color customizations: dim unused code instead of error color
+  "workbench.colorCustomizations": {
+    "editorUnnecessary.foreground": "#6c757d"
+  }
+}
