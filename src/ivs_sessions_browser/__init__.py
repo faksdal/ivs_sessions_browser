@@ -19,7 +19,7 @@ from .sessions_browser import SessionsBrowser
 # Version (managed by setuptools-scm)
 # ──────────────────────────────────────────────────────────────────────────────
 try:
-    from ._version import version as __version__
+    from .version import version as __version__
 except ImportError:
     __version__ = "0.0.0"
 # ─── END OF Version ───────────────────────────────────────────────────────────
@@ -140,7 +140,7 @@ def main() -> None:
     # No output - start TUI if available
     attr = getattr(sb, "run", None)
     if callable(attr):
-        attr()
+        attr(False)
     else:
         print('TUI start not implemented; created SessionsBrowser instance.')
 
