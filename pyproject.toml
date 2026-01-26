@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools>=45", "wheel"]
+requires = ["setuptools>=45", "wheel", "setuptools-scm>=7"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "ivs_sessions_browser"
-version = "4.0.0"
+dynamic = ["version"]
 description = "A terminal-based TUI for browsing IVS session schedules with fast filtering and keyboard navigation"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -28,3 +28,8 @@ ivs-sessions-browser = "ivs_sessions_browser.__main__:main"
 [tool.setuptools]
 packages = ["ivs_sessions_browser"]
 package-dir = {"" = "src"}
+
+[tool.setuptools_scm]
+write_to = "src/ivs_sessions_browser/version.py"
+version_scheme = "post-release"
+local_scheme = "node-and-date"
