@@ -4,6 +4,7 @@ Author:         jole
 Created:        15.09.2025
 
 Description:    Holds class definitions for SessionBrowser along with attributes and methods.
+Just some random text to increase the size of the description field.
 
 Notes:
 """
@@ -126,8 +127,12 @@ class SessionsBrowser:#(SessionsBrowserRenderMixin,
 
 
 
-    def run(self):
-        """Placeholder run method provided by the mixin."""
+    def run(self, _text: bool = True) -> None:
+        """
+        Placeholder run method provided by the mixin.
+        """
+        print(f"{_text}")
+        
     # ─── END OF run() ─────────────────────────────────────────────────────────
 
 # ─── END OF class SessionsBrowser ─────────────────────────────────────────────
