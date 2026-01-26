@@ -43,23 +43,19 @@ class SessionsBrowser:
         # Build the candidate URL list for the requested scope/mirrors
         self.url_list = self._urls_for_scope(_mirrors)
 
-        #for url in self.url_list:
-        #    print(f"url: {url}")
-
-        # Container for fetched HTML (url -> html string) and parsed rows.
-        # `FetchSessions.fetch_urls_html()` is responsible for probing mirrors
-        # and returning the most-recent master/intensive pages when possible.
-        #self.url_meta: dict[str, dict] = {}
-        #self.html_map: dict[str, str] = {}
-
         # The raw HTML data fetched from the URL, in case of mirrors, the most recent
         # one is stored here.
         self.html_data: list[str] = []
 
         fs: FetchSessions = FetchSessions()
 
+        # self.html_data contains the fetched HTML data for both master and intensive schedules
         self.html_data = fs.fetch_urls_html(self.url_list)
+
         print(f"Fetched HTML data for {BeautifulSoup(''.join(self.html_data), 'html.parser')} URLs.")  # noqa: E501
+
+        # Next step is to organize and render the session data, applying filters if any.
+
     # ─── END OF __init__() ────────────────────────────────────────────────────
 
 
@@ -84,9 +80,9 @@ class SessionsBrowser:
 
         if not _mirrors:
             base_url_list = [base_url_list[0]]
-            print("Using only primary IVSCC site for session data.")
+            print("Using only primary IVSCC site for session data (https://ivscc.gsfc.nasa.gov)")
         else:
-            print("Using most recent of primary and mirror IVSCC sites for session data.")
+            print("Using most recent session data from primary and mirror IVSCC sites")
 
         if self.scope == "master":
             for base_url in base_url_list:

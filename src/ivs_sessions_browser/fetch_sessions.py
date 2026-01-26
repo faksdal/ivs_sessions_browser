@@ -2,19 +2,16 @@
 # ──────────────────────────────────────────────────────────────────────────────
 # Import section
 # ──────────────────────────────────────────────────────────────────────────────
-#from urllib import response
+
 import os                                       # noqa: I001
-# from urllib import response
-# import urllib.request
+
 import certifi
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
-#from .defs import IVSCC_BASE_URLS
 
-# from datetime import datetime, timezone
 from datetime import datetime
-# from email.utils import parsedate_to_datetime
+
 from bs4 import BeautifulSoup
 from dateutil import parser as dparser
 import importlib.resources as pkg_resources
@@ -25,11 +22,12 @@ from .ivstypes import PageData
 
 class FetchSessions:
     """
-    Docstring for FetchSessions
+    class FetchSessions defiend in fetch_sessions.py.
 
-    :var mapping: Description
-    :var implementation: Description
-    :vartype implementation: it
+    Methods:
+        * fetch_urls_html(); Fetch HTML content for a list of URLs, comparing last-modified times to
+          return the most recent content for master and intensive schedules.
+
     """
 
 
@@ -79,9 +77,6 @@ class FetchSessions:
         page_master     = self._find_most_recent_page(urls_master, _timeout)
         page_intensive  = self._find_most_recent_page(urls_intensive, _timeout)
 
-
-        # 3.
-        # 4.
         return [page_master.html + page_intensive.html]
     # ─── END OF fetch_urls_html() ─────────────────────────────────────────────
 
@@ -233,7 +228,7 @@ class FetchSessions:
         # Returns a mapping: { url: { 'last_modified': datetime|None, 'etag': str|None } }
         # """
 #
-        meta: list[tuple[str, datetime]] = []
+        # meta: list[tuple[str, datetime]] = []
         # for u in urls:
             # print(f"Please wait, fetching metadata for URL: {u}")
             # lm = self.fetch_last_modified(u)
@@ -282,63 +277,63 @@ class FetchSessions:
 
 
 
-    def fetch_last_modified(self, url: str, timeout: int = 10) -> datetime | None:
-        """
-        Perform a HEAD request (fallback to GET) and return (Last-Modified, ETag).
+    # def fetch_last_modified(self, url: str, timeout: int = 10) -> datetime | None:
+        # """
+        # Perform a HEAD request (fallback to GET) and return (Last-Modified, ETag).
+#
+        # Returns two values which may be None if the server doesn't provide the
+        # corresponding headers.
+        # """
 
-        Returns two values which may be None if the server doesn't provide the
-        corresponding headers.
-        """
+        # ca_bundle   = self._get_ca_bundle_path()
+        # sess        = self._make_session()
+        # lm          = None
 
-        ca_bundle   = self._get_ca_bundle_path()
-        sess        = self._make_session()
-        lm          = None
+        # try:
+            # resp = sess.get(url, timeout=timeout, allow_redirects=True, verify=True)
 
-        try:
-            resp = sess.get(url, timeout=timeout, allow_redirects=True, verify=True)
+            # resp.raise_for_status()
 
-            resp.raise_for_status()
+            # soup = BeautifulSoup(resp.text, "html.parser")
+            # t = soup.find("time")
+            # if t and t.has_attr("datetime"):
+                # last_modified_string = str(t.get("datetime", "")).strip()
+                # try:
+                    # lm = dparser.parse(last_modified_string)
+                # except Exception:
+                    # lm = None
+            # else:
+                # lm = None
 
-            soup = BeautifulSoup(resp.text, "html.parser")
-            t = soup.find("time")
-            if t and t.has_attr("datetime"):
-                last_modified_string = str(t.get("datetime", "")).strip()
-                try:
-                    lm = dparser.parse(last_modified_string)
-                except Exception:
-                    lm = None
-            else:
-                lm = None
+            # return lm
 
-            return lm
-
-        except requests.exceptions.SSLError:
+        # except requests.exceptions.SSLError:
             # SSL issues: if this relates to ivscc.oan.es, try again with our CA bundle
             # Otherwise, just give up and return None
-            print(f"SSL error fetching URL: {url}")
-            print("Trying again with verify= ca_bundle")
+            # print(f"SSL error fetching URL: {url}")
+            # print("Trying again with verify= ca_bundle")
 
-            if "ivscc.oan.es" in url:
-                resp = sess.get(url, timeout=timeout, allow_redirects=True, verify=ca_bundle)
-
-                soup = BeautifulSoup(resp.text, "html.parser")
-                t = soup.find("time")
-                if t and t.has_attr("datetime"):
-                    last_modified_string = str(t.get("datetime", "")).strip()
-                    try:
-                        lm = dparser.parse(last_modified_string)
-                    except Exception:
-                        lm = None
-                else:
-                    lm = None
-            else:
-                lm = None
-
-            return lm
-
-        except requests.exceptions.RequestException:
-            print(f"Error fetching URL: {url}")
-            return (None)
+            # if "ivscc.oan.es" in url:
+                # resp = sess.get(url, timeout=timeout, allow_redirects=True, verify=ca_bundle)
+#
+                # soup = BeautifulSoup(resp.text, "html.parser")
+                # t = soup.find("time")
+                # if t and t.has_attr("datetime"):
+                    # last_modified_string = str(t.get("datetime", "")).strip()
+                    # try:
+                        # lm = dparser.parse(last_modified_string)
+                    # except Exception:
+                        # lm = None
+                # else:
+                    # lm = None
+            # else:
+                # lm = None
+#
+            # return lm
+#
+        # except requests.exceptions.RequestException:
+            # print(f"Error fetching URL: {url}")
+            # return (None)
     # ─── END OF fetch_last_modified() ─────────────────────────────────────────
 
 
