@@ -36,7 +36,7 @@
   // Configure the multi-command sequences (requires ryuta46.multi-command extension)
   "multiCommand.commands": [
     {
-      "command": "extension.multiCommand.toggleCommentAndDown",
+      "command": "multiCommand.commentAndNextLine",
       "sequence": [
         "editor.action.commentLine",
         "cursorDown"

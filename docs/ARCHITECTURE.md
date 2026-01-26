@@ -5,12 +5,18 @@
 - Scope: current minimal implementation that fetches session pages, chooses freshest master/intensive URLs, and prints a text summary.
 
 ## High-level flow
-1) User runs `run_browser` or `python -m ivs_sessions_browser`.
-2) `__main__.py` calls `ivs_sessions_browser.main()`.
-3) `main()` (argument parsing) builds the CLI parser, adds `--year`, `--scope`, `--filters`, `--mirrors`, output options, and `--version`, then parses args.
-4) `SessionsBrowser` is constructed with parsed args and computes the URL list for the chosen scope and mirrors.
-5) `FetchSessions` retrieves metadata for those URLs, picks the most recently updated master and intensive pages, then fetches their HTML.
-6) `SessionsBrowser.render_sessions_list()` produces text lines (placeholder for now) and either prints or writes them based on CLI options.
+1. User runs `run_browser` or `python -m ivs_sessions_browser`.
+2. `__main__.py` calls `ivs_sessions_browser.main()`.
+3. `main()` (argument parsing) builds the CLI parser, adds `--year`, `--scope`, `--filters`, `--mirrors`, output options, and `--version`, then parses args.
+4. `SessionsBrowser` is constructed with parsed args and computes the URL list for the chosen scope and mirrors.
+5. `FetchSessions` retrieves metadata for those URLs, picks the most recently updated master and intensive pages, then fetches their HTML.
+6. `SessionsBrowser.render_sessions_list()` produces text lines (placeholder for now) and either prints or writes them based on CLI options.
+
+## Detailed flow
+- CLI arguments are being processed in `__init__.py`.
+- SessionsBrowser object are created in `__init__.py` as `sb`. This calls upon SessionsBrowser's `__init__()` method.
+    This initializes the local attributes: `year`, `scope`, `mirrors` and `filters`.
+    `SessionsBrowser:__init__()` continues to call `_fetch_session_data(_mirrors)`.
 
 ## Entry points
 - Shell wrapper: `run_browser` in project root sets `PYTHONPATH=src` and execs `.venv/bin/python3 scripts/run_sessions_browser.py`.

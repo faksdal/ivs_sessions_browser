@@ -12,18 +12,18 @@ Notes:
 # ──────────────────────────────────────────────────────────────────────────────
 # Import section
 # ──────────────────────────────────────────────────────────────────────────────
-from __future__ import annotations  # noqa: I001
+from __future__ import annotations
+
+from bs4 import BeautifulSoup  # noqa: I001
 
 from .defs import IVSCC_BASE_URLS
 from .fetch_sessions import FetchSessions
+
 # ─── END OF Import section ────────────────────────────────────────────────────
 
 
 
-class SessionsBrowser:#(SessionsBrowserRenderMixin,
-                      #SessionsBrowserRunMixin,
-                      #SessionsBrowserUrlsForScopeMixin,
-                      #)
+class SessionsBrowser:
 
     """
     Class representing the IVS Sessions Browser.
@@ -40,29 +40,27 @@ class SessionsBrowser:#(SessionsBrowserRenderMixin,
         self.filters    = _filters
 
 
+        # Build the candidate URL list for the requested scope/mirrors
         self.url_list = self._urls_for_scope(_mirrors)
 
-        # Fetch URLs metadata
-        self.url_meta: dict[str, dict] = {}
-        self.html_map: dict[str, dict] = {}
-        fs : FetchSessions = FetchSessions()
+        #for url in self.url_list:
+        #    print(f"url: {url}")
 
-        try:
-            #self.url_meta.update(fs.fetch_urls_metadata(self.url_list))
-            html_map = fs.fetch_urls_html(self.url_list)
-            print("Fetched HTML content for URLs:")
-            for url, html in html_map.items():
-                print(f"--- URL: {url} ---")
-                print(html[:200] + "...\n")  # Print first 200 characters as a sample
+        # Container for fetched HTML (url -> html string) and parsed rows.
+        # `FetchSessions.fetch_urls_html()` is responsible for probing mirrors
+        # and returning the most-recent master/intensive pages when possible.
+        #self.url_meta: dict[str, dict] = {}
+        #self.html_map: dict[str, str] = {}
 
-            return
+        # The raw HTML data fetched from the URL, in case of mirrors, the most recent
+        # one is stored here.
+        self.html_data: list[str] = []
 
-        except Exception:
-            # Keep startup robust: if metadata fetching fails, fall back to
-            # printing URLs for debugging and continue.
-            for url in self.url_list:
-                print(f"FAILED TO READ URL: {url}")
-    # ─── END OF __init__ ──────────────────────────────────────────────────────
+        fs: FetchSessions = FetchSessions()
+
+        self.html_data = fs.fetch_urls_html(self.url_list)
+        print(f"Fetched HTML data for {BeautifulSoup(''.join(self.html_data), 'html.parser')} URLs.")  # noqa: E501
+    # ─── END OF __init__() ────────────────────────────────────────────────────
 
 
 
@@ -132,7 +130,7 @@ class SessionsBrowser:#(SessionsBrowserRenderMixin,
         Placeholder run method provided by the mixin.
         """
         print(f"{_text}")
-        
+
     # ─── END OF run() ─────────────────────────────────────────────────────────
 
 # ─── END OF class SessionsBrowser ─────────────────────────────────────────────

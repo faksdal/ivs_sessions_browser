@@ -1,0 +1,8 @@
+[
+  {
+    "key": "ctrl+numpad_divide",
+    "command": "multiCommand.commentAndNextLine",
+    "when": "editorTextFocus && !editorReadonly"
+  }
+]
+

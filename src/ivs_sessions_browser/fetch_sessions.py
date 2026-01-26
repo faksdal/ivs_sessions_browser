@@ -10,6 +10,7 @@ import certifi
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
+#from .defs import IVSCC_BASE_URLS
 
 # from datetime import datetime, timezone
 from datetime import datetime
@@ -17,6 +18,7 @@ from datetime import datetime
 from bs4 import BeautifulSoup
 from dateutil import parser as dparser
 import importlib.resources as pkg_resources
+from .ivstypes import PageData
 # ─── END OF Import section ────────────────────────────────────────────────────
 
 
@@ -33,116 +35,214 @@ class FetchSessions:
 
 
     def __init__(self) -> None:
+        pass
         # Cache mapping: url -> { 'last_modified': datetime|None, 'etag': str|None }
         # Initialized here so other methods can rely on its presence.
-        self.url_meta: dict[str, dict] = {}
+        # self.url_meta: dict[str, dict] = {}
     # ─── END OF __init__() ────────────────────────────────────────────────────
 
 
 
-    def fetch_urls_html(self, _urls: list[str], _timeout: int = 30) -> dict[str, str]:
+    def fetch_urls_html(self, _urls: list[str], _timeout: int = 30) -> list[str]:
         """
-        Fetch HTML content for a list of URLs.
+        Defined in fetch_sessions.py.
 
-        Returns a mapping: { url: html_content }
-        """
-        url_list = _urls
+        Fetch HTML content for a list of URLs, comapring last-modified times to
+        return the most recent content for master and intensive schedules.
 
-        self.url_meta: dict[str, dict] = {}
-        self.url_meta.update(self.fetch_urls_metadata(url_list))
+        Returns a list[str]: The downloaded HTML content for each URL in the same order as the input list.
+        """  # noqa: E501
 
-        # Here goes code to sort URLs by last modified date
-        # Modifying the url_list, deleting the older ones
-        # First need to differentiate between master and intensive schedules
-        self.meta_master:       dict[str, datetime] = {}
-        self.meta_intensive:    dict[str, datetime] = {}
-        self.last_master:       str = ""
-        self.last_intensive:    str = ""
+        # 1. Split URLs into master and intensive
+        urls_master, urls_intensive = self._split_urls(_urls)
 
-        self.last_mod_master             = None
-        self.last_mod_intensive          = None
-        self.most_recent_mod_master      = None
-        self.most_recent_mod_intensive   = None
+        # for url in urls_master:
+            # print(f"Master URL: {url}")
+        # for url in urls_intensive:
+            # print(f"Intensive URL: {url}")
 
-        for m in self.url_meta.items():
-            url         = m[0]
+        # 2. Fetch data from urls, comparing timestamps to pick most recent
+        #   for each url in master
+        #       check that we can read data (that the site exists)
+        #       if we can't read, check if it's ivscc.oan.es; they need our CA bundle
+        #       store the html data and last modified time, and compare to previous best
+        #   repeat for each url in intensive
+        #   return the most recent master and intensive html data
+        # most_recent_html_data_master    : list[str] = []
+        # most_recent_html_data_intensive : list[str] = []
+        # last_read_html_data_master      : list[str] = []
+        # last_read_html_data_intensive   : list[str] = []
 
-            if "intensive" not in url:  # master schedule
-                #self.meta_master[url] = last_mod
-                self.last_mod_master = m[1].get('last_modified')
+        page_master     = PageData(html = "", last_modified = None)
+        page_intensive  = PageData(html = "", last_modified = None)
 
-                if self.most_recent_mod_master is None or self.most_recent_mod_master < self.last_mod_master:  # noqa: E501
-                    self.most_recent_mod_master = self.last_mod_master
-                    self.most_recent_url_master = url
-
-            elif "intensive" in url:    # intensive schedule
-                #self.meta_intensive[url] = last_mod
-                self.last_mod_intensive = m[1].get('last_modified')
-
-                if self.most_recent_mod_intensive is None or self.most_recent_mod_intensive < self.last_mod_intensive:  # noqa: E501
-                    self.most_recent_mod_intensive = self.last_mod_intensive
-                    self.most_recent_url_intensive = url
-
-        html_map: dict[str, str] = {}
-        ca_bundle   = self._get_ca_bundle_path()
-        sess        = self._make_session()
-
-        url_list.clear()
-        url_list.append(self.most_recent_url_master)
-        url_list.append(self.most_recent_url_intensive)
-        print(url_list)
+        page_master     = self._find_most_recent_page(urls_master, _timeout)
+        page_intensive  = self._find_most_recent_page(urls_intensive, _timeout)
 
 
-        for u in url_list:
-            print(f"Please wait, fetching HTML for URL: {u}")
-
-            try:
-                resp = sess.get(u, timeout=_timeout, allow_redirects=True, verify=True)
-
-                resp.raise_for_status()
-
-                html_map[u] = resp.text
-
-            except requests.exceptions.SSLError:
-                    # SSL issues: if this relates to ivscc.oan.es, try again with our CA bundle
-                    # Otherwise, just give up and return None
-                    print(f"SSL error fetching URL: {u}")
-                    print("Trying again with verify= ca_bundle")
-
-                    if "ivscc.oan.es" in u:
-                        resp = sess.get(u, timeout=_timeout, allow_redirects=True, verify=ca_bundle)
-                        html_map[u] = resp.text
-                    else:
-                        html_map[u] = ""
-
-            except requests.exceptions.RequestException:
-                print(f"Error fetching URL: {u}")
-                html_map[u] = ""
-
-        return html_map
-
+        # 3.
+        # 4.
+        return [page_master.html + page_intensive.html]
     # ─── END OF fetch_urls_html() ─────────────────────────────────────────────
 
 
 
-    def fetch_urls_metadata(self, urls: list[str]) -> dict[str, dict]:
+    def _find_most_recent_page(self, _urls: list[str], _timeout: int) -> PageData:
+
+        page_data = PageData(html = "", last_modified = None)
+
+        for url in _urls:
+            # print(f"Please wait, fetching HTML content for URL: {url}")
+
+            # Initialize variables
+            html    = ""
+            lm      = None
+
+            # Fetch HTML content and last modified time
+            html = self._fetch_one_url_html(url, _timeout = _timeout)
+            if html:
+                lm = self._fetch_latest_update_from_html(html)
+
+            # print(f"Last modified: {lm} - fetched HTML content from URL: {url}")
+            # Compare last modified time to pick most recent
+            if page_data.last_modified is None or (lm is not None and lm > page_data.last_modified):  # noqa: E501
+                page_data.html = html
+                page_data.last_modified = lm
+                page_data.url = url
+
+            # print(f"Most recent last modified so far: {page_data.last_modified} from URL: {page_data.url}")  # noqa: E501
+
+        return page_data
+    # ─── END OF _find_most_recent_page() ──────────────────────────────────────
+
+
+
+    def _fetch_latest_update_from_html(self, html: str) -> datetime | None:
         """
-        Fetch metadata for a list of URLs. What we're interested in are
-        Last-Modified and ETag headers.
+        Docstring for _fetch_latest_update_from_html
 
-        Returns a mapping: { url: { 'last_modified': datetime|None, 'etag': str|None } }
+        :param self: Description
+        :param html: Description
+        :type html: str
+        :return: Description
+        :rtype: datetime | None
         """
 
-        # meta: list[tuple[str, datetime]] = []
-        for u in urls:
-            print(f"Please wait, fetching metadata for URL: {u}")
-            lm = self.fetch_last_modified(u)
-            self.url_meta[u] = {'url': u, 'last_modified': lm}
+        try:
+            soup = BeautifulSoup(html, "html.parser")
+            t = soup.find("time")
+            if t and t.has_attr("datetime"):
+                last_modified_string = str(t.get("datetime", "")).strip()
+                try:
+                    lm = dparser.parse(last_modified_string)
+                    return lm
+                except Exception:
+                    return None
+            else:
+                return None
 
-        for m in self.url_meta.items():
-                print(f"Last modified: {m[1].get('last_modified')} -> url: {m[0]}")
+        except Exception:
+            return None
+    # ─── END OF _fetch_latest_update_from_html() ──────────────────────────────
 
-        return self.url_meta
+
+
+    def _fetch_one_url_html(self, _url: str, _timeout: int = 30) -> str:
+        """
+        Docstring for _fetch_one_url_html
+
+        :param self: Description
+        :param _url: Description
+        :type _url: str
+        :param _timeout: Description
+        :type _timeout: int
+        :return: Description
+        :rtype: str
+        """
+
+        ca_bundle   = self._get_ca_bundle_path()
+        sessions    = self._make_session()
+
+        try:
+            resp = sessions.get(_url, timeout=_timeout, allow_redirects=True, verify=True)
+
+            resp.raise_for_status()
+
+            return resp.text
+
+        except requests.exceptions.SSLError:
+            # SSL issues: try with packaged CA bundle only for known host, otherwise
+            # treat as non-fatal and return empty content so caller can continue.
+            print(f"SSL error fetching URL: {_url}")
+            if "ivscc.oan.es" in _url:
+                try:
+                    resp = sessions.get(_url, timeout=_timeout, allow_redirects=True, verify=ca_bundle)  # noqa: E501
+                    resp.raise_for_status()
+                    return resp.text
+                except requests.exceptions.RequestException as e:
+                    print(f"Retry with CA bundle failed: {_url} - {e}")
+                    return ""
+            else:
+                return ""
+
+        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
+            # Network-level failures: DNS failures, connection refused, timeouts
+            print(f"Network error fetching URL: {_url} - {e}")
+            return ""
+
+        except requests.exceptions.RequestException as e:
+            # HTTP errors (4xx/5xx) and other request exceptions
+            print(f"Error fetching URL: {_url} - {e}")
+            return ""
+
+    # ─── END OF _fetch_one_url_html() ─────────────────────────────────────────
+
+
+
+    def _split_urls(self, _urls: list[str]) -> tuple[list[str], list[str]]:
+        """
+        Defined in fetch_sessions.py.
+
+        Split a list of URLs into master and intensive lists.
+
+        :param _urls: List of urls to split between master and intensive
+        :type _urls: list[str]
+        :return: Returns a tuple: (urls_master, urls_intensive)
+        :rtype: tuple[list[str], list[str]]
+        """
+
+        urls_master     : list[str]  = []
+        urls_intensive  : list[str]  = []
+
+        for u in _urls:
+            if "intensive" not in u:
+                urls_master.append(u)
+            elif "intensive" in u:
+                urls_intensive.append(u)
+
+        return (urls_master, urls_intensive)
+    # ─── END OF _split_urls() ─────────────────────────────────────────────────
+
+
+
+    # def fetch_urls_metadata(self, urls: list[str]) -> dict[str, dict]:
+        # """
+        # Fetch metadata for a list of URLs. What we're interested in are
+        # Last-Modified and ETag headers.
+#
+        # Returns a mapping: { url: { 'last_modified': datetime|None, 'etag': str|None } }
+        # """
+#
+        meta: list[tuple[str, datetime]] = []
+        # for u in urls:
+            # print(f"Please wait, fetching metadata for URL: {u}")
+            # lm = self.fetch_last_modified(u)
+            # self.url_meta[u] = {'url': u, 'last_modified': lm}
+#
+        # for m in self.url_meta.items():
+                # print(f"Last modified: {m[1].get('last_modified')} -> url: {m[0]}")
+#
+        # return self.url_meta
     # ─── END OF fetch_urls_metadata() ─────────────────────────────────────────
 
 
