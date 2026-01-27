@@ -22,11 +22,12 @@ from .ivstypes import PageData
 
 class FetchSessions:
     """
-    class FetchSessions defiend in fetch_sessions.py.
+    class FetchSessions defined in fetch_sessions.py.
 
     Methods:
-        * fetch_urls_html(); Fetch HTML content for a list of URLs, comparing last-modified times to
+        * fetch_html_from_urls(); Fetch HTML content for a list of URLs, comparing last-modified times to
           return the most recent content for master and intensive schedules.
+        * _find_most_recent_page(); Find the most recent page from a list of URLs based on last-modified times.
 
     """
 
@@ -41,11 +42,11 @@ class FetchSessions:
 
 
 
-    def fetch_urls_html(self, _urls: list[str], _timeout: int = 30) -> list[str]:
+    def fetch_html_from_urls(self, _urls: list[str], _timeout: int = 30) -> list[str]:
         """
         Defined in fetch_sessions.py.
 
-        Fetch HTML content for a list of URLs, comapring last-modified times to
+        Fetch HTML content from a list of URLs, comparing last-modified times to
         return the most recent content for master and intensive schedules.
 
         Returns a list[str]: The downloaded HTML content for each URL in the same order as the input list.
@@ -54,31 +55,14 @@ class FetchSessions:
         # 1. Split URLs into master and intensive
         urls_master, urls_intensive = self._split_urls(_urls)
 
-        # for url in urls_master:
-            # print(f"Master URL: {url}")
-        # for url in urls_intensive:
-            # print(f"Intensive URL: {url}")
-
-        # 2. Fetch data from urls, comparing timestamps to pick most recent
-        #   for each url in master
-        #       check that we can read data (that the site exists)
-        #       if we can't read, check if it's ivscc.oan.es; they need our CA bundle
-        #       store the html data and last modified time, and compare to previous best
-        #   repeat for each url in intensive
-        #   return the most recent master and intensive html data
-        # most_recent_html_data_master    : list[str] = []
-        # most_recent_html_data_intensive : list[str] = []
-        # last_read_html_data_master      : list[str] = []
-        # last_read_html_data_intensive   : list[str] = []
-
         page_master     = PageData(html = "", last_modified = None)
         page_intensive  = PageData(html = "", last_modified = None)
 
         page_master     = self._find_most_recent_page(urls_master, _timeout)
         page_intensive  = self._find_most_recent_page(urls_intensive, _timeout)
-
-        return [page_master.html + page_intensive.html]
-    # ─── END OF fetch_urls_html() ─────────────────────────────────────────────
+        
+        return BeautifulSoup(page_master.html + page_intensive.html, "html.parser").prettify()        
+    # ─── END OF fetch_html_from_urls() ─────────────────────────────────────────────
 
 
 
@@ -220,28 +204,6 @@ class FetchSessions:
 
 
 
-    # def fetch_urls_metadata(self, urls: list[str]) -> dict[str, dict]:
-        # """
-        # Fetch metadata for a list of URLs. What we're interested in are
-        # Last-Modified and ETag headers.
-#
-        # Returns a mapping: { url: { 'last_modified': datetime|None, 'etag': str|None } }
-        # """
-#
-        # meta: list[tuple[str, datetime]] = []
-        # for u in urls:
-            # print(f"Please wait, fetching metadata for URL: {u}")
-            # lm = self.fetch_last_modified(u)
-            # self.url_meta[u] = {'url': u, 'last_modified': lm}
-#
-        # for m in self.url_meta.items():
-                # print(f"Last modified: {m[1].get('last_modified')} -> url: {m[0]}")
-#
-        # return self.url_meta
-    # ─── END OF fetch_urls_metadata() ─────────────────────────────────────────
-
-
-
     #def fetch_last_modified(self, url: str, timeout: int = 10) -> tuple[datetime | None, str | None]:  # noqa: E501
     def _get_ca_bundle_path(self) -> str:
         """Return path to CA bundle: env override -> packaged PEM -> certifi."""
@@ -274,6 +236,28 @@ class FetchSessions:
         s.mount("http://", HTTPAdapter(max_retries=retries))
         return s
     # ─── END OF _make_session() ───────────────────────────────────────────────
+
+
+
+    # def fetch_urls_metadata(self, urls: list[str]) -> dict[str, dict]:
+        # """
+        # Fetch metadata for a list of URLs. What we're interested in are
+        # Last-Modified and ETag headers.
+#
+        # Returns a mapping: { url: { 'last_modified': datetime|None, 'etag': str|None } }
+        # """
+#
+        # meta: list[tuple[str, datetime]] = []
+        # for u in urls:
+            # print(f"Please wait, fetching metadata for URL: {u}")
+            # lm = self.fetch_last_modified(u)
+            # self.url_meta[u] = {'url': u, 'last_modified': lm}
+#
+        # for m in self.url_meta.items():
+                # print(f"Last modified: {m[1].get('last_modified')} -> url: {m[0]}")
+#
+        # return self.url_meta
+    # ─── END OF fetch_urls_metadata() ─────────────────────────────────────────
 
 
 
