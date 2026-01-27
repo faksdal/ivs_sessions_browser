@@ -1,0 +1,104 @@
+"""SessionsTuiFormatter
+
+Scan a BeautifulSoup `soup` and produce formatted lines for the TUI.
+
+This module provides a small, dependency-light formatter that uses
+heuristics to find session-like elements in the parsed HTML and
+convert them into single-line strings suitable for a text UI.
+"""
+from typing import Iterator
+
+from bs4 import BeautifulSoup, Tag
+
+
+class SessionsTuiFormatter:
+    """
+    Format parsed IVS session HTML into TUI-ready lines.
+
+    The implementation uses simple heuristics (elements with class
+    `session`, table rows, list items) to find candidate elements and
+    converts them to readable, single-line strings. The behaviour is
+    intentionally conservative so callers can replace or extend it.
+    """
+
+    def __init__(self, soup: BeautifulSoup) -> None:
+        self.soup = soup
+
+    def iter_lines(self) -> Iterator[str]:
+        """
+        Yield formatted lines for the TUI from the provided `soup`.
+
+        Yields:
+            str: one formatted line per session-like element.
+        """
+        # Try a few common structures in order of specificity.
+        candidates = list(self.soup.find_all(class_='session'))
+        if not candidates:
+            candidates = list(self.soup.find_all('tr'))
+        if not candidates:
+            candidates = list(self.soup.find_all('li'))
+        if not candidates:
+            # fallback: top-level children of the document/body
+            body = self.soup.body or self.soup
+            candidates = list(body.find_all(recursive=False))
+
+        for el in candidates:
+            if isinstance(el, Tag):
+                line = self._format_element(el)
+                if line:
+                    yield line
+
+    def _format_element(self, el: Tag) -> str:
+        """Convert a candidate element into a single-line string."""
+        # Table rows: join `td` cells with fixed-width columns.
+        if el.name == 'tr':
+            tds = el.find_all('td')
+            if tds:
+                parts = [self._clean_text(td) for td in tds]
+                return self._format_columns(parts)
+
+        # Fallback: return joined stripped text for the element.
+        return self._clean_text(el)
+
+    def _format_columns(self, parts: list[str], widths: list[int] | None = None, aligns: list[str] | None = None, sep: str = ' | ') -> str:
+        """Format `parts` into fixed-width columns.
+
+        If `widths` is None the terminal width is queried and space is
+        distributed evenly across columns (minus separator space).
+        """
+        # determine widths if not provided
+        if widths is None:
+            try:
+                import shutil
+
+                total = shutil.get_terminal_size((80, 20)).columns
+            except Exception:
+                total = 80
+            n = max(1, len(parts))
+            sep_space = len(sep) * (n - 1)
+            avail = max(10, total - sep_space)
+            base = max(1, avail // n)
+            widths = [base] * n
+            rem = avail - base * n
+            if rem > 0:
+                widths[-1] += rem
+
+        aligns = aligns or ['left'] * len(widths)
+        out = []
+        for text, w, a in zip(parts, widths, aligns):
+            t = text if text is not None else ''
+            if len(t) > w:
+                t = t[: w - 1] + '…' if w > 1 else t[:w]
+            if a == 'right':
+                out.append(t.rjust(w))
+            else:
+                out.append(t.ljust(w))
+        return sep.join(out)
+
+    @staticmethod
+    def _clean_text(el: Tag) -> str:
+        """Return the element's stripped text joined by single spaces."""
+        return ' '.join(s for s in el.stripped_strings)
+
+
+__all__ = ['SessionsTuiFormatter']
