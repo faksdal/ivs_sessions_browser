@@ -35,8 +35,7 @@ class SessionsBrowser:
     def __init__(self, _year: int, _scope: str, _mirrors: bool = False, _filters: str | None = None) -> None:  # noqa: E501
         # Store user input parameters
         self.year       = _year
-        self.scope      = _scope
-        #self.mirrors    = _mirrors
+        self.scope      = _scope        
         self.filters    = _filters
 
 
@@ -50,11 +49,12 @@ class SessionsBrowser:
         fs: FetchSessions = FetchSessions()
 
         # self.html_data contains the fetched HTML data for both master and intensive schedules
-        self.html_data = fs.fetch_urls_html(self.url_list)
-
-        print(f"Fetched HTML data for {BeautifulSoup(''.join(self.html_data), 'html.parser')} URLs.")  # noqa: E501
-
+        self.html_data = fs.fetch_html_from_urls(self.url_list)
+        
         # Next step is to organize and render the session data, applying filters if any.
+        session_rows = self.html_data.select("table tr")
+        print(session_rows)
+        
 
     # ─── END OF __init__() ────────────────────────────────────────────────────
 
@@ -63,6 +63,7 @@ class SessionsBrowser:
     def _urls_for_scope(self, _mirrors: bool) -> list[str]:
         """
         Defined in sessions_browser.py.
+
         _urls_for_scope() builds the list of urls to download session data from,
         based on the year and scope provided by the user. The list contains both
         primary site, and any mirrors
@@ -117,16 +118,14 @@ class SessionsBrowser:
         lines.append("Jon Leithe")
         lines.append("(No session rows available in this minimal implementation.)")
         return lines
-# ─── END OF render_sessions_list() ────────────────────────────────────────────
+    # ─── END OF render_sessions_list() ────────────────────────────────────────
 
 
 
     def run(self, _text: bool = True) -> None:
         """
         Placeholder run method provided by the mixin.
-        """
-        print(f"{_text}")
-
+        """     
     # ─── END OF run() ─────────────────────────────────────────────────────────
 
 # ─── END OF class SessionsBrowser ─────────────────────────────────────────────

@@ -74,11 +74,16 @@ def main() -> None:
 
     args = arg_parser.parse_args()
 
-    # Define the SessionsBrowser instance
+    # Define the SessionsBrowser instance, and read html data from web
+    # After a successful creation, sb.html_data contains the fetched HTML data
     sb: SessionsBrowser = SessionsBrowser(_year     = args.year,
                                           _scope    = args.scope,
                                           _mirrors  = args.mirrors,
                                           _filters  = args.filters)
+
+    
+    # print(sb.html_data)
+
 
     # If user requested output to file/stdout, produce textual output and exit
     if args.output:
@@ -89,6 +94,10 @@ def main() -> None:
 
         # Generate textual output
         lines = sb.render_sessions_list()
+        
+        # print(sb.html_data)
+        #for ln in sb.html_data:
+        #    print(ln)
 
         # Write to stdout
         if args.output == '-':
