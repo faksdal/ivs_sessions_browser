@@ -1,21 +1,26 @@
+# isort: skip_file
+
+"""
+Filename:    fetch_sessions.py
+Author:      Jon Leithe
+Created:     2026-01-27
+Description: Fetch and choose most-recent IVS session HTML pages.
+"""
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Import section
 # ──────────────────────────────────────────────────────────────────────────────
-
-import os                                       # noqa: I001
-
+import os
 import certifi
 import requests
-from requests.adapters import HTTPAdapter
-from urllib3.util.retry import Retry
-
-from datetime import datetime
-
-from bs4 import BeautifulSoup
-from dateutil import parser as dparser
 import importlib.resources as pkg_resources
-from .ivstypes import PageData
+
+from requests.adapters  import HTTPAdapter
+from urllib3.util.retry import Retry
+from datetime           import datetime
+from bs4                import BeautifulSoup
+from .ivstypes          import PageData
+from dateutil           import parser   as dparser
 # ─── END OF Import section ────────────────────────────────────────────────────
 
 
@@ -31,8 +36,6 @@ class FetchSessions:
 
     """
 
-
-
     def __init__(self) -> None:
         pass
         # Cache mapping: url -> { 'last_modified': datetime|None, 'etag': str|None }
@@ -42,26 +45,41 @@ class FetchSessions:
 
 
 
-    def fetch_html_from_urls(self, _urls: list[str], _timeout: int = 30) -> list[str]:
+    def fetch_html_from_urls(self, _urls: list[str], _timeout: int = 30) -> list[PageData]:
         """
         Defined in fetch_sessions.py.
 
         Fetch HTML content from a list of URLs, comparing last-modified times to
         return the most recent content for master and intensive schedules.
 
-        Returns a list[str]: The downloaded HTML content for each URL in the same order as the input list.
+        Returns a list[PageData]: A list containing PageData for master and intensive schedules.
         """  # noqa: E501
 
-        # 1. Split URLs into master and intensive
+        # Split URLs into master and intensive
         urls_master, urls_intensive = self._split_urls(_urls)
 
+        # Declare PageData objects to hold results
         page_master     = PageData(html = "", last_modified = None)
         page_intensive  = PageData(html = "", last_modified = None)
 
+        # Find most recent pages for master and intensive
         page_master     = self._find_most_recent_page(urls_master, _timeout)
         page_intensive  = self._find_most_recent_page(urls_intensive, _timeout)
-        
-        return BeautifulSoup(page_master.html + page_intensive.html, "html.parser").prettify()        
+
+        ############ DEBUGGING OUTPUT ############
+        if page_master.url:
+            print(f"Most recent master schedule URL: {page_master.url} - Last modified: {page_master.last_modified}")  # noqa: E501
+        else:
+            print("No master schedule URL fetched.")
+
+        ############ DEBUGGING OUTPUT ############
+        if page_intensive.url:
+            print(f"Most recent intensive schedule URL: {page_intensive.url} - Last modified: {page_intensive.last_modified}")  # noqa: E501
+        else:
+            print("No intensive schedule URL fetched.")
+
+        # return pager_master and page_intensive attributes as a list
+        return [page_master, page_intensive]
     # ─── END OF fetch_html_from_urls() ─────────────────────────────────────────────
 
 
@@ -79,6 +97,9 @@ class FetchSessions:
 
             # Fetch HTML content and last modified time
             html = self._fetch_one_url_html(url, _timeout = _timeout)
+
+
+
             if html:
                 lm = self._fetch_latest_update_from_html(html)
 
