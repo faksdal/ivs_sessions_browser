@@ -15,8 +15,9 @@
 ## Detailed flow
 - CLI arguments are being processed in `__init__.py`.
 - SessionsBrowser object are created in `__init__.py` as `sb`. This calls upon SessionsBrowser's `__init__()` method.
-    This initializes the local attributes: `year`, `scope`, `mirrors` and `filters`.
-    `SessionsBrowser:__init__()` continues to call `_fetch_session_data(_mirrors)`.
+    `SessionsBrowser::__init__()` This initializes the local attributes: `year`, `scope`, `mirrors` and `filters`.
+    `SessionsBrowser::__init__()` continues to call `self._urls_for_scope(_mirrors)` to build the list of URLs to
+    get session data from.
 
 ## Entry points
 - Shell wrapper: `run_browser` in project root sets `PYTHONPATH=src` and execs `.venv/bin/python3 scripts/run_sessions_browser.py`.
