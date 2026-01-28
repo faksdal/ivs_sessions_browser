@@ -30,13 +30,13 @@ class SessionsTuiFormatter:
     Docstring for SessionsTuiFormatter
     """
 
-    def __init__(self,
-                 _soup:             BeautifulSoup,
-                 _num_of_headers:   int,
-                 _is_intensive:     bool,
-                 _filters:          str | None,
-                 _url:              str | None = None,
-                 ) -> None:
+    def __init__(self):#,
+                 #_soup:             BeautifulSoup,
+                 #_num_of_headers:   int,
+                 #_is_intensive:     bool,
+                 #_filters:          str | None,
+                 #_url:              str | None = None,
+                 #) -> None:
 
         """
         Docstring for __init__
@@ -47,12 +47,6 @@ class SessionsTuiFormatter:
                                 This is used to add the [I] marker in the Type column.
         :param _filters:        String containing filter criteria to apply to sessions.
         """
-
-        self.soup           = _soup
-        self.num_of_headers = _num_of_headers
-        self.is_intensive   = _is_intensive
-        self.filters        = _filters
-        self.url            = _url
 
         self.header_line = " | ".join([f"{title:<{w}}" for title, w in HEADERS])
 
@@ -67,15 +61,27 @@ class SessionsTuiFormatter:
 
 
 
-    def build_list(self) -> None:
+    def build_list(self,
+                   _soup:             BeautifulSoup,
+                   _num_of_headers:   int,
+                   _is_intensive:     bool,
+                   _filters:          str | None,
+                   _url:              str | None = None,
+                   ) -> None:
+
+        soup           = _soup
+        num_of_headers = _num_of_headers
+        is_intensive   = _is_intensive
+        filters        = _filters
+        url            = _url
 
         # Find all session rows in the HTML soup
-        session_rows = self.soup.select("table tr")
+        session_rows = soup.select("table tr")
         for r in session_rows:
             # Extract all <td> elements in the row, discard those that doesn't fit
             # the expected number of columns (headers)
             tds = r.find_all("td")
-            if len(tds) < self.num_of_headers:
+            if len(tds) < num_of_headers:
                 continue
 
         # ──────────────────────────────────────────────────────────────────────
@@ -117,7 +123,7 @@ class SessionsTuiFormatter:
         # This is done by adding '[I]' to the Type column
         # Tag intensives directly, no padding here; alignment happens in the renderer
         # ──────────────────────────────────────────────────────────────────────
-            if self.is_intensive:
+            if is_intensive:
                 # values[1] = f"{values[1]}[I]"
                 values[1] += f"[I]"
         # ─── END OF Visualise intensive sessions ──────────────────────────────
@@ -128,7 +134,7 @@ class SessionsTuiFormatter:
         # ──────────────────────────────────────────────────────────────────────
             # Session detail URL from Code column if present
             code_link = values[2].lower()
-            session_url = f"{self.url}/{code_link}" if self.url and code_link else None
+            session_url = f"{url}/{code_link}" if url and code_link else None
         # ─── END OF Prepare session detail URL ────────────────────────────────
 
         # ──────────────────────────────────────────────────────────────────────
@@ -138,7 +144,7 @@ class SessionsTuiFormatter:
         # by turning the 'visible' flag on/off
         # ──────────────────────────────────────────────────────────────────────
             meta =  {"visible":      True,
-                     "intensive":    self.is_intensive,
+                     "intensive":    is_intensive,
                      "code":         session_code
                     }
         # ─── END OF Prepare metadata dictionary for this row ──────────────────
@@ -154,8 +160,8 @@ class SessionsTuiFormatter:
 
 
 
-    # def _match_stations_filter(self, _hay: str, _expr: str) -> bool:
-        # pass
+    def _match_stations_filter(self, _hay: str, _expr: str) -> bool:
+        return True
     # ─── END OF _match_stations_filter() ──────────────────────────────────────
 
 
@@ -209,7 +215,7 @@ class SessionsTuiFormatter:
 
 
 
-    def recompute_header_widths(rows: list[Row]) -> None:
+    def recompute_header_widths(self, rows: list[Row]) -> None:
         """
         Recompute HEADERS/HEADER_DICT/WIDTHS/HEADER_LINE from data.
         Ensures 'Type' has room for a right-justified '[I]' if any intensive exists.
