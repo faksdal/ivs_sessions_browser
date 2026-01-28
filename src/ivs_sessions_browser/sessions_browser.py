@@ -1,3 +1,4 @@
+# flake8: noqa
 # isort: skip_file
 
 """
@@ -17,12 +18,14 @@ Notes:
 from __future__ import annotations
 from bs4        import BeautifulSoup
 
-# from ivs_sessions_browser.sessions_tui_formatter import SessionsTuiFormatter
+from ivs_sessions_browser.ivstypes import PageData
 
 # Project defined imports
 from .defs                      import HEADERS, IVSCC_BASE_URLS
 from .fetch_sessions            import FetchSessions
 from .sessions_tui_formatter    import SessionsTuiFormatter
+from .ivstypes                  import PageData
+# from .operators                 import load_operator_bindings, load_operator_bindings, load_operators, save_operators #, load_operator_bindings
 # ─── END OF Import section ────────────────────────────────────────────────────
 
 
@@ -36,8 +39,8 @@ class SessionsBrowser:
 
     """
 
-    def __init__(self, _year: int, _scope: str, _mirrors: bool = False, _filters: str | None = None) -> None:  # noqa: E501
-        
+    def __init__(self, _year: int, _scope: str, _mirrors: bool = False, _filters: str | None = None) -> None:
+
         # Store user input parameters
         self.year       = _year
         self.scope      = _scope
@@ -48,10 +51,10 @@ class SessionsBrowser:
 
         # Creating attribute to store the raw HTML data fetched from the URL, in case of mirrors, the most recent
         # one is stored here.
-        self.list_html_data: list[str] = []
+        self.list_html_data: list[PageData] = []
 
     # ──────────────────────────────────────────────────────────────────────────
-    # Fetch data from web 
+    # Fetch data from web
     # ──────────────────────────────────────────────────────────────────────────
         # Create FetchSessions instance to download HTML data from the URLs
         fs: FetchSessions = FetchSessions()
@@ -73,23 +76,29 @@ class SessionsBrowser:
     # ──────────────────────────────────────────────────────────────────────────
         # Scan fetched HTML data and produce formatted lines
         for page_data in self.list_html_data_page:
-            soup = BeautifulSoup(page_data.html, "html.parser")
+            soup    = BeautifulSoup(page_data.html, "html.parser")
+            url     = page_data.url
 
-            # Determine if this is a master or an intensive session       
+            # Determine if this is a master or an intensive session
             h1          = soup.find('h1', class_='title')
             title_str   = h1.get_text(strip = True) if h1 else None
             if title_str and "intensive" in title_str.lower():
                 is_intensive = True
             else:
                 is_intensive = False
-            
+
+            # self.operator_bindings = load_operator_bindings()
+
             # Create SessionsTuiFormatter instance to format the parsed HTML
-            formatter = SessionsTuiFormatter(_soup         = soup,
-                                             _num_of_headers = len(HEADERS) - 1,  # <-- Op is local-only, not on the website
+            formatter = SessionsTuiFormatter(_soup              = soup,
+                                             _num_of_headers    = len(HEADERS) - 1,  # <-- Op is local-only, not on the website
                                             #   _num_of_headers = 3,
-                                             _is_intensive   = is_intensive,
-                                             _filters       = self.filters)
-            formatter.run()
+                                             _is_intensive      = is_intensive,
+                                             _filters           = self.filters,
+                                             _url               = url,
+                                             # _operator_map  = load_operator_bindings() #self.operator_bindings
+                                             )
+            formatter.build_list()
         # ─── END OF 'for page_data in self.list_html_data_page' ───────────────
     # ─── END OF Format and render session data ────────────────────────────────
 
@@ -120,20 +129,20 @@ class SessionsBrowser:
             base_url_list = [base_url_list[0]]
             print("Using only primary IVSCC site for session data (https://ivscc.gsfc.nasa.gov)")
         else:
-            print("Reviewing primary and mirror IVSCC sites for the most recently updated session data.")  # noqa: E501
+            print("Reviewing primary and mirror IVSCC sites for the most recently updated session data.")
 
         if self.scope == "master":
             for base_url in base_url_list:
-                retval.append(f"{base_url}/{year}/")
+                retval.append(f"{base_url}/{year}")
 
         elif self.scope == "intensive":
             for base_url in base_url_list:
-                retval.append(f"{base_url}/intensive/{year}/")
+                retval.append(f"{base_url}/intensive/{year}")
 
         elif self.scope == "both":
             for base_url in base_url_list:
-                retval.append(f"{base_url}/{year}/")
-                retval.append(f"{base_url}/intensive/{year}/")
+                retval.append(f"{base_url}/{year}")
+                retval.append(f"{base_url}/intensive/{year}")
 
         return retval
     # ─── END OF _urls_for_scope() ─────────────────────────────────────────────

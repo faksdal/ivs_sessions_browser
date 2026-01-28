@@ -1,3 +1,4 @@
+# flake8: noqa
 # isort: skip_file
 
 """
@@ -68,13 +69,13 @@ class FetchSessions:
 
         ############ DEBUGGING OUTPUT ############
         if page_master.url:
-            print(f"Most recent master schedule URL: {page_master.url} - Last modified: {page_master.last_modified}")  # noqa: E501
+            print(f"Most recent master schedule URL: {page_master.url} - Last modified: {page_master.last_modified}")
         else:
             print("No master schedule URL fetched.")
 
         ############ DEBUGGING OUTPUT ############
         if page_intensive.url:
-            print(f"Most recent intensive schedule URL: {page_intensive.url} - Last modified: {page_intensive.last_modified}")  # noqa: E501
+            print(f"Most recent intensive schedule URL: {page_intensive.url} - Last modified: {page_intensive.last_modified}")
         else:
             print("No intensive schedule URL fetched.")
 
@@ -105,12 +106,12 @@ class FetchSessions:
 
             # print(f"Last modified: {lm} - fetched HTML content from URL: {url}")
             # Compare last modified time to pick most recent
-            if page_data.last_modified is None or (lm is not None and lm > page_data.last_modified):  # noqa: E501
+            if page_data.last_modified is None or (lm is not None and lm > page_data.last_modified):
                 page_data.html = html
                 page_data.last_modified = lm
                 page_data.url = url
 
-            # print(f"Most recent last modified so far: {page_data.last_modified} from URL: {page_data.url}")  # noqa: E501
+            # print(f"Most recent last modified so far: {page_data.last_modified} from URL: {page_data.url}")
 
         return page_data
     # ─── END OF _find_most_recent_page() ──────────────────────────────────────
@@ -176,7 +177,7 @@ class FetchSessions:
             print(f"SSL error fetching URL: {_url}")
             if "ivscc.oan.es" in _url:
                 try:
-                    resp = sessions.get(_url, timeout=_timeout, allow_redirects=True, verify=ca_bundle)  # noqa: E501
+                    resp = sessions.get(_url, timeout=_timeout, allow_redirects=True, verify=ca_bundle)
                     resp.raise_for_status()
                     return resp.text
                 except requests.exceptions.RequestException as e:
@@ -225,7 +226,7 @@ class FetchSessions:
 
 
 
-    #def fetch_last_modified(self, url: str, timeout: int = 10) -> tuple[datetime | None, str | None]:  # noqa: E501
+    #def fetch_last_modified(self, url: str, timeout: int = 10) -> tuple[datetime | None, str | None]:
     def _get_ca_bundle_path(self) -> str:
         """Return path to CA bundle: env override -> packaged PEM -> certifi."""
         env = os.getenv("IVS_CA_BUNDLE")

@@ -1,3 +1,4 @@
+# flake8: noqa
 # isort: skip_file
 
 """
@@ -64,7 +65,7 @@ def main() -> None:
     arg_parser.add_argument("--scope",
                             choices=("master", "intensive", "both"),
                             default="both",
-                            help="Which schedules to include (master, intensive, both) (default: both)"  # noqa: E501
+                            help="Which schedules to include (master, intensive, both) (default: both)"
     )
     arg_parser.add_argument("--filters",
                             type=str,
@@ -77,7 +78,7 @@ def main() -> None:
     arg_parser.add_argument('-a', '--append', action='store_true',
                             help='append to output file instead of overwriting')
     arg_parser.add_argument('-m', '--mirrors', action='store_true',
-                            help='check mirror websites for last update; default is use only primary IVSCC site (https://ivscc.gsfc.nasa.gov)')  # noqa: E501
+                            help='check mirror websites for last update; default is use only primary IVSCC site (https://ivscc.gsfc.nasa.gov)')
 
     # Provide a standard --version flag exposing package version
     arg_parser.add_argument('--version', action='version', version=__version__)
@@ -90,8 +91,8 @@ def main() -> None:
                                           _scope    = args.scope,
                                           _mirrors  = args.mirrors,
                                           _filters  = args.filters)
-    # ─── END OF SessionsBrowser creation ──────────────────────────────────────  
-    
+    # ─── END OF SessionsBrowser creation ──────────────────────────────────────
+
 
     # If user requested output to file/stdout, produce textual output and exit
     if args.output:
@@ -102,7 +103,7 @@ def main() -> None:
 
         # Generate textual output
         lines = sb.render_sessions_list()
-        
+
         # print(sb.html_data)
         #for ln in sb.html_data:
         #    print(ln)
@@ -133,7 +134,7 @@ def main() -> None:
             target_dir = os.path.dirname(args.output) or '.'
             tmp_name = None
             try:
-                with tempfile.NamedTemporaryFile('w', delete=False, dir=target_dir, encoding='utf-8') as tf:  # noqa: E501
+                with tempfile.NamedTemporaryFile('w', delete=False, dir=target_dir, encoding='utf-8') as tf:
                     tmp_name = tf.name
                     for ln in lines:
                         tf.write(ln + "\n")

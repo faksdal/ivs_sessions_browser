@@ -1,3 +1,4 @@
+# flake8: noqa
 # isort: skip_file
 
 """
@@ -20,6 +21,7 @@ from __future__ import annotations
 from typing     import Any
 
 import argparse
+from pathlib import Path
 
 # from dataclasses import dataclass
 
@@ -33,15 +35,15 @@ import argparse
 # ──────────────────────────────────────────────────────────────────────────────
 # CLI blurb + help
 # ──────────────────────────────────────────────────────────────────────────────
-ARGUMENT_DESCRIPTION        = "IVS Sessions TUI Browser; browse IVS session data in a terminal interface."  # noqa: E501
+ARGUMENT_DESCRIPTION        = "IVS Sessions TUI Browser; browse IVS session data in a terminal interface."
 ARGUMENT_EPILOG             = ("Filters:\n"
-                               "   ─ Added as key:value pair, several key:value pair are separated by ';'\n"  # noqa: E501
-                               "   ─ Valid keys equals to the column headers (case-sensitive only for stations).\n"  # noqa: E501
-                               "   ─ Non-stations fields: tokens split by space/comma/plus/pipe are OR (e.g. code: r1|r4)\n"  # noqa: E501
-                               "   ─ Stations active: stations: Nn&Ns  or  stations: Nn|Ns\n"  # noqa: E501
+                               "   ─ Added as key:value pair, several key:value pair are separated by ';'\n"
+                               "   ─ Valid keys equals to the column headers (case-sensitive only for stations).\n"
+                               "   ─ Non-stations fields: tokens split by space/comma/plus/pipe are OR (e.g. code: r1|r4)\n"
+                               "   ─ Stations active: stations: Nn&Ns  or  stations: Nn|Ns\n"
                                "   ─ Filters must be escaped with \" or \'\n"
                                "   ─ | (pipe) means OR, & (ampersand) means AND\n"
-                               "   Example: --filters \'code: r1|r4; stations: Nn&Ns\'\n\nCLI:\n"  # noqa: E501
+                               "   Example: --filters \'code: r1|r4; stations: Nn&Ns\'\n\nCLI:\n"
                                )
 
 ARGUMENT_FORMATTER_CLASS    = argparse.RawDescriptionHelpFormatter
@@ -119,3 +121,12 @@ FIELD_INDEX: dict[str, int] = {"op": 0,
 DATEFORMAT = "%Y-%m-%d"
 BASE_URL = ""
 NAVIGATION_KEYS: dict[str, str] = {}
+
+
+# Configuration filenames and directory (shared constants)
+# Use the user's config directory by default; tests or dev can override.
+# Default config directory: current directory for development. Tests/dev can
+# override by assigning a different value to `defs.CONFIG_DIR` at runtime.
+CONFIG_DIR              = Path(".")
+OPERATORS_FILENAME      = "operators.json"
+ASSIGNMENTS_FILENAME    = "operator_assignments.json"

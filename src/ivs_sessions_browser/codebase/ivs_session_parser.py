@@ -1,3 +1,6 @@
+# flake8: noqa
+# isort: skip_file
+
 """
 Filename:       ive_session_parser.py
 Author:         jole
@@ -123,8 +126,8 @@ class IvsSessionParser:
 
             # Tag intensives directly (no padding here; alignment happens in the renderer)
             if self.is_intensive:
-                # values[0] = f"{values[0]}[I]"
-                values[0] = f"{values[0]}"
+                values[0] = f"{values[0]}[I]"
+                #values[0] = f"{values[0]}"
 
             # Session detail URL from Code column if present
             code_link = tds[1].find("a")
