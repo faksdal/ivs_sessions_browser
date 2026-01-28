@@ -84,23 +84,24 @@ class SessionsTuiFormatter:
             if len(tds) < num_of_headers:
                 continue
 
-        # ──────────────────────────────────────────────────────────────────────
-        # Differentiate active vs removed stations in the 'stations' column
-        # ──────────────────────────────────────────────────────────────────────
+            # ──────────────────────────────────────────────────────────────────
+            # Differentiate active vs removed stations in the 'stations' column
+            # _split_stations_active_removed() render them as "Active [Removed]"
+            # ──────────────────────────────────────────────────────────────────
             stations_str = self._split_stations_active_removed(tds)
-        # ─── END OF Differentiate active vs removed stations ──────────────────
+            # ─── END OF Differentiate active vs removed stations ──────────────
 
-        # ──────────────────────────────────────────────────────────────────────
-        # Add header for operator assignments
-        # Operator, or 'op', gets added at index 0, shifting all other indices by 1
-        # ──────────────────────────────────────────────────────────────────────
+            # ──────────────────────────────────────────────────────────────────
+            # Add header for operator assignments
+            # Operator, or 'op', gets added at index 0, shifting all other indices by 1
+            # ──────────────────────────────────────────────────────────────────
             session_code = tds[1].get_text(strip=True) # values[1]
             op = self.operator_assignments.get(session_code, "")
-        # ─── END OF Add header for operator assignments ───────────────────────
+            # ─── END OF Add header for operator assignments ───────────────────
 
-        # ──────────────────────────────────────────────────────────────────────
-        # Assigning each column's value in 'values' list
-        # ──────────────────────────────────────────────────────────────────────
+            # ──────────────────────────────────────────────────────────────────
+            # Assigning each column's value in 'values' list
+            # ──────────────────────────────────────────────────────────────────
             values = [
                 f"{op}" if op else "",
                 tds[0].get_text(strip=True),    # Type
@@ -108,7 +109,7 @@ class SessionsTuiFormatter:
                 tds[2].get_text(strip=True),    # Start
                 tds[3].get_text(strip=True),    # DOY
                 tds[4].get_text(strip=True),    # Dur
-                # stations_str.ljust(44),  # Stations (fixed width for alignment)
+                # stations_str.ljust(44),       # Stations (fixed width for alignment)
                 stations_str,                   # Stations (no padding; renderer will align)
                 tds[6].get_text(strip=True),    # DB Code
                 tds[7].get_text(strip=True),    # Ops Center
@@ -116,44 +117,44 @@ class SessionsTuiFormatter:
                 tds[9].get_text(strip=True),    # Status
                 tds[10].get_text(strip=True),   # Analysis
             ]
-        # ─── END OF Assigning each column's value in 'values' list ────────────
+            # ─── END OF Assigning each column's value in 'values' list ────────
 
-        # ──────────────────────────────────────────────────────────────────────
-        # Visualise intensive sessions
-        # This is done by adding '[I]' to the Type column
-        # Tag intensives directly, no padding here; alignment happens in the renderer
-        # ──────────────────────────────────────────────────────────────────────
+            # ──────────────────────────────────────────────────────────────────
+            # Visualise intensive sessions
+            # This is done by adding '[I]' to the Type column
+            # Tag intensives directly, no padding here; alignment happens in the renderer
+            # ──────────────────────────────────────────────────────────────────
             if is_intensive:
                 # values[1] = f"{values[1]}[I]"
                 values[1] += f"[I]"
-        # ─── END OF Visualise intensive sessions ──────────────────────────────
+            # ─── END OF Visualise intensive sessions ──────────────────────────
 
-        # ──────────────────────────────────────────────────────────────────────
-        # Prepare session detail URL
-        # It will go into the metadata for this row
-        # ──────────────────────────────────────────────────────────────────────
+            # ──────────────────────────────────────────────────────────────────
+            # Prepare session detail URL
+            # It will go into the metadata for this row
+            # ──────────────────────────────────────────────────────────────────
             # Session detail URL from Code column if present
             code_link = values[2].lower()
             session_url = f"{url}/{code_link}" if url and code_link else None
-        # ─── END OF Prepare session detail URL ────────────────────────────────
+            # ─── END OF Prepare session detail URL ────────────────────────────
 
-        # ──────────────────────────────────────────────────────────────────────
-        # Prepare metadata dictionary for this row
-        # Metadata dictionary for this row, all rows are visible by default
-        # Filtering the list based on stations_filter happens in the TUI renderer
-        # by turning the 'visible' flag on/off
-        # ──────────────────────────────────────────────────────────────────────
+            # ──────────────────────────────────────────────────────────────────
+            # Prepare metadata dictionary for this row
+            # Metadata dictionary for this row, all rows are visible by default
+            # Filtering the list based on stations_filter happens in the TUI renderer
+            # by turning the 'visible' flag on/off
+            # ──────────────────────────────────────────────────────────────────
             meta =  {"visible":      True,
                      "intensive":    is_intensive,
                      "code":         session_code
                     }
-        # ─── END OF Prepare metadata dictionary for this row ──────────────────
+            # ─── END OF Prepare metadata dictionary for this row ──────────────
 
-        # ──────────────────────────────────────────────────────────────────────
-        # Append the parsed row to the full_list
-        # ──────────────────────────────────────────────────────────────────────
+            # ──────────────────────────────────────────────────────────────────
+            # Append the parsed row to the full_list
+            # ──────────────────────────────────────────────────────────────────
             self.full_list.append((values, session_url, meta))
-        # ─── END OF Append the parsed row to the full_list ────────────────────
+            # ─── END OF Append the parsed row to the full_list ────────────────
 
         # ─── END OF 'for r in session_rows' ───────────────────────────────────
     # ─── END OF run() ─────────────────────────────────────────────────────────
@@ -168,49 +169,51 @@ class SessionsTuiFormatter:
 
     def _split_stations_active_removed(self, _tds) -> str:
 
-        # ──────────────────────────────────────────────────────────────────────
+        # ──────────────────────────────────────────────────────────────────
         # Differentiate active vs removed stations in the 'stations' column
-        # ──────────────────────────────────────────────────────────────────────
-            # Stations: differentiate between active and removed.
-            # Render as "Active [Removed]".
-            # Find the current index of 'stations', and assign an attribute.
-            index = FIELD_INDEX.get("stations", -1)
-            if index == -1:
-                print("Index error on 'stations', exiting...")
-                exit(-1)
+        # Render as "Active [Removed]".
+        # Find the current index of 'stations', and assign an attribute.
+        # ──────────────────────────────────────────────────────────────────
+        index = FIELD_INDEX.get("stations", -1)
+        if index == -1:
+            print("Index error on 'stations', exiting...")
+            exit(-1)
 
-            # This is the cell, or column, containing all the stations, and we want to separate the
-            # active from the removed.
-            # The reason for subracting 1 is becasue we added 'op' as index 0, but the website
-            # doesn't have that column, so all indices are shifted by one.
-            stations_cell = _tds[index-1]
+        # This is the cell, or column, containing all the stations, and we
+        # want to separate the active from the removed.
+        # The reason for subtracting 1 is because we added 'op' as index 0,
+        # but the website doesn't have that column, so all indices are shifted
+        # by one.
+        stations_cell = _tds[index-1]
 
-            # Two empty lists to hold active vs removed stations.
-            active_ids  : List[str] = []
-            removed_ids : List[str] = []
+        # Two empty lists to hold active vs removed stations.
+        active_ids  : List[str] = []
+        removed_ids : List[str] = []
 
-            # This is the logic, going through all list items in the stations_cell column, extracting
-            # and sorting active and removed stations separately.
-            for li in stations_cell.find_all("li", class_="station-id"):
-                classes = li.get("class", [])
-                code    = li.get_text(strip=True)
-                removed_ids.append(code) if "removed" in classes else active_ids.append(code)
+        # This is the logic, going through all list items in the
+        # stations_cell column, extracting and sorting active and removed
+        # stations separately.
+        for li in stations_cell.find_all("li", class_="station-id"):
+            classes = li.get("class", [])
+            code    = li.get_text(strip=True)
+            removed_ids.append(code) if "removed" in classes else active_ids.append(code)
 
-            # And putting them into separate lists
-            active_str  = "".join(active_ids)
-            removed_str = "".join(removed_ids)
+        # And putting them into separate lists
+        active_str  = "".join(active_ids)
+        removed_str = "".join(removed_ids)
 
-            # And now we're rendering the stations string, with the active and removed sessions
-            # separated. They will be written as "active [removed]", with the removed in square brackets.
-            if active_str and removed_str:
-                stations_str = f"{active_str} [{removed_str}]"
-            elif removed_str:
-                stations_str = f"[{removed_str}]"
-            else:
-                stations_str = f"{active_str}"
+        # And now we're rendering the stations string, with the active and
+        # removed sessions separated. They will be written as
+        # "active [removed]", with the removed in square brackets.
+        if active_str and removed_str:
+            stations_str = f"{active_str} [{removed_str}]"
+        elif removed_str:
+            stations_str = f"[{removed_str}]"
+        else:
+            stations_str = f"{active_str}"
 
-            return stations_str
-        # ─── END OF Differentiate active vs removed stations ──────────────────
+        return stations_str
+        # ─── END OF Differentiate active vs removed stations ──────────────
     # ─── END OF _split_stations_active_removed() ──────────────────────────────
 
 
