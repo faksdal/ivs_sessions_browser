@@ -1,16 +1,26 @@
-# --- file: __init__.py
+# isort: skip_file
+
+"""
+Filename:       __init__.py
+Author:         jole
+Created:        26.01.2026
+
+Description:    Holds class definitions for SessionBrowser along with attributes and methods.
+Just some random text to increase the size of the description field.
+
+Notes:
+"""
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Import section
 # ──────────────────────────────────────────────────────────────────────────────
 import argparse
+
 from datetime import datetime
 
 # Project defined imports
-from .defs import ARGUMENT_DESCRIPTION, ARGUMENT_EPILOG, ARGUMENT_FORMATTER_CLASS
-from .sessions_browser import SessionsBrowser
-
-# from .sessions_browser import SessionsBrowser
+from .defs              import ARGUMENT_DESCRIPTION, ARGUMENT_EPILOG, ARGUMENT_FORMATTER_CLASS
+from .sessions_browser  import SessionsBrowser
 # ─── END OF Import section ────────────────────────────────────────────────────
 
 
@@ -80,10 +90,8 @@ def main() -> None:
                                           _scope    = args.scope,
                                           _mirrors  = args.mirrors,
                                           _filters  = args.filters)
-
+    # ─── END OF SessionsBrowser creation ──────────────────────────────────────  
     
-    # print(sb.html_data)
-
 
     # If user requested output to file/stdout, produce textual output and exit
     if args.output:

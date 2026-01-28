@@ -1,3 +1,5 @@
+# isort: skip_file
+
 """
 Filename:       sessions_browser.py
 Author:         jole
@@ -13,12 +15,14 @@ Notes:
 # Import section
 # ──────────────────────────────────────────────────────────────────────────────
 from __future__ import annotations
+from bs4        import BeautifulSoup
 
-from bs4 import BeautifulSoup  # noqa: I001
+# from ivs_sessions_browser.sessions_tui_formatter import SessionsTuiFormatter
 
-from .defs import IVSCC_BASE_URLS
-from .fetch_sessions import FetchSessions
-
+# Project defined imports
+from .defs                      import HEADERS, IVSCC_BASE_URLS
+from .fetch_sessions            import FetchSessions
+from .sessions_tui_formatter    import SessionsTuiFormatter
 # ─── END OF Import section ────────────────────────────────────────────────────
 
 
@@ -33,67 +37,61 @@ class SessionsBrowser:
     """
 
     def __init__(self, _year: int, _scope: str, _mirrors: bool = False, _filters: str | None = None) -> None:  # noqa: E501
+        
         # Store user input parameters
         self.year       = _year
         self.scope      = _scope
         self.filters    = _filters
 
-
         # Build the candidate URL list for the requested scope/mirrors
         self.url_list = self._urls_for_scope(_mirrors)
 
-        # The raw HTML data fetched from the URL, in case of mirrors, the most recent
+        # Creating attribute to store the raw HTML data fetched from the URL, in case of mirrors, the most recent
         # one is stored here.
         self.list_html_data: list[str] = []
 
-
+    # ──────────────────────────────────────────────────────────────────────────
+    # Fetch data from web 
+    # ──────────────────────────────────────────────────────────────────────────
+        # Create FetchSessions instance to download HTML data from the URLs
         fs: FetchSessions = FetchSessions()
 
         # self.html_data contains the fetched HTML data for both master and intensive schedules
         self.list_html_data_page = fs.fetch_html_from_urls(self.url_list)
 
+        # Simple print to see what we've got - this will get discarded later
+        # for page_data in self.list_html_data_page:
+            # soup        = BeautifulSoup(page_data.html, "html.parser")
+            # h1          = soup.find('h1', class_='title')
+            # title_str   = h1.get_text(strip = True) if h1 else None
+
+            # print(f"Fetched title: {title_str} from URL: {page_data.url}")
+    # ─── END OF Fetch data from web ───────────────────────────────────────────
+
+    # ──────────────────────────────────────────────────────────────────────────
+    # Format and render session data
+    # ──────────────────────────────────────────────────────────────────────────
+        # Scan fetched HTML data and produce formatted lines
         for page_data in self.list_html_data_page:
-            # print(f"Processing fetched HTML data of length: {len(page_data.html)} characters")
             soup = BeautifulSoup(page_data.html, "html.parser")
-            h1 = soup.find('h1', class_='title')
-            title_str = h1.get_text(strip=True) if h1 else None
-            print(f"Fetched title: {title_str} from URL: {page_data.url}")
 
-        # print the title of each downloaded page for debugging
-        # soup = BeautifulSoup(html, "html.parser")
-        # title_tag = soup.find("title")
-        # title_text = title_tag.get_text() if title_tag else "No title found"
-        # print(f"Fetched page title: {title_text} from URL: {url}")
-
-        # h1 = soup.find('h1', class_='title')
-        # title_str = h1.get_text(strip=True) if h1 else None
-        # print(f"Fetched h1 title: {title_str} from URL: {url}")
-
-        # soup = BeautifulSoup(html_data, "html.parser")
-        # title_tag = soup.find("title")
-        # title_text = title_tag.get_text() if title_tag else "No title found"
-        # print(f"Fetched page title: {title_text}")
-
-        # print(BeautifulSoup("".join(self.list_html_data), "html.parser").prettify())
-
-        # print(f"Lenght of list element #1: {len(self.list_html_data[0])}")
-        # print(f"Lenght of list element #2: {len(self.list_html_data[1])}")
-
-
-        #soup = BeautifulSoup("".join(self.html_data), "html.parser")
-
-        #from .sessions_tui_formatter import SessionsTuiFormatter
-
-        #SessionsTuiFormatter(soup, self.filters)
-
-        #session_lines = list(formatter.iter_lines())
-
-        # print(f"Fetched {len(session_rows)} session rows from IVSCC sites.")
-
-        # Next step is to organize and render the session data, applying filters if any.
-        # session_rows = self.html_data.select("table tr")
-        # print(session_rows)
-
+            # Determine if this is a master or an intensive session       
+            h1          = soup.find('h1', class_='title')
+            title_str   = h1.get_text(strip = True) if h1 else None
+            if title_str and "intensive" in title_str.lower():
+                is_intensive = True
+            else:
+                is_intensive = False
+            
+            # Create SessionsTuiFormatter instance to format the parsed HTML
+            formatter = SessionsTuiFormatter(_soup         = soup,
+                                             _num_of_headers = len(HEADERS) - 1,  # <-- Op is local-only, not on the website
+                                            #   _num_of_headers = 3,
+                                             _is_intensive   = is_intensive,
+                                             _filters       = self.filters)
+            formatter.run()
+        # ─── END OF 'for page_data in self.list_html_data_page' ───────────────
+    # ─── END OF Format and render session data ────────────────────────────────
 
     # ─── END OF __init__() ────────────────────────────────────────────────────
 
@@ -165,6 +163,7 @@ class SessionsBrowser:
         """
         Placeholder run method provided by the mixin.
         """
+        print("SessionsBrowser run() method called.")
     # ─── END OF run() ─────────────────────────────────────────────────────────
 
 # ─── END OF class SessionsBrowser ─────────────────────────────────────────────

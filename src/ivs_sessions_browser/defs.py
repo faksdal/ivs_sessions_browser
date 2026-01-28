@@ -1,3 +1,5 @@
+# isort: skip_file
+
 """
 Filename:   defs.py
 Author:     jole
@@ -15,9 +17,9 @@ Purpose:
 # Import section
 # ──────────────────────────────────────────────────────────────────────────────
 from __future__ import annotations
+from typing     import Any
 
 import argparse
-from typing import Any
 
 # from dataclasses import dataclass
 
@@ -81,17 +83,39 @@ Row = tuple[list[str], str | None, dict[str, Any]]
 
 # UI/layout placeholders
 HELP_TEXT: list[str] = []
-HEADERS: list[str] = []
-HEADER_LINE: str = ""
-HEADER_DICT: dict[str, int] = {}
-WIDTHS: list[int] = []
-FIELD_INDEX: dict[str, int] = {}
+# HEADERS: list[str] = []
+HEADERS                     = [("Op", 5),
+                               ("Type", 14),    # 16 in 2022
+                               ("Code", 8),
+                               ("Start", 16),
+                               ("DOY", 3),
+                               ("Dur", 5),
+                               ("Stations", 10), # 56 in 2022
+                               ("DB", 4),
+                               ("Ops", 10),
+                               ("Corr", 6),
+                               ("Status", 10),
+                               ("Analys", 10)
+                              ]
+# HEADER_LINE: str = ""
+HEADER_LINE = " | ".join([f"{title:<{w}}" for title, w in HEADERS])
+
+HEADER_DICT: dict[str, int] = dict(HEADERS)
+WIDTHS: list[int] = [w for _, w in HEADERS]
+FIELD_INDEX: dict[str, int] = {"op": 0,
+                                "type": 1,
+                                "code": 2,
+                                "start": 3,
+                                "doy": 4,
+                                "dur": 5,
+                                "stations": 6,
+                                "db": 7,
+                                "ops": 8,
+                                "corr": 9,
+                                "status": 10,
+                                "analysis": 11
+                                }
 
 DATEFORMAT = "%Y-%m-%d"
 BASE_URL = ""
 NAVIGATION_KEYS: dict[str, str] = {}
-
-
-def recompute_header_widths(rows: list[Row], headers: list[str]) -> None:
-  """Placeholder recompute function; real implementation lives elsewhere."""
-  return None
