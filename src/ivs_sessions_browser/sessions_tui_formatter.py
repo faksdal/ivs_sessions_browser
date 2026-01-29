@@ -1,13 +1,10 @@
 # flake8: noqa
 # isort: skip_file
 
-"""SessionsTuiFormatter
+"""
+Defined in sessions_tui_formatter.py.
 
-Scan a BeautifulSoup `soup` and produce formatted lines for the TUI.
 
-This module provides a small, dependency-light formatter that uses
-heuristics to find session-like elements in the parsed HTML and
-convert them into single-line strings suitable for a text UI.
 """
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -19,7 +16,7 @@ from bs4    import BeautifulSoup
 
 # Project defined imports
 from .defs      import FIELD_INDEX, HEADERS, List, Row
-from .operators import load_operator_bindings, load_operator_assignments, save_operator_assignments
+from .operators import load_operator_bindings, load_operator_assignments #, save_operator_assignments
 # ─── END OF Import section ────────────────────────────────────────────────────
 
 
@@ -27,25 +24,22 @@ from .operators import load_operator_bindings, load_operator_assignments, save_o
 class SessionsTuiFormatter:
 
     """
-    Docstring for SessionsTuiFormatter
+    SessionsTuiFormatter class definition.
+
+    Scan raw HTML tags, producing formatted lines for the TUI.
+
+    This class is responsible for a few tasks:
+        - converting the raw HTML data into formatted lines for TUI display
+        - handling sessions filtering
+        - rendering the TUI
+        - managing operator assignments
     """
 
-    def __init__(self):#,
-                 #_soup:             BeautifulSoup,
-                 #_num_of_headers:   int,
-                 #_is_intensive:     bool,
-                 #_filters:          str | None,
-                 #_url:              str | None = None,
-                 #) -> None:
+    def __init__(self):
 
         """
+        Defined in sessions_tui_formatter.py.
         Docstring for __init__
-
-        :param _soup:           The BeautifulSoup object containing the downloaded HTML.
-        :param _num_of_headers: The actual number of headers as expected in the session table.
-        :param _is_intensive:   True/False indicating if the session is intensive.
-                                This is used to add the [I] marker in the Type column.
-        :param _filters:        String containing filter criteria to apply to sessions.
         """
 
         self.header_line = " | ".join([f"{title:<{w}}" for title, w in HEADERS])
@@ -68,12 +62,35 @@ class SessionsTuiFormatter:
                    _filters:          str | None,
                    _url:              str | None = None,
                    ) -> None:
+        """
+        Defined in sessions_tui_formatter.py.
 
-        soup           = _soup
-        num_of_headers = _num_of_headers
-        is_intensive   = _is_intensive
-        filters        = _filters
-        url            = _url
+        build_list() parses the read HTML content, and add formatted rows, url
+        and metadata like visible, is_intensive and code, to self.full_list.
+        After its completion, self.full_list items can be rendered in the TUI.
+
+        No filtering is done here, all rows are added to self.full_list.
+        Filtering based on self.filters is done in the TUI renderer by turning
+        the 'visible' flag on/off in the metadata dictionary for each row.
+
+        :param self: Description
+        :param _soup: Description
+        :type _soup: BeautifulSoup
+        :param _num_of_headers: Description
+        :type _num_of_headers: int
+        :param _is_intensive: Description
+        :type _is_intensive: bool
+        :param _filters: Description
+        :type _filters: str | None
+        :param _url: Description
+        :type _url: str | None
+        """
+
+        soup            = _soup
+        num_of_headers  = _num_of_headers
+        is_intensive    = _is_intensive
+        self.filters    = _filters
+        url             = _url
 
         # Find all session rows in the HTML soup
         session_rows = soup.select("table tr")
@@ -157,7 +174,7 @@ class SessionsTuiFormatter:
             # ─── END OF Append the parsed row to the full_list ────────────────
 
         # ─── END OF 'for r in session_rows' ───────────────────────────────────
-    # ─── END OF run() ─────────────────────────────────────────────────────────
+    # ─── END OF build_list() ──────────────────────────────────────────────────
 
 
 
@@ -181,19 +198,19 @@ class SessionsTuiFormatter:
 
         # This is the cell, or column, containing all the stations, and we
         # want to separate the active from the removed.
-        # The reason for subtracting 1 is because we added 'op' as index 0,
+        # The reason for subtracting 1 is because we added 'op' at index 0,
         # but the website doesn't have that column, so all indices are shifted
         # by one.
-        stations_cell = _tds[index-1]
+        stations_column = _tds[index-1]
 
         # Two empty lists to hold active vs removed stations.
         active_ids  : List[str] = []
         removed_ids : List[str] = []
 
         # This is the logic, going through all list items in the
-        # stations_cell column, extracting and sorting active and removed
+        # stations_column, extracting and sorting active and removed
         # stations separately.
-        for li in stations_cell.find_all("li", class_="station-id"):
+        for li in stations_column.find_all("li", class_="station-id"):
             classes = li.get("class", [])
             code    = li.get_text(strip=True)
             removed_ids.append(code) if "removed" in classes else active_ids.append(code)
