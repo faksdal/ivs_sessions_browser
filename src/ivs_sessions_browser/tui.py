@@ -2,7 +2,7 @@
 # isort: skip_file
 
 """
-Defined in sessions_tui_formatter.py.
+Defined in tui.py.
 
 
 """
@@ -21,7 +21,7 @@ from .operators import load_operator_bindings, load_operator_assignments #, save
 
 
 
-class SessionsTuiFormatter:
+class Tui:
 
     """
     SessionsTuiFormatter class definition.
@@ -38,7 +38,7 @@ class SessionsTuiFormatter:
     def __init__(self):
 
         """
-        Defined in sessions_tui_formatter.py.
+        Defined in tui.py.
         Docstring for __init__
         """
 
@@ -55,15 +55,15 @@ class SessionsTuiFormatter:
 
 
 
-    def build_list(self,
-                   _soup:             BeautifulSoup,
-                   _num_of_headers:   int,
-                   _is_intensive:     bool,
-                   _filters:          str | None,
-                   _url:              str | None = None,
-                   ) -> None:
+    def build_session_list(self,
+                           _soup:             BeautifulSoup,
+                           _num_of_headers:   int,
+                           _is_intensive:     bool,
+                           _filters:          str | None,
+                           _url:              str | None = None,
+                           ) -> None:
         """
-        Defined in sessions_tui_formatter.py.
+        Defined in tui.py.
 
         build_list() parses the read HTML content, and add formatted rows, url
         and metadata like visible, is_intensive and code, to self.full_list.
@@ -174,7 +174,7 @@ class SessionsTuiFormatter:
             # ─── END OF Append the parsed row to the full_list ────────────────
 
         # ─── END OF 'for r in session_rows' ───────────────────────────────────
-    # ─── END OF build_list() ──────────────────────────────────────────────────
+    # ─── END OF build_session_list() ──────────────────────────────────────────────────
 
 
 

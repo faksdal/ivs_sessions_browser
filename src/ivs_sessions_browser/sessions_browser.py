@@ -21,7 +21,7 @@ from bs4        import BeautifulSoup
 # Project defined imports
 from .defs                      import HEADERS, IVSCC_BASE_URLS
 from .fetch_sessions            import FetchSessions
-from .sessions_tui_formatter    import SessionsTuiFormatter
+from .tui    import Tui
 from .ivstypes                  import PageData
 # ─── END OF Import section ────────────────────────────────────────────────────
 
@@ -62,7 +62,7 @@ class SessionsBrowser:
         # Format and render session data
         # ──────────────────────────────────────────────────────────────────────
         # Create SessionsTuiFormatter instance to format the parsed HTML
-        formatter = SessionsTuiFormatter()
+        formatter = Tui()
 
         # Scan fetched HTML data and produce formatted lines
         for page_data in self.list_html_data_page:
@@ -79,7 +79,7 @@ class SessionsBrowser:
                 is_intensive = False
 
             # Build the formatted session list from the downloaded HTML soup
-            formatter.build_list(_soup              = soup,
+            formatter.build_session_list(_soup              = soup,
                                  _num_of_headers    = len(HEADERS) - 1,  # <-- Op is local-only, not on the website
                                  _is_intensive      = is_intensive,
                                  _filters           = self.filters,
