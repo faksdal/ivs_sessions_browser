@@ -55,6 +55,30 @@ class Tui:
 
 
 
+    def draw_header(self,
+                    _stdscr,
+                    _theme: TUITheme,
+                    _state: UIState) -> None:
+        """
+        Draws up the header line on top of the terminal window using curses.
+        Sets up the test to write, and the attributes for the text.
+        Writes the header line and the dotted line underneath, at the top of the terminal
+
+        :param _stdscr:
+        :param _theme:
+        :param _state:
+
+        :return:    None
+        """
+
+        # self._addstr_clip(_stdscr, 0, 0, D.HEADER_LINE, _theme.header)
+        # self._addstr_clip(_stdscr, 1, 0, "-" * len(D.HEADER_LINE))
+
+        # self._addstr_clip(_stdscr, 3, 0, "Jon Leithe", _theme.header)
+    # ─── END OF draw_header() ─────────────────────────────────────────────────
+
+
+
     def build_session_list(self,
                            _soup:             BeautifulSoup,
                            _num_of_headers:   int,
