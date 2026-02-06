@@ -46,6 +46,17 @@ def load_operator_bindings(path: Path = OPERATORS_PATH) -> dict[str, str]:
     return {str(k): str(v) for k, v in bindings.items()}
 
 
+def load_operator_colors(path: Path = OPERATORS_PATH) -> dict[str, str]:
+    """
+    operators.json:
+      { "colors": { "1": "green", "2": "yellow", ... } }
+    Returns dict mapping operator key to color name.
+    """
+    raw     = _load_json(path)
+    colors  = raw.get("colors", {}) if isinstance(raw, dict) else {}
+    return {str(k): str(v) for k, v in colors.items()}
+
+
 # def load_operator_assignments(path: Path = ASSIGNMENTS_PATH) -> Dict[str, str]:
     # """
     # operator_assignments.json:
