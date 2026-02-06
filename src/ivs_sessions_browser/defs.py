@@ -47,6 +47,42 @@ ARGUMENT_EPILOG             = ("Filters:\n"
                                )
 
 ARGUMENT_FORMATTER_CLASS    = argparse.RawDescriptionHelpFormatter
+
+EXIT_MESSAGE                = "Thanks for using IVS Sessions Browser. Have a nice day!"
+
+# TUI help screen text (shown when pressing '?')
+HELP_TEXT = [
+    "IVS Session Browser Help",
+    "",
+    "Navigation:",
+    "  ↑/↓ : Move selection",
+    "  PgUp/PgDn : Page up/down",
+    "  Home/End : Jump to first/last",
+    "  T : Jump to today's session",
+    "  Enter : Open session in browser",
+    "",
+    "Filtering:",
+    "  Filter by headers; type, code, start, etc.",
+    "  / : Enter filter (field:value, supports AND/OR (&,|))",
+    "  C : Clear filters",
+    "  R : Toggle show/hide removed stations",
+    "",
+    "Other:",
+    "  q or Q : Quit",
+    "  ? : Show this help",
+    "",
+    "Color legend:",
+    "  Green    = Released",
+    "  Yellow   = Processing / Waiting",
+    "  Magenta  = Cancelled",
+    "  White    = No status",
+    "  Cyan     = Active filters",
+    "",
+    "",
+    "Hit any key to close this help",
+    "",
+    "Well, maybe not ANY key; Ctrl/Shift/Alt usually don't work ;-)"
+]
 # ─── END OF CLI blurb + help ──────────────────────────────────────────────────
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -86,7 +122,7 @@ Row = tuple[list[str], str | None, dict[str, Any]]
 # UI/layout placeholders
 HELP_TEXT: list[str] = []
 # HEADERS: list[str] = []
-HEADERS                     = [("Op", 5),
+HEADERS                     = [("Op", 2),
                                ("Type", 14),    # 16 in 2022
                                ("Code", 8),
                                ("Start", 16),
@@ -121,6 +157,9 @@ FIELD_INDEX: dict[str, int] = {"op": 0,
 DATEFORMAT = "%Y-%m-%d"
 BASE_URL = ""
 NAVIGATION_KEYS: dict[str, str] = {}
+
+# Help bar text displayed at bottom of TUI  
+HELP_BAR_TEXT = "↑↓-PgUp/PgDn-Home/End:Move Enter:Open /:Filter C:Clear T:Jump to today R:Hide/show removed ?:Help q/Q:Quit"
 
 
 # Configuration filenames and directory (shared constants)
