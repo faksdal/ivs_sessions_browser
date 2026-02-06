@@ -1,5 +1,9 @@
 # IVS Sessions Browser v4 (dev)
 
+It is worth noting that this script is developed on Linux, for Linux terminal and optimized for a dark background!
+It is not tested by me on anything else.
+   -jole 2026
+
 A terminal-based TUI for browsing [IVS session schedules](https://ivscc.gsfc.nasa.gov/sessions/): master and intensives, with fast filtering, keyboard navigation, and colorized status.
 
 - **TUI**: curses interface with smooth navigation
