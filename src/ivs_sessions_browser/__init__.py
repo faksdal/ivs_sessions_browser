@@ -155,7 +155,7 @@ def main() -> None:
 
 
 
-    # No output - start TUI if available
+    # No output - start TUI if available using the sb.run() method
     attr = getattr(sb, "run", None)
     if callable(attr):
         attr(False)
