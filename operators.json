@@ -11,10 +11,10 @@
   },
   "colors": {
     "0": "white",
-    "1": "magenta",
-    "2": "green",
+    "1": "green",
+    "2": "yellow",
     "3": "red",
     "4": "blue",
-    "5": "yellow"
+    "5": "magenta"
   }
 }
