@@ -147,22 +147,6 @@ ivs-sessions-browser
 
 ---
 
-## Running in PyCharm
-
-1. Open the project (File → Open → project folder).
-2. Interpreter: File → Settings → Project → Python Interpreter → select `.venv/bin/python`.
-3. Mark Source Root: right-click `src/` → *Mark Directory As* → **Sources Root**.
-4. Run/Debug Configuration:
-   - Add **Python** configuration
-   - Script path: `scripts/run_sessions_browser.py`
-   - Working directory: project root
-   - Interpreter: the project `.venv`
-   - Environment variables: add `PYTHONPATH=$PROJECT_DIR$/src`
-
-Click ▶️ to run, 🐞 to debug.
-
----
-
 ## Usage
 
 Most usage is interactive (TUI). Command-line flags typically include:
@@ -180,7 +164,6 @@ Once inside the TUI:
 - Press `T` to jump to today
 - Press `/` to enter a filter
 - Press `C` to clear filters
-- Press `R` to show/hide removed stations
 - Press `0-5` to assign an operator to the selected session
 - Press `Enter` to open the selected session in your browser
 - Press `?` for inline help
@@ -198,7 +181,6 @@ Navigation:
 Filtering:
   /                        Enter a filter expression
   C                        Clear current filters
-  R                        Toggle show/hide removed stations
   Examples:
     code:R1|R4             → match sessions with code R1 or R4
     stations:Nn&Ns         → sessions including both Nn and Ns
