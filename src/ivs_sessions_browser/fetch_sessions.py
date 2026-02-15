@@ -20,8 +20,11 @@ from requests.adapters  import HTTPAdapter
 from urllib3.util.retry import Retry
 from datetime           import datetime
 from bs4                import BeautifulSoup
-from .ivstypes          import PageData
+
 from dateutil           import parser   as dparser
+
+# Project defined imports
+from .ivstypes          import PageData
 # ─── END OF Import section ────────────────────────────────────────────────────
 
 
@@ -37,11 +40,8 @@ class FetchSessions:
 
     """
 
-    def __init__(self) -> None:
-        pass
-        # Cache mapping: url -> { 'last_modified': datetime|None, 'etag': str|None }
-        # Initialized here so other methods can rely on its presence.
-        # self.url_meta: dict[str, dict] = {}
+    def __init__(self, _mirrors: bool) -> None:
+        self.mirrors = _mirrors        
     # ─── END OF __init__() ────────────────────────────────────────────────────
 
 
@@ -53,8 +53,9 @@ class FetchSessions:
         Fetch HTML content from a list of URLs, comparing last-modified times to
         return the most recent content for master and intensive schedules.
 
-        Returns a list[PageData]: A list containing PageData for master and intensive schedules.
-        """  # noqa: E501
+        Returns a list[PageData]: A list containing PageData for master and intensive
+        schedules.
+        """ 
 
         # Split URLs into master and intensive
         urls_master, urls_intensive = self._split_urls(_urls)
@@ -63,21 +64,21 @@ class FetchSessions:
         page_master     = PageData(html = "", last_modified = None)
         page_intensive  = PageData(html = "", last_modified = None)
 
-        # Find most recent pages for master and intensive
+        # Find most recent pages for master and intensive, and store results in
+        # page_master and page_intensive
         page_master     = self._find_most_recent_page(urls_master, _timeout)
         page_intensive  = self._find_most_recent_page(urls_intensive, _timeout)
 
-        ############ DEBUGGING OUTPUT ############
-        if page_master.url:
-            print(f"Most recent master schedule URL: {page_master.url} - Last modified: {page_master.last_modified}")
-        else:
-            print("No master schedule URL fetched.")
+        if self.mirrors:
+            if page_master.url:
+                print(f"Most recent master schedule URL: {page_master.url} - Last modified: {page_master.last_modified}")
+            else:
+                print("No master schedule URL fetched.")
 
-        ############ DEBUGGING OUTPUT ############
-        if page_intensive.url:
-            print(f"Most recent intensive schedule URL: {page_intensive.url} - Last modified: {page_intensive.last_modified}")
-        else:
-            print("No intensive schedule URL fetched.")
+            if page_intensive.url:
+                print(f"Most recent intensive schedule URL: {page_intensive.url} - Last modified: {page_intensive.last_modified}")
+            else:
+                print("No intensive schedule URL fetched.")
 
         # return pager_master and page_intensive attributes as a list
         return [page_master, page_intensive]
@@ -86,32 +87,45 @@ class FetchSessions:
 
 
     def _find_most_recent_page(self, _urls: list[str], _timeout: int) -> PageData:
+        """
+        Defined in fetch_sessions.py.
+        
+        :param _urls    : List of URLs to fetch HTML content from
+        :type _urls     : list[str]
+        :param _timeout : Timeout for the request in seconds
+        :type _timeout  : int
+        :return         : PageData object containing the most recent page's HTML
+                          and last modified time
+        :rtype          : PageData
+        """
 
         page_data = PageData(html = "", last_modified = None)
 
         for url in _urls:
-            # print(f"Please wait, fetching HTML content for URL: {url}")
-
             # Initialize variables
             html    = ""
             lm      = None
 
-            # Fetch HTML content and last modified time
+            
+            # Give the user some outputbased on whether we're checking mirrors
+            # or just fetching HTML content
+            if(self.mirrors):
+                print(f"Please wait, checking last update on {url}")
+            else:
+                print(f"Please wait, fetching HTML content for URL: {url}")
+
+            # Fetch HTML content and last modified time from the URL
             html = self._fetch_one_url_html(url, _timeout = _timeout)
-
-
 
             if html:
                 lm = self._fetch_latest_update_from_html(html)
 
-            # print(f"Last modified: {lm} - fetched HTML content from URL: {url}")
-            # Compare last modified time to pick most recent
+            # Compare last modified time to pick most recent, setting page_data
+            # attributes if this page is more recent than the current most recent
             if page_data.last_modified is None or (lm is not None and lm > page_data.last_modified):
-                page_data.html = html
+                page_data.html          = html
                 page_data.last_modified = lm
-                page_data.url = url
-
-            # print(f"Most recent last modified so far: {page_data.last_modified} from URL: {page_data.url}")
+                page_data.url           = url
 
         return page_data
     # ─── END OF _find_most_recent_page() ──────────────────────────────────────
@@ -120,13 +134,13 @@ class FetchSessions:
 
     def _fetch_latest_update_from_html(self, html: str) -> datetime | None:
         """
-        Docstring for _fetch_latest_update_from_html
+        Defined in fetch_sessions.py.
+        Extract the latest update time from HTML content.
 
-        :param self: Description
-        :param html: Description
-        :type html: str
-        :return: Description
-        :rtype: datetime | None
+        :param html : HTML content to parse for the latest update time
+        :type html  : str
+        :return     : The latest update time as a datetime object, or None if not found
+        :rtype      : datetime | None
         """
 
         try:
@@ -150,15 +164,14 @@ class FetchSessions:
 
     def _fetch_one_url_html(self, _url: str, _timeout: int = 30) -> str:
         """
-        Docstring for _fetch_one_url_html
+        Defined in fetch_sessions.py.
 
-        :param self: Description
-        :param _url: Description
-        :type _url: str
-        :param _timeout: Description
-        :type _timeout: int
-        :return: Description
-        :rtype: str
+        :param _url     : URL to fetch HTML content from
+        :type _url      : str
+        :param _timeout : Timeout for the request in seconds
+        :type _timeout  : int
+        :return         : HTML content as a string
+        :rtype          : str
         """
 
         ca_bundle   = self._get_ca_bundle_path()
@@ -174,28 +187,28 @@ class FetchSessions:
         except requests.exceptions.SSLError:
             # SSL issues: try with packaged CA bundle only for known host, otherwise
             # treat as non-fatal and return empty content so caller can continue.
-            print(f"SSL error fetching URL: {_url}")
+            # print(f"SSL error fetching URL: {_url}")
             if "ivscc.oan.es" in _url:
                 try:
                     resp = sessions.get(_url, timeout=_timeout, allow_redirects=True, verify=ca_bundle)
+                    # print(f"Please wait, reading from {_url}")
                     resp.raise_for_status()
                     return resp.text
                 except requests.exceptions.RequestException as e:
-                    print(f"Retry with CA bundle failed: {_url} - {e}")
+                    # print(f"Retry with CA bundle failed: {_url} - {e}")
                     return ""
             else:
                 return ""
 
         except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
             # Network-level failures: DNS failures, connection refused, timeouts
-            print(f"Network error fetching URL: {_url} - {e}")
+            # print(f"Network error fetching URL: {_url} - {e}")
             return ""
 
         except requests.exceptions.RequestException as e:
             # HTTP errors (4xx/5xx) and other request exceptions
             print(f"Error fetching URL: {_url} - {e}")
             return ""
-
     # ─── END OF _fetch_one_url_html() ─────────────────────────────────────────
 
 
@@ -228,7 +241,12 @@ class FetchSessions:
 
     #def fetch_last_modified(self, url: str, timeout: int = 10) -> tuple[datetime | None, str | None]:
     def _get_ca_bundle_path(self) -> str:
-        """Return path to CA bundle: env override -> packaged PEM -> certifi."""
+        """
+        Defined in fetch_sessions.py.
+
+        Return path to CA bundle: env override -> packaged PEM -> certifi.
+        """
+        
         env = os.getenv("IVS_CA_BUNDLE")
         if env:
             return env
@@ -252,191 +270,14 @@ class FetchSessions:
 
 
     def _make_session(self) -> requests.Session:
+        """
+        Defined in fetch_sessions.py.
+
+        Create a requests Session with retry logic for transient errors.
+        """
         s = requests.Session()
         retries = Retry(total=2, backoff_factor=0.3, status_forcelist=(500, 502, 503, 504))
         s.mount("https://", HTTPAdapter(max_retries=retries))
         s.mount("http://", HTTPAdapter(max_retries=retries))
         return s
     # ─── END OF _make_session() ───────────────────────────────────────────────
-
-
-
-    # def fetch_urls_metadata(self, urls: list[str]) -> dict[str, dict]:
-        # """
-        # Fetch metadata for a list of URLs. What we're interested in are
-        # Last-Modified and ETag headers.
-#
-        # Returns a mapping: { url: { 'last_modified': datetime|None, 'etag': str|None } }
-        # """
-#
-        # meta: list[tuple[str, datetime]] = []
-        # for u in urls:
-            # print(f"Please wait, fetching metadata for URL: {u}")
-            # lm = self.fetch_last_modified(u)
-            # self.url_meta[u] = {'url': u, 'last_modified': lm}
-#
-        # for m in self.url_meta.items():
-                # print(f"Last modified: {m[1].get('last_modified')} -> url: {m[0]}")
-#
-        # return self.url_meta
-    # ─── END OF fetch_urls_metadata() ─────────────────────────────────────────
-
-
-
-    # def fetch_last_modified(self, url: str, timeout: int = 10) -> datetime | None:
-        # """
-        # Perform a HEAD request (fallback to GET) and return (Last-Modified, ETag).
-#
-        # Returns two values which may be None if the server doesn't provide the
-        # corresponding headers.
-        # """
-
-        # ca_bundle   = self._get_ca_bundle_path()
-        # sess        = self._make_session()
-        # lm          = None
-
-        # try:
-            # resp = sess.get(url, timeout=timeout, allow_redirects=True, verify=True)
-
-            # resp.raise_for_status()
-
-            # soup = BeautifulSoup(resp.text, "html.parser")
-            # t = soup.find("time")
-            # if t and t.has_attr("datetime"):
-                # last_modified_string = str(t.get("datetime", "")).strip()
-                # try:
-                    # lm = dparser.parse(last_modified_string)
-                # except Exception:
-                    # lm = None
-            # else:
-                # lm = None
-
-            # return lm
-
-        # except requests.exceptions.SSLError:
-            # SSL issues: if this relates to ivscc.oan.es, try again with our CA bundle
-            # Otherwise, just give up and return None
-            # print(f"SSL error fetching URL: {url}")
-            # print("Trying again with verify= ca_bundle")
-
-            # if "ivscc.oan.es" in url:
-                # resp = sess.get(url, timeout=timeout, allow_redirects=True, verify=ca_bundle)
-#
-                # soup = BeautifulSoup(resp.text, "html.parser")
-                # t = soup.find("time")
-                # if t and t.has_attr("datetime"):
-                    # last_modified_string = str(t.get("datetime", "")).strip()
-                    # try:
-                        # lm = dparser.parse(last_modified_string)
-                    # except Exception:
-                        # lm = None
-                # else:
-                    # lm = None
-            # else:
-                # lm = None
-#
-            # return lm
-#
-        # except requests.exceptions.RequestException:
-            # print(f"Error fetching URL: {url}")
-            # return (None)
-    # ─── END OF fetch_last_modified() ─────────────────────────────────────────
-
-
-
-    #def _parse_last_modified(self, header_value: str) -> datetime | None:
-    #    try:
-    #        return parsedate_to_datetime(header_value)
-    #    except Exception:
-    #        return None
-    # ─── END OF _parse_last_modified() ────────────────────────────────────────
-
-
-
-    #def _extract_html_time(self, html: str) -> datetime | None:
-    #    """Extract a datetime from a <time datetime="..."> or visible timestamp.
-
-    #    Returns a timezone-aware UTC `datetime` when possible.
-    #    """
-    #    # Use BeautifulSoup to robustly extract footer/time
-    #    try:
-    #        soup = BeautifulSoup(html, "html.parser")
-    #    except Exception:
-    #        return None
-
-    #    footer = soup.find("footer")
-    #    if not footer:
-    #        # fallback to searching whole document
-    #        container = soup
-    #    else:
-    #        container = footer
-
-    #    # Prefer explicit <time datetime="..."> attribute
-    #    t = container.find("time")
-    #    if t and t.has_attr("datetime"):
-    #        s = str(t.get("datetime", "")).strip()
-    #        try:
-    #            dt = dparser.parse(s)
-    #            if dt.tzinfo is None:
-    #                dt = dt.replace(tzinfo=timezone.utc)
-    #            return dt
-    #        except Exception:
-    #            pass
-
-    #    # Fallback: search visible text for a recognizable date/time
-    #    text = container.get_text(" ", strip=True)
-    #    try:
-    #        dt = dparser.parse(text, fuzzy=True)
-    #        if dt.tzinfo is None:
-    #            dt = dt.replace(tzinfo=timezone.utc)
-    #        return dt
-    #    except Exception:
-    #        return None
-    # ─── END OF _extract_html_time() ──────────────────────────────────────────
-
-
-
-    #def read_and_process_url(self, url: str, timeout: int = 30) -> bool:
-    #    """Perform a GET for the URL and process its contents.
-
-    #    This is a minimal implementation: it reads the response body and returns
-    #    True on success. Replace processing with your parser/loader.
-    #    """
-    #    try:
-    #        with urllib.request.urlopen(url, timeout=timeout) as resp:
-    #            _ = resp.read()
-    #        return True
-    #    except Exception:
-    #        return False
-    # ─── END OF read_and_process_url() ────────────────────────────────────────
-
-
-
-    #def read_if_updated(self, urls: list[str]) -> None:
-    #    """Read only those URLs that are new or updated compared to `self.url_meta`.
-
-    #    `self.url_meta` is an instance-level cache mapping url -> metadata dict.
-    #    After a successful read the metadata for the URL is updated.
-    #    """
-    #    if not hasattr(self, 'url_meta') or not isinstance(self.url_meta, dict):
-    #        self.url_meta = {}
-
-    #    for u in urls:
-    #        remote_lm, remote_etag = self.fetch_last_modified(u)
-    #        prev = self.url_meta.get(u, {})
-    #        prev_lm = prev.get('last_modified')
-    #        prev_etag = prev.get('etag')
-
-    #        should_fetch = False
-    #        if prev_lm is None and prev_etag is None:
-    #            should_fetch = True
-    #        elif remote_etag and prev_etag != remote_etag:
-    #            should_fetch = True
-    #        elif remote_lm and (prev_lm is None or remote_lm > prev_lm):
-    #            should_fetch = True
-
-    #        if should_fetch:
-    #            ok = self.read_and_process_url(u)
-    #            if ok:
-    #                self.url_meta[u] = {'last_modified': remote_lm, 'etag': remote_etag}
-    # ─── END OF read_if_updated() ─────────────────────────────────────────────

@@ -1,15 +1,11 @@
 # flake8: noqa
 # isort: skip_file
-
 """
 Filename:       sessions_browser.py
 Author:         jole
 Created:        15.09.2025
 
 Description:    Holds class definitions for SessionBrowser along with attributes and methods.
-Just some random text to increase the size of the description field.
-
-Notes:
 """
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -36,12 +32,25 @@ from .operators         import load_operator_assignments, load_operator_bindings
 
 class SessionsBrowser:
     """
-    Class representing the IVS Sessions Browser.
+    Class representing the IVS Sessions Browser object.
     Defined in sessions_browser.py.
 
     """
 
     def __init__(self, _year: int, _scope: str, _mirrors: bool = False, _filters: str | None = None) -> None:
+        """
+        Docstring for __init__
+        
+        :param _year:       Which year to fetch sessions for (e.g., 2025)
+        :type _year:        int
+        :param _scope:      Which schedules to include (master, intensive, both)
+        :type _scope:       str
+        :param _mirrors:    Whether to check mirror websites for the latest update
+                            and use the most recent one
+        :type _mirrors:     bool
+        :param _filters:    Initial filters (see help for syntax)
+        :type _filters:     str | None
+        """
 
         # Store user input parameters
         self.year       = _year
@@ -59,9 +68,10 @@ class SessionsBrowser:
         # Fetch data from web
         # ──────────────────────────────────────────────────────────────────────
         # Create FetchSessions instance to download HTML data from the URLs
-        fs: FetchSessions = FetchSessions()
+        fs: FetchSessions = FetchSessions(_mirrors)
 
-        # self.list_html_data_page contains the fetched HTML data for both master and intensive schedules
+        # self.list_html_data_page contains the fetched HTML data for both master
+        # and intensive schedules
         self.list_html_data_page = fs.fetch_html_from_urls(self.url_list)
         # ─── END OF Fetch data from web ───────────────────────────────────────
 
@@ -142,9 +152,9 @@ class SessionsBrowser:
 
         if not _mirrors:
             base_url_list = [base_url_list[0]]
-            print(f"Using only primary IVSCC site for session data ({D.IVSCC_BASE_URLS[0]})")
+            print(f"► Using only primary IVSCC site for session data ({D.IVSCC_BASE_URLS[0]})")
         else:
-            print("Reviewing primary and mirror IVSCC sites for the most recently updated session data.")
+            print("►► Reviewing primary and mirror IVSCC sites for the most recently updated session data.")
 
         if self.scope == "master":
             for base_url in base_url_list:
@@ -347,14 +357,14 @@ class SessionsBrowser:
                     self.state.selected = self.state.offset = idx
 
                 # Hide/show removed stations
-                case c if c == ord('R'):
-                    self.state.show_removed = not self.state.show_removed
-                    self.view_rows = self.formatter.apply_filters_and_sorting(
-                        _query=self.filters,
-                        _show_removed=self.state.show_removed,
-                        _sort_key="start",
-                        _ascending=True
-                    )
+                # case c if c == ord('R'):
+                    # self.state.show_removed = not self.state.show_removed
+                    # self.view_rows = self.formatter.apply_filters_and_sorting(
+                        # _query=self.filters,
+                        # _show_removed=self.state.show_removed,
+                        # _sort_key="start",
+                        # _ascending=True
+                    # )
 
                 # Show help
                 case c if c == ord('?'):

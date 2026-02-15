@@ -6,10 +6,12 @@ Filename:       __init__.py
 Author:         jole
 Created:        26.01.2026
 
-Description:    Holds class definitions for SessionBrowser along with attributes and methods.
-Just some random text to increase the size of the description field.
-
-Notes:
+Description:    Entry point for ivs_sessions_browser package. Defines the main()
+                function which serves as the CLI entry point, and imports necessary
+                components from other modules.
+                It also handles command line arguments, creates a SessionsBrowser
+                instance, and either runs a TUI or outputs textual data based on
+                user input.
 """
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -42,15 +44,9 @@ except ImportError:
 # ──────────────────────────────────────────────────────────────────────────────
 def main() -> None:
     """
-    CLI entry point.
-
-    Possible command line arguments:
-        * --year        {the year you want to browse: xxxx}
-        * --scope       {master, intensive, both}, defaults to both
-        * --stations    {[station code: Xx]}, supports |(OR), &(AND), defaults to all stations
+    CLI entry point. Parses command line arguments, creates a SessionsBrowser
+    instance, and either runs a TUI or outputs textual data based on user input.
     """
-
-
 
     # Define an argument parser for the users command line args
     arg_parser = argparse.ArgumentParser(description        = ARGUMENT_DESCRIPTION,
@@ -60,7 +56,7 @@ def main() -> None:
     arg_parser.add_argument("--year",
                             type=int,
                             default=datetime.now().year,
-                            help="Year (yyyy) (default: current year)"
+                            help="Year (yyyy) (default: current year from system date)"
     )
     arg_parser.add_argument("--scope",
                             choices=("master", "intensive", "both"),
@@ -73,20 +69,25 @@ def main() -> None:
 
     arg_parser.add_argument('-o', '--output', metavar='FILE',
                             help='write textual output to FILE (use - for stdout), and exit')
+    
     arg_parser.add_argument('--format', choices=('text', 'json', 'csv'),
                             default='text', help='output format (default: text)')
+    
     arg_parser.add_argument('-a', '--append', action='store_true',
                             help='append to output file instead of overwriting')
+    
     arg_parser.add_argument('-m', '--mirrors', action='store_true',
                             help='check mirror websites for last update; default is use only primary IVSCC site (https://ivscc.gsfc.nasa.gov)')
 
     # Provide a standard --version flag exposing package version
+    # Note: setuptools-scm will automatically update the __version__ variable
+    # during build, so this will always reflect the current package version.
     arg_parser.add_argument('--version', action='version', version=__version__)
 
     args = arg_parser.parse_args()
 
     # Define the SessionsBrowser instance, and read html data from web
-    # After a successful creation, sb.html_data contains the fetched HTML data
+    # After a successful creation, sb.list_html_data_page contains the fetched HTML data
     sb: SessionsBrowser = SessionsBrowser(_year     = args.year,
                                           _scope    = args.scope,
                                           _mirrors  = args.mirrors,
@@ -103,10 +104,6 @@ def main() -> None:
 
         # Generate textual output
         lines = sb.render_sessions_list()
-
-        # print(sb.html_data)
-        #for ln in sb.html_data:
-        #    print(ln)
 
         # Write to stdout
         if args.output == '-':
@@ -161,12 +158,8 @@ def main() -> None:
         attr(False)
     else:
         print('TUI start not implemented; created SessionsBrowser instance.')
-
-    #if hasattr(sb, 'run'):
-    #    sb.run()    # callable() is also possible to use, for added safety
-    #else:
-    #    print('TUI start not implemented; created SessionsBrowser instance.')
-
+    
+    # Exit normally after TUI exits or if TUI not implemented
     raise SystemExit(0)
 # ─── END OF main() ────────────────────────────────────────────────────────────
 

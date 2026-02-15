@@ -176,7 +176,7 @@ class Tui:
             for k in sorted(self.operator_bindings.keys(), key=lambda s: int(s) if str(s).isdigit() else 99):
                 v = (self.operator_bindings.get(k) or "").strip()
                 if k == "0":
-                    # Show 0 as "clear" if it's mapped to empty (recommended)
+                    # Show 0 as "clear" it's mapped to empty string
                     if v == "":
                         parts.append("0:Clr")
                     else:
@@ -281,8 +281,9 @@ class Tui:
             # self._addstr_clip(_stdscr, y, 0, marker, marker_attr)
 
             # Draw each column with operator color and white separators
-            # x_pos = 2  # Start after marker
-            x_pos = 0  # Reset to 0 after removed marker
+            x_pos = 2   # The marker is gone, but to align with header which has
+                        # 2 spaces padding, we keep x_pos starting at 2
+            
             white_sep = curses.color_pair(1) if _state.has_colors else 0  # white
 
             for idx, part in enumerate(parts):

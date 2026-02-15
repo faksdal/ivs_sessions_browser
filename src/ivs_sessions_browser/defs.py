@@ -40,7 +40,7 @@ ARGUMENT_EPILOG             = ("Filters:\n"
                                "   ─ Added as key:value pair, several key:value pair are separated by ';'\n"
                                "   ─ Valid keys equals to the column headers (case-sensitive only for stations).\n"
                                "   ─ Non-stations fields: tokens split by space/comma/plus/pipe are OR (e.g. code: r1|r4)\n"
-                               "   ─ Stations active: stations: Nn&Ns  or  stations: Nn|Ns\n"
+                               "   ─ Stations: 'stations: Nn&Ns'  or  'stations: Nn|Ns'\n"
                                "   ─ Filters must be escaped with \" or \'\n"
                                "   ─ | (pipe) means OR, & (ampersand) means AND\n"
                                "   Example: --filters \'code: r1|r4; stations: Nn&Ns\'\n\nCLI:\n"
@@ -65,7 +65,7 @@ HELP_TEXT = [
     "  Filter by headers; type, code, start, etc.",
     "  / : Enter filter (field:value, supports AND/OR (&,|))",
     "  C : Clear filters",
-    "  R : Toggle show/hide removed stations",
+    # "  R : Toggle show/hide removed stations",
     "",
     "Other:",
     "  q or Q : Quit",
@@ -122,44 +122,46 @@ Row = tuple[list[str], str | None, dict[str, Any]]
 # UI/layout placeholders
 HELP_TEXT: list[str] = []
 # HEADERS: list[str] = []
-HEADERS                     = [("Op", 2),
-                               ("Type", 14),    # 16 in 2022
-                               ("Code", 8),
-                               ("Start", 16),
-                               ("DOY", 3),
-                               ("Dur", 5),
+HEADERS                     = [("Op",       2),
+                               ("Type",     14),    # 16 in 2022
+                               ("Code",     8),
+                               ("Start",    16),
+                               ("DOY",      3),
+                               ("Dur",      5),
                                ("Stations", 10), # 56 in 2022
-                               ("DB", 4),
-                               ("Ops", 10),
-                               ("Corr", 6),
-                               ("Status", 10),
-                               ("Analys", 10)
+                               ("DB",       4),
+                               ("Ops",      10),
+                               ("Corr",     6),
+                               ("Status",   10),
+                               ("Analys",   10)
                               ]
 # HEADER_LINE: str = ""
 HEADER_LINE = " | ".join([f"{title:<{w}}" for title, w in HEADERS])
 
 HEADER_DICT: dict[str, int] = dict(HEADERS)
 WIDTHS: list[int] = [w for _, w in HEADERS]
-FIELD_INDEX: dict[str, int] = {"op": 0,
-                                "type": 1,
-                                "code": 2,
-                                "start": 3,
-                                "doy": 4,
-                                "dur": 5,
-                                "stations": 6,
-                                "db": 7,
-                                "ops": 8,
-                                "corr": 9,
-                                "status": 10,
-                                "analysis": 11
+FIELD_INDEX: dict[str, int] = {"op"         : 0,
+                                "type"      : 1,
+                                "code"      : 2,
+                                "start"     : 3,
+                                "doy"       : 4,
+                                "dur"       : 5,
+                                "stations"  : 6,
+                                "db"        : 7,
+                                "ops"       : 8,
+                                "corr"      : 9,
+                                "status"    : 10,
+                                "analysis"  : 11
                                 }
 
-DATEFORMAT = "%Y-%m-%d"
-BASE_URL = ""
+DATEFORMAT  = "%Y-%m-%d"
+BASE_URL    = ""
+
 NAVIGATION_KEYS: dict[str, str] = {}
 
 # Help bar text displayed at bottom of TUI  
-HELP_BAR_TEXT = "↑↓-PgUp/PgDn-Home/End:Move Enter:Open /:Filter C:Clear T:Jump to today R:Hide/show removed ?:Help q/Q:Quit"
+# HELP_BAR_TEXT = "↑↓-PgUp/PgDn-Home/End:Move Enter:Open /:Filter C:Clear T:Jump to today R:Hide/show removed ?:Help q/Q:Quit"
+HELP_BAR_TEXT = "↑↓-PgUp/PgDn-Home/End:Move Enter:Open /:Filters C:Clear filters T:Jump to today ?:Help q/Q:Quit"
 
 
 # Configuration filenames and directory (shared constants)
