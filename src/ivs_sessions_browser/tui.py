@@ -258,7 +258,7 @@ class Tui:
                 else:
                     parts.append(f"{val:<{w}}")
 
-            y           = i - _state.offset + 2
+            y = i - _state.offset + 2
 
             # Get operator label from 'op' column and look up color
             op_label = vals[D.FIELD_INDEX.get("op", 0)].strip()
@@ -270,33 +270,42 @@ class Tui:
             else:
                 row_color = 0
             
-            # Selected row gets arrow marker and bold
-            if i == _state.selected:
-                marker = "► "
-                row_attr = curses.A_BOLD | curses.A_REVERSE | row_color
-            else:
-                marker = "  "
-                row_attr = row_color
-            
-            # Draw marker
-            self._addstr_clip(_stdscr, y, 0, marker, row_attr)
-            
+            # Determine selection and basic flags; draw line first without A_REVERSE
+            selected = (i == _state.selected)
+            bold_flag = curses.A_BOLD if selected else 0
+
+            # Marker and column attributes (no reverse yet)
+            # marker = "► " if selected else "  "
+            # marker = ""
+            # marker_attr = row_color | bold_flag
+            # self._addstr_clip(_stdscr, y, 0, marker, marker_attr)
+
             # Draw each column with operator color and white separators
-            x_pos = 2  # Start after marker
+            # x_pos = 2  # Start after marker
+            x_pos = 0  # Reset to 0 after removed marker
             white_sep = curses.color_pair(1) if _state.has_colors else 0  # white
-            
+
             for idx, part in enumerate(parts):
-                # Draw column content with operator color
-                self._addstr_clip(_stdscr, y, x_pos, part, row_attr)
-                
+                # Draw column content with operator color (no reverse)
+                col_attr = row_color | bold_flag
+                self._addstr_clip(_stdscr, y, x_pos, part, col_attr)
+
                 # Highlight intensive marker in Type column if present
-                if idx == type_idx and _state.has_colors and "[I]" in part:
+                if idx == type_idx and "[I]" in part:
                     i_pos = part.find("[I]")
                     if i_pos != -1:
-                        self._addstr_clip(_stdscr, y, x_pos + i_pos, "[I]", _theme.intensives)
-                
+                        # Draw intensives in theme color; will be overridden by chgat when selected
+                        # intensives_attr = _theme.intensivess if _state.has_colors else curses.A_BOLD
+                        
+                        # The [I] marker will be drawn in the current row color if
+                        # colors are supported, otherwise it will be bold. When
+                        # the row is selected, the entire row will be reversed, which
+                        # will override the color but keep the bold.
+                        intensives_attr = row_color if _state.has_colors else curses.A_BOLD
+                        self._addstr_clip(_stdscr, y, x_pos + i_pos, "[I]", intensives_attr)
+
                 x_pos += len(part)
-                
+
                 # Draw separator in white (except after last column)
                 if idx < len(parts) - 1:
                     self._addstr_clip(_stdscr, y, x_pos, " | ", white_sep)
@@ -320,6 +329,15 @@ class Tui:
                             break
                         self._addstr_clip(_stdscr, y, col_x + j, tok, hl_attr)
                         start = j + len(tok)
+            # If the row is selected, apply reverse (and bold) across the drawn line
+            if selected:
+                try:
+                    max_y, max_x = _stdscr.getmaxyx()
+                    # chgat length: cover from column 0 to the screen width
+                    _stdscr.chgat(y, 0, max_x - 1, row_color | curses.A_REVERSE | curses.A_BOLD)
+                except Exception:
+                    # chgat may fail on some terminals; ignore errors and leave as-is
+                    pass
     # ─── END OF draw_rows() ───────────────────────────────────────────────────
 
 
