@@ -273,7 +273,7 @@ class Tui:
             # Selected row gets arrow marker and bold
             if i == _state.selected:
                 marker = "► "
-                row_attr = curses.A_BOLD | row_color
+                row_attr = curses.A_BOLD | curses.A_REVERSE | row_color
             else:
                 marker = "  "
                 row_attr = row_color
