@@ -154,6 +154,21 @@ FIELD_INDEX: dict[str, int] = {"op"         : 0,
                                 "analysis"  : 11
                                 }
 
+FIELD_NAME_BY_INDEX: dict[int, str] = {idx: field for field, idx in FIELD_INDEX.items()}
+
+# Single source of truth for pretty-print column names accepted by CLI.
+# Built from visible headers and mapped to internal FIELD_INDEX keys.
+PRETTY_PRINT_COLUMN_TO_FIELD: dict[str, str] = {
+  title.upper(): FIELD_NAME_BY_INDEX[idx]
+  for idx, (title, _width) in enumerate(HEADERS)
+  if idx in FIELD_NAME_BY_INDEX
+}
+
+# Accept full name alias while preserving existing short header label "Analys".
+PRETTY_PRINT_COLUMN_TO_FIELD["ANALYSIS"] = "analysis"
+
+PRETTY_PRINT_ALLOWED_COLUMNS: tuple[str, ...] = tuple(PRETTY_PRINT_COLUMN_TO_FIELD.keys())
+
 DATEFORMAT  = "%Y-%m-%d"
 BASE_URL    = ""
 

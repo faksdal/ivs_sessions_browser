@@ -22,9 +22,39 @@ import argparse
 from datetime import datetime
 
 # Project defined imports
-from .defs              import ARGUMENT_DESCRIPTION, ARGUMENT_EPILOG, ARGUMENT_FORMATTER_CLASS
+from .defs              import (
+    ARGUMENT_DESCRIPTION,
+    ARGUMENT_EPILOG,
+    ARGUMENT_FORMATTER_CLASS,
+    PRETTY_PRINT_ALLOWED_COLUMNS,
+)
 from .sessions_browser  import SessionsBrowser
 # ─── END OF Import section ────────────────────────────────────────────────────
+
+
+
+def _parse_pretty_columns(value: str) -> str | list[str]:
+    text = value.strip().upper()
+    if text == "ALL":
+        return "ALL"
+
+    cols = [col.strip().upper() for col in value.split("|") if col.strip()]
+    if not cols:
+        raise argparse.ArgumentTypeError(
+            "Use ALL or a pipe-delimited list, e.g. OP|TYPE|STATIONS"
+        )
+
+    invalid = [col for col in cols if col not in PRETTY_PRINT_ALLOWED_COLUMNS]
+    if invalid:
+        valid = "|".join(PRETTY_PRINT_ALLOWED_COLUMNS)
+        bad = "|".join(invalid)
+        raise argparse.ArgumentTypeError(
+            f"Unknown column(s): {bad}. Valid values: {valid}"
+        )
+
+    # De-duplicate while preserving order
+    deduped_cols: list[str] = list(dict.fromkeys(cols))
+    return deduped_cols
 
 
 
@@ -70,6 +100,16 @@ def main() -> None:
     arg_parser.add_argument('-o', '--output', metavar='FILE',
                             help='write textual output to FILE (use - for stdout), and exit')
     
+    #arg_parser.add_argument('-p', '--pretty-print', action='store_true',
+    #                        help='pretty print the output')
+    arg_parser.add_argument('-p', '--pretty-print',
+                            nargs='?',
+                            const='ALL',
+                            default='ALL',
+                            type=_parse_pretty_columns,
+                            metavar='ALL|OP|TYPE|CODE|START|DOY|DUR|STATIONS|DB|OPS|CORR|STATUS|ANALYS',
+                            help='pretty print columns; use ALL (default) or pipe-delimited names (e.g. OP|TYPE|STATIONS). ANALYSIS is accepted as alias for ANALYS.')
+    
     arg_parser.add_argument('--format', choices=('text', 'json', 'csv'),
                             default='text', help='output format (default: text)')
     
@@ -103,7 +143,7 @@ def main() -> None:
             raise SystemExit(2)
 
         # Generate textual output
-        lines = sb.render_sessions_list()
+        lines = sb.render_sessions_list(args.pretty_print)
 
         # Write to stdout
         if args.output == '-':

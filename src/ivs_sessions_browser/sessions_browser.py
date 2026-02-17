@@ -174,7 +174,7 @@ class SessionsBrowser:
 
 
 
-    def render_sessions_list(self) -> list[str]:
+    def render_sessions_list(self, pretty_print: str | list[str] = "ALL") -> list[str]:
         """
         Defined in sessions_browser.py.
         This method is responsible for rendering the session list as formatted
@@ -203,6 +203,18 @@ class SessionsBrowser:
         }
         ANSI_RESET = "\033[0m"
         ANSI_BOLD = "\033[1m"
+
+        if pretty_print == "ALL":
+            selected_indices = list(range(len(D.HEADERS)))
+        else:
+            selected_indices = [
+                D.FIELD_INDEX[D.PRETTY_PRINT_COLUMN_TO_FIELD[col_name]]
+                for col_name in pretty_print
+                if col_name in D.PRETTY_PRINT_COLUMN_TO_FIELD
+            ]
+
+        if not selected_indices:
+            selected_indices = list(range(len(D.HEADERS)))
         
         # Map operator labels to colors
         operator_label_to_color = {}
@@ -215,7 +227,8 @@ class SessionsBrowser:
         lines = []
         
         # Header
-        header = " | ".join([f"{title:<{w}}" for title, w in D.HEADERS])
+        header = " | ".join([f"{D.HEADERS[i][0]:<{D.HEADERS[i][1]}}" for i in selected_indices])
+        
         lines.append(f"{ANSI_BOLD}{ANSI_COLORS['cyan']}{header}{ANSI_RESET}")
         lines.append("─" * len(header))
         
@@ -228,7 +241,8 @@ class SessionsBrowser:
             # Build formatted parts with proper widths
             parts = []
             type_idx = D.FIELD_INDEX.get("type", 1)
-            for c, val in enumerate(values):
+            for c in selected_indices:
+                val = values[c]
                 w = D.WIDTHS[c]
                 if c == type_idx and meta.get("intensive"):
                     # Reserve 3 chars for "[I]" at right edge
