@@ -12,6 +12,7 @@ Description: Fetch and choose most-recent IVS session HTML pages.
 # Import section
 # ──────────────────────────────────────────────────────────────────────────────
 import os
+from urllib import response
 import certifi
 import requests
 import importlib.resources as pkg_resources
@@ -20,6 +21,7 @@ from requests.adapters  import HTTPAdapter
 from urllib3.util.retry import Retry
 from datetime           import datetime
 from bs4                import BeautifulSoup
+from tqdm               import tqdm
 
 from dateutil           import parser   as dparser
 
@@ -107,12 +109,12 @@ class FetchSessions:
             lm      = None
 
             
-            # Give the user some outputbased on whether we're checking mirrors
+            # Give the user some output based on whether we're checking mirrors
             # or just fetching HTML content
-            if(self.mirrors):
-                print(f"Please wait, checking last update on {url}")
-            else:
-                print(f"Please wait, fetching HTML content for URL: {url}")
+            #if(self.mirrors):
+            #    print(f"Please wait, checking latest update on {url}")
+            #else:
+            #    print(f"Please wait, fetching HTML content for URL: {url}")
 
             # Fetch HTML content and last modified time from the URL
             html = self._fetch_one_url_html(url, _timeout = _timeout)
@@ -162,6 +164,12 @@ class FetchSessions:
 
 
 
+    def _fetch_one_url_html_with_progress(self) -> str:
+        pass
+    # ─── END OF _fetch_one_url_html_with_progress() ─────────────────────────────
+
+
+
     def _fetch_one_url_html(self, _url: str, _timeout: int = 30) -> str:
         """
         Defined in fetch_sessions.py.
@@ -178,12 +186,36 @@ class FetchSessions:
         sessions    = self._make_session()
 
         try:
-            resp = sessions.get(_url, timeout=_timeout, allow_redirects=True, verify=True)
-
+            # Trying to read using streams to show progress bar, but if the server doesn't provide a content-length header, this will not work well.
+            resp = sessions.get(_url, timeout=_timeout, allow_redirects=True, verify=True, stream=True)
+              
+            # Raise an exception for HTTP errors (4xx and 5xx) to be caught below
             resp.raise_for_status()
 
-            return resp.text
+            # Get content length for progress bar, default to 0 if not provided
+            # Not all servers provide a content-length header, so we need to handle that case
+            total_size = int(resp.headers.get('content-length', 0))
 
+            # Print a message to the user indicating that we're reading from the
+            # URL, and show a progress bar if we have a content length
+            # If we don't have a content length, we simply count the bytes as
+            # they come in
+            print(f"Please wait, reading from {_url}")
+            chunks: list[bytes] = []
+            with tqdm(total=total_size, unit='B', unit_scale=True, ncols=70) as pbar:
+                for chunk in resp.iter_content(chunk_size=1024):
+                    if chunk:
+                        chunks.append(chunk)
+                        pbar.update(len(chunk))
+
+            # Join the chunks together and decode to get the full HTML content to
+            # return to the caller
+            raw_html = b"".join(chunks)
+            encoding = resp.encoding or "utf-8"
+            return raw_html.decode(encoding, errors="replace")
+
+        # Handle different types of exceptions separately to provide more specific
+        # error messages and handling logic
         except requests.exceptions.SSLError:
             # SSL issues: try with packaged CA bundle only for known host, otherwise
             # treat as non-fatal and return empty content so caller can continue.
