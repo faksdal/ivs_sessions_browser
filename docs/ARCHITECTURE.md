@@ -12,7 +12,7 @@ This document explains how the CLI/TUI flow is wired together so contributors ca
 6. The HTML is parsed into row data, filtered, and sorted by `Tui` class using helper methods from `FilterAndSort`.
 7. Either:
    - Interactive TUI is launched (default) via curses, or
-   - Text/JSON/CSV output is written to file/stdout and the program exits.
+  - Text output is written to file/stdout and the program exits.
 
 ## Detailed flow
 
@@ -105,7 +105,9 @@ Type definitions and data classes:
 - `--mirrors` (compare timestamps across mirror sites, select most recent)
 - Output controls:
   - `--output FILE` - write to file (use `-` for stdout) and exit
-  - `--format` (text|json|csv; default: text)
+  - `--pretty-print [ALL|OP|TYPE|...]` - select output columns for textual rendering
+  - `--verbose-fetch` - keep fetch/progress messages visible when using `--output`
+  - `--format` (text|json|csv; default: text; currently `text` is implemented)
   - `--append` - append to output file instead of overwriting
 - `--version` - reports package version from setuptools-scm
 
@@ -121,7 +123,7 @@ Type definitions and data classes:
 
 ## TUI Features
 - **Navigation**: Arrow keys, PgUp/PgDn, Home/End, jump to today with `T`
-- **Filtering**: `/` to enter filter, `C` to clear, `R` to toggle removed stations
+- **Filtering**: `/` to enter filter, `C` to clear (including station filters: `stations`, `stations_removed`, `stations_all`)
 - **Operator assignment**: `0-5` keys assign configured operators to sessions
 - **Colors**: Status-based colors (green=released, yellow=processing/waiting, magenta=cancelled) and operator-specific colors
 - **Help**: `?` displays inline help with key bindings and examples

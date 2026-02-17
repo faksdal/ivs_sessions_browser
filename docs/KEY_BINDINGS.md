@@ -25,7 +25,6 @@
 |-----|--------|-------------|
 | `/` | Enter filter | Enter filter mode to type a filter expression |
 | `C` | Clear filters | Clear all active filters and show all sessions |
-| `R` | Toggle removed | Toggle visibility of removed stations (show/hide) |
 
 ## Operator Assignment
 
@@ -65,14 +64,14 @@ See [FILTER_SYNTAX.md](FILTER_SYNTAX.md) for comprehensive filter documentation.
 
 ## Color Legend
 
-| Color | Meaning |
-|-------|---------|
-| **Green** | Released - session data has been released |
-| **Yellow** | Processing / Waiting - session is being processed or waiting |
-| **Magenta** | Cancelled - session was cancelled |
-| **White** | No status - status not specified |
-| **Cyan** | Filter indicator - shown in status bar when filters are active |
-| **Operator colors** | Custom colors for each operator (configurable) |
+| Color                 | Meaning                                                        |
+|-----------------------|----------------------------------------------------------------|
+| **Green**             | Released - session data has been released                      |
+| **Yellow**            | Processing / Waiting - session is being processed or waiting   |
+| **Magenta**           | Cancelled - session was cancelled                              |
+| **White**             | No status - status not specified                               |
+| **Cyan**              | Filter indicator - shown in status bar when filters are active |
+| **Operator colors**   | Custom colors for each operator (configurable)                 |
 
 ## Status Bar
 
@@ -88,4 +87,4 @@ The bottom status bar shows:
 3. **Browser integration**: Press `Enter` on any session to view full details on the IVS website
 4. **Help always available**: Press `?` anytime to see the help screen with all key bindings
 5. **Clear and retry**: Use `C` to clear filters if you want to start fresh
-6. **Removed stations toggle**: Use `R` to see which stations were scheduled but later removed
+6. **Removed stations view**: Use filters like `stations_removed:Ft|Ur` or `stations_all:Ft|Ur` to inspect removed stations

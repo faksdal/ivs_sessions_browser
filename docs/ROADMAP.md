@@ -36,7 +36,7 @@
   - Color-coded session status (Released/Processing/Cancelled)
   - Operator-based row coloring
   - Highlighted removed stations (in brackets)
-  - Toggle removed stations visibility (`R` key)
+  - Removed/active/all station filtering via filter expressions
   - Status bar with filter indication and position info
   - Inline help screen (`?` key)
 
@@ -50,6 +50,10 @@
   - Initial filter expression (`--filters`)
   - Mirror checking (`--mirrors`)
   - Text output to file/stdout (`--output`)
+  - Column selection for textual output (`--pretty-print`)
+  - Quiet-by-default export with optional progress override (`--verbose-fetch`)
+  - Append mode (`--append`)
+  - Output format selector (`--format`, currently `text` implemented)
   - Version display (`--version`)
 
 ## Near-Term Roadmap (Next 6 months)
