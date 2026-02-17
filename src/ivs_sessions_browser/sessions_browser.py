@@ -15,6 +15,7 @@ from __future__ import annotations
 from bs4        import BeautifulSoup
 
 import curses
+import os
 import time
 import webbrowser
 
@@ -149,12 +150,15 @@ class SessionsBrowser:
         base_url_list   : list[str] = D.IVSCC_BASE_URLS
         year            : int       = (int)(self.year)
         retval          : list[str] = []
+        quiet = os.getenv("IVS_SESSIONS_QUIET") == "1"
 
         if not _mirrors:
             base_url_list = [base_url_list[0]]
-            print(f"► Using only primary IVSCC site for session data ({D.IVSCC_BASE_URLS[0]})")
+            if not quiet:
+                print(f"► Using only primary IVSCC site for session data ({D.IVSCC_BASE_URLS[0]})")
         else:
-            print("►► Reviewing primary and mirror IVSCC sites for the most recently updated session data.")
+            if not quiet:
+                print("►► Reviewing primary and mirror IVSCC sites for the most recently updated session data.")
 
         if self.scope == "master":
             for base_url in base_url_list:

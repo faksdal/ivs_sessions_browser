@@ -71,7 +71,9 @@ class FetchSessions:
         page_master     = self._find_most_recent_page(urls_master, _timeout)
         page_intensive  = self._find_most_recent_page(urls_intensive, _timeout)
 
-        if self.mirrors:
+        quiet = os.getenv("IVS_SESSIONS_QUIET") == "1"
+
+        if self.mirrors and not quiet:
             if page_master.url:
                 print(f"Most recent master schedule URL: {page_master.url} - Last modified: {page_master.last_modified}")
             else:
@@ -184,6 +186,7 @@ class FetchSessions:
 
         ca_bundle   = self._get_ca_bundle_path()
         sessions    = self._make_session()
+        quiet       = os.getenv("IVS_SESSIONS_QUIET") == "1"
 
         try:
             # Trying to read using streams to show progress bar, but if the server doesn't provide a content-length header, this will not work well.
@@ -200,9 +203,10 @@ class FetchSessions:
             # URL, and show a progress bar if we have a content length
             # If we don't have a content length, we simply count the bytes as
             # they come in
-            print(f"Please wait, reading from {_url}")
+            if not quiet:
+                print(f"Please wait, reading from {_url}")
             chunks: list[bytes] = []
-            with tqdm(total=total_size, unit='B', unit_scale=True, ncols=70) as pbar:
+            with tqdm(total=total_size, unit='B', unit_scale=True, ncols=70, disable=quiet) as pbar:
                 for chunk in resp.iter_content(chunk_size=1024):
                     if chunk:
                         chunks.append(chunk)

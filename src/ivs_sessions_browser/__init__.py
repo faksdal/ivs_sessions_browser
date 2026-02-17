@@ -18,6 +18,7 @@ Description:    Entry point for ivs_sessions_browser package. Defines the main()
 # Import section
 # ──────────────────────────────────────────────────────────────────────────────
 import argparse
+import os
 
 from datetime import datetime
 
@@ -119,12 +120,22 @@ def main() -> None:
     arg_parser.add_argument('-m', '--mirrors', action='store_true',
                             help='check mirror websites for last update; default is use only primary IVSCC site (https://ivscc.gsfc.nasa.gov)')
 
+    arg_parser.add_argument('--verbose-fetch', action='store_true',
+                            help='show fetch progress and source-status messages even when using --output')
+
     # Provide a standard --version flag exposing package version
     # Note: setuptools-scm will automatically update the __version__ variable
     # during build, so this will always reflect the current package version.
     arg_parser.add_argument('--version', action='version', version=__version__)
 
     args = arg_parser.parse_args()
+
+    # Script-friendly mode: suppress progress/status chatter when user requested
+    # textual output (stdout/file) via -o/--output.
+    if args.output and not args.verbose_fetch:
+        os.environ["IVS_SESSIONS_QUIET"] = "1"
+    else:
+        os.environ.pop("IVS_SESSIONS_QUIET", None)
 
     # Define the SessionsBrowser instance, and read html data from web
     # After a successful creation, sb.list_html_data_page contains the fetched HTML data
@@ -149,12 +160,18 @@ def main() -> None:
         if args.output == '-':
             import sys
             out = sys.stdout
-            for ln in lines:
-                print(ln, file=out)
+            try:
+                for ln in lines:
+                    print(ln, file=out)
+            except BrokenPipeError:
+                # Downstream consumer closed stdout early (e.g. pipe/head or debugger transport).
+                # Exit cleanly instead of showing a traceback/non-zero status.
+                devnull_fd = os.open(os.devnull, os.O_WRONLY)
+                os.dup2(devnull_fd, sys.stdout.fileno())
+                raise SystemExit(0)
             raise SystemExit(0)
 
         # Write to file: support append vs atomic overwrite
-        import os
         import tempfile
 
         if args.append:
