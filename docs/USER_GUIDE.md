@@ -74,7 +74,9 @@ Available options:
 - `--filters "expression"` - Initial filter expression
 - `--mirrors` - Check mirror sites for most recent data
 - `--output FILE` - Write output to file and exit (use `-` for stdout)
-- `--format {text|json|csv}` - Output format (default: text)
+- `-p, --pretty-print [ALL|OP|TYPE|... ]` - Select output columns (pipe-delimited), default `ALL`
+- `--verbose-fetch` - Show fetch/progress output even when using `--output`
+- `--format {text|json|csv}` - Output format flag (currently `text` is implemented)
 - `--append` - Append to output file instead of overwriting
 - `--version` - Show version and exit
 
@@ -95,6 +97,12 @@ Available options:
 
 # Export to file and exit
 ./run_browser --year 2025 --output sessions.txt
+
+# Export selected columns to stdout
+./run_browser --year 2025 --output - --pretty-print OP|TYPE|STATIONS
+
+# Keep fetch progress visible while exporting
+./run_browser --year 2025 --output sessions.txt --verbose-fetch
 ```
 
 ## Using the TUI
@@ -301,23 +309,14 @@ When operators are assigned, the row color reflects the operator's configured co
 Stations that were originally scheduled but later removed appear:
 - In square brackets: `[Ft]`
 - Often highlighted (depending on theme)
-- Can be hidden/shown with `R` key
-
-## Toggle Removed Stations
-
-Press `R` to toggle between three views:
-1. Show both active and removed stations
-2. Show only active stations
-3. Show only removed stations (if filter includes `stations_removed:`)
-
-This helps you:
-- See the original schedule vs. actual participants
-- Identify station availability issues
-- Track schedule changes over time
+- Can be targeted via filters such as `stations:`, `stations_removed:`, and `stations_all:`
 
 ## Output to File
 
 Instead of using the interactive TUI, you can export session data:
+
+By default, `--output` runs in quiet mode (no fetch/progress chatter on stderr).
+Use `--verbose-fetch` to re-enable progress/status output.
 
 ### Text Format
 ```bash
@@ -430,7 +429,7 @@ Press `?` anytime in the TUI for a complete keyboard reference.
 
 Quick reference:
 - **Navigation**: `↑↓` `PgUp` `PgDn` `Home` `End` `T`
-- **Filtering**: `/` `C` `R`
+- **Filtering**: `/` `C`
 - **Actions**: `Enter` `0-5`
 - **Help**: `?`
 - **Quit**: `q` or `Q`

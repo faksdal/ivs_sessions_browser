@@ -10,7 +10,7 @@ A terminal-based TUI for browsing [IVS session schedules](https://ivscc.gsfc.nas
 - **Filters**: powerful, composable query language
 - **Colors**: quick status scanning (Released / Processing / Waiting / Cancelled / None)
 - **Open in browser**: jump to the IVS page for a session
-- **Toggle removed stations**: see active, removed or both
+- **Station filtering**: filter active/removed/all station sets in expressions
 - **Jump to today**: one-key shortcut to the current session row
 - **Inline help**: `?` or `#!` shows a centered help box
 
@@ -154,7 +154,10 @@ Most usage is interactive (TUI). Command-line flags typically include:
 ```
 --year 2025                    # which IVS year to fetch (1979 onwards)
 --scope master|intensive|both  # select scope
---stations "Ns|Nn"             # prefilter stations
+--filters "code:R1|R4"         # initial filter expression
+--output -                     # write text output to stdout and exit
+--pretty-print OP|TYPE|STATIONS
+--verbose-fetch                # show fetch/progress output even with --output
 ```
 
 Run with `-h/--help` (help) to see current options.
