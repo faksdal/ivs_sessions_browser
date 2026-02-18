@@ -2,15 +2,15 @@
 
 ## Navigation
 
-| Key | Action | Description |
-|-----|--------|-------------|
-| `↑` | Move up | Move selection up one row |
-| `↓` | Move down | Move selection down one row |
-| `PgUp` | Page up | Scroll up one page |
-| `PgDn` | Page down | Scroll down one page |
-| `Home` | Jump to top | Jump to first session |
-| `End` | Jump to bottom | Jump to last session |
-| `T` | Jump to today | Jump to session on or after today's date |
+| Key       | Action            | Description                               |
+|-----------|-------------------|-------------------------------------------|
+| `↑`       | Move up           | Move selection up one row                 |
+| `↓`       | Move down         | Move selection down one row               |
+| `PgUp`    | Page up           | Scroll up one page                        |
+| `PgDn`    | Page down         | Scroll down one page                      |
+| `Home`    | Jump to top       | Jump to first session                     |
+| `End`     | Jump to bottom    | Jump to last session                      |
+| `T`       | Jump to today     | Jump to session on or after today's date  |
 
 ## Actions
 
