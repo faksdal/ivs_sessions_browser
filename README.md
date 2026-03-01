@@ -99,6 +99,7 @@ ivs-sessions-browser = "ivs_sessions_browser:main"
 ```bash
 pip install -e .
 ```
+On Windows, .\.venv\Scripts\ivs_sessions_browser.exe
 
 You can now run:
 ```bash
