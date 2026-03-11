@@ -53,3 +53,15 @@ Thumbs.db
 
 operator_assignments.json
 src/ivs_sessions_browser/version.py
+
+# Files suggested to be ignored by user
+.editorconfig
+.pre-commit-config.yaml
+pdf_columns
+pyrightconfig.json
+pytest.ini
+ruff.toml
+src/ivs_sessions_browser/_version.py
+sessions*.pdf
+software_flow.md
+
