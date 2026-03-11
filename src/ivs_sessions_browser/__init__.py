@@ -101,7 +101,7 @@ def main() -> None:
 
     arg_parser.add_argument('-o', '--output', metavar='FILE',
                             help='write textual output to FILE (use - for stdout), and exit')
-    
+
     #arg_parser.add_argument('-p', '--pretty-print', action='store_true',
     #                        help='pretty print the output')
     arg_parser.add_argument('-p', '--pretty-print',
@@ -111,13 +111,13 @@ def main() -> None:
                             type=_parse_pretty_columns,
                             metavar='ALL|OP|TYPE|CODE|START|DOY|DUR|STATIONS|DB|OPS|CORR|STATUS|ANALYS',
                             help='pretty print columns; use ALL (default) or pipe-delimited names (e.g. OP|TYPE|STATIONS). ANALYSIS is accepted as alias for ANALYS.')
-    
-    arg_parser.add_argument('--format', choices=('text', 'json', 'csv', 'pdf'),
+
+    arg_parser.add_argument('--format', choices=('text', 'pdf', 'csv'),
                             default='text', help='output format (default: text); pdf preserves row colors in file export')
-    
+
     arg_parser.add_argument('-a', '--append', action='store_true',
                             help='append to output file instead of overwriting')
-    
+
     arg_parser.add_argument('-m', '--mirrors', action='store_true',
                             help='check mirror websites for last update; default is use only primary IVSCC site (https://ivscc.gsfc.nasa.gov)')
 
@@ -252,7 +252,7 @@ def main() -> None:
         attr(False)
     else:
         print('TUI start not implemented; created SessionsBrowser instance.')
-    
+
     # Exit normally after TUI exits or if TUI not implemented
     raise SystemExit(0)
 # ─── END OF main() ────────────────────────────────────────────────────────────

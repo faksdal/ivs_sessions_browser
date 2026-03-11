@@ -18,6 +18,7 @@ import curses
 import os
 import time
 import webbrowser
+from .pdf_export import write_ansi_lines_pdf
 
 # Project defined imports
 from .                          import defs as D
@@ -41,7 +42,7 @@ class SessionsBrowser:
     def __init__(self, _year: int, _scope: str, _mirrors: bool = False, _filters: str | None = None) -> None:
         """
         Docstring for __init__
-        
+
         :param _year:       Which year to fetch sessions for (e.g., 2025)
         :type _year:        int
         :param _scope:      Which schedules to include (master, intensive, both)
@@ -111,10 +112,10 @@ class SessionsBrowser:
                                                                   _show_removed = True,
                                                                   _sort_key     = "start",
                                                                   _ascending    = True)
-        
+
         # Extract station tokens for highlighting
         self.highlight_tokens = self.formatter.filter_sort.extract_station_tokens(self.filters or "")
-        
+
         # After building the session list(s), recompute header widths to fit content
         self.formatter.recompute_header_widths()
 
@@ -127,6 +128,37 @@ class SessionsBrowser:
         self.operator_bindings      = load_operator_bindings()
         self.operator_assignments   = load_operator_assignments()
         self.operator_colors        = load_operator_colors()
+        # Read default PDF columns from user-editable file in CONFIG_DIR
+        try:
+            pdf_columns_path = D.CONFIG_DIR / "pdf_columns"
+            if not pdf_columns_path.exists():
+                try:
+                    pdf_columns_path.write_text("ALL", encoding="utf-8")
+                except Exception:
+                    pass
+
+            raw = ""
+            try:
+                raw = (pdf_columns_path.read_text(encoding="utf-8") or "").strip()
+            except Exception:
+                raw = ""
+
+            if not raw:
+                self.pdf_default_columns = "ALL"
+            else:
+                raw_up = raw.strip().upper()
+                if raw_up == "ALL":
+                    self.pdf_default_columns = "ALL"
+                else:
+                    cols = [c.strip().upper() for c in raw_up.split("|") if c.strip()]
+                    invalid = [c for c in cols if c not in D.PRETTY_PRINT_ALLOWED_COLUMNS]
+                    if invalid:
+                        self.pdf_default_columns = "ALL"
+                    else:
+                        # store as list for later use
+                        self.pdf_default_columns = cols
+        except Exception:
+            self.pdf_default_columns = "ALL"
         # ─── END OF Format and render session data ────────────────────────────
     # ─── END OF __init__() ────────────────────────────────────────────────────
 
@@ -183,7 +215,7 @@ class SessionsBrowser:
         Defined in sessions_browser.py.
         This method is responsible for rendering the session list as formatted
         text output with ANSI colors, suitable for printing to console or web display.
-        
+
         Returns formatted lines matching TUI appearance:
         - Operator colors applied to each row
         - Proper column widths and padding
@@ -193,7 +225,7 @@ class SessionsBrowser:
         :return: List of formatted strings with ANSI color codes
         :rtype: list[str]
         """
-        
+
         # ANSI color codes
         ANSI_COLORS = {
             "white": "\033[97m",
@@ -219,29 +251,29 @@ class SessionsBrowser:
 
         if not selected_indices:
             selected_indices = list(range(len(D.HEADERS)))
-        
+
         # Map operator labels to colors
         operator_label_to_color = {}
         for op_key, op_label in self.operator_bindings.items():
             if op_label and op_key in self.operator_colors:
                 color_name = self.operator_colors[op_key].lower()
                 operator_label_to_color[op_label] = ANSI_COLORS.get(color_name, "")
-        
+
         # Build output lines
         lines = []
-        
+
         # Header
         header = " | ".join([f"{D.HEADERS[i][0]:<{D.HEADERS[i][1]}}" for i in selected_indices])
-        
+
         lines.append(f"{ANSI_BOLD}{ANSI_COLORS['cyan']}{header}{ANSI_RESET}")
         lines.append("─" * len(header))
-        
+
         # Data rows
         for values, _url, meta in self.view_rows:
             # Get operator color
             op_label = values[D.FIELD_INDEX.get("op", 0)].strip()
             color_code = operator_label_to_color.get(op_label, "")
-            
+
             # Build formatted parts with proper widths
             parts = []
             type_idx = D.FIELD_INDEX.get("type", 1)
@@ -254,7 +286,7 @@ class SessionsBrowser:
                     parts.append(f"{val:<{base_w}}[I]")
                 else:
                     parts.append(f"{val:<{w}}")
-            
+
             # Build line with white separators and colored cells
             line_parts = []
             for i, part in enumerate(parts):
@@ -262,11 +294,11 @@ class SessionsBrowser:
                     line_parts.append(f"{color_code}{part}{ANSI_RESET}")
                 else:
                     line_parts.append(part)
-            
+
             # Join with white pipe separators
             full_line = f"{ANSI_COLORS['white']} | {ANSI_RESET}".join(line_parts)
             lines.append(full_line)
-        
+
         return lines
     # ─── END OF render_sessions_list() ────────────────────────────────────────
 
@@ -288,21 +320,21 @@ class SessionsBrowser:
         if self.state.has_colors:
             curses.start_color()
         _stdscr.clear()
-        
+
         # Jump to today's session on startup
         idx = self.formatter.filter_sort.index_on_or_after_today(self.view_rows)
         if idx != -1:
             # self.state.selected = idx
             self.state.selected = self.state.offset = idx
-        
+
         # Start the main loop
         quit: bool = False
         while not quit:
-            
+
             # Determine the view height of the current terminal screen
             max_y, _                = _stdscr.getmaxyx()
             self.state.view_height  = max(1, max_y - 3)
-            
+
             self.formatter.clear_screen(_stdscr)
             self.formatter.draw_header(_stdscr, self.theme, self.state)
 
@@ -317,7 +349,7 @@ class SessionsBrowser:
             key = _stdscr.getch()
             match key:
                 # Navigation keys and Enter
-                case key if key in (curses.KEY_UP, curses.KEY_DOWN, curses.KEY_PPAGE, curses.KEY_NPAGE, 
+                case key if key in (curses.KEY_UP, curses.KEY_DOWN, curses.KEY_PPAGE, curses.KEY_NPAGE,
                                    curses.KEY_HOME, curses.KEY_END, 10, 13, curses.KEY_ENTER):
                     self._navigate(key, _stdscr)
 
@@ -383,6 +415,68 @@ class SessionsBrowser:
                         # _sort_key="start",
                         # _ascending=True
                     # )
+
+                # Save to PDF
+                case c if c == ord('P'):
+                    # Prompt user for which columns to include (ALL or pipe-separated list)
+                    prompt = "PDF columns (ALL or pipe-separated, e.g. OP|TYPE|STATIONS): "
+                    # Use configured default (string 'ALL' or list of cols)
+                    if isinstance(getattr(self, 'pdf_default_columns', None), list):
+                        prefill = "|".join(self.pdf_default_columns)
+                    else:
+                        prefill = str(getattr(self, 'pdf_default_columns', 'ALL'))
+                    cols_input = self._get_input(_stdscr, self.theme, prompt, _initial=prefill)
+                    if not cols_input:
+                        cols_input = "ALL"
+
+                    # Parse and validate input
+                    pretty: str | list[str]
+                    text = cols_input.strip().upper()
+                    if text == "ALL":
+                        pretty = "ALL"
+                    else:
+                        cols = [col.strip().upper() for col in text.split("|") if col.strip()]
+                        invalid = [col for col in cols if col not in D.PRETTY_PRINT_ALLOWED_COLUMNS]
+                        if invalid:
+                            max_y, max_x = _stdscr.getmaxyx()
+                            err = f"Unknown column(s): {','.join(invalid)}"
+                            attr = self.theme.help_bar if self.state.has_colors else 0
+                            self.formatter._addstr_clip(_stdscr, max_y - 2, 0, err[: max_x - 1], attr)
+                            _stdscr.refresh()
+                            time.sleep(1.5)
+                            break
+                        # De-duplicate while preserving order
+                        pretty = list(dict.fromkeys(cols))
+
+                    try:
+                        max_y, max_x = _stdscr.getmaxyx()
+                        filename = f"sessions-{time.strftime('%Y%m%d-%H%M%S')}.pdf"
+                        out_path = os.path.join(os.getcwd(), filename)
+
+                        # Build ANSI-coloured lines and write PDF
+                        lines = self.render_sessions_list(pretty)
+                        with open(out_path, "wb") as f:
+                            write_ansi_lines_pdf(lines, f)
+
+                        # Show short confirmation message above helpbar
+                        msg = f"Saved PDF: {out_path}"
+                        attr = self.theme.help_bar if self.state.has_colors else 0
+                        self.formatter._addstr_clip(_stdscr, max_y - 2, 0, msg[: max_x - 1], attr)
+                        _stdscr.refresh()
+                        time.sleep(1.5)
+
+                        # Try to open the saved file in the system viewer
+                        try:
+                            webbrowser.open(f"file://{out_path}")
+                        except Exception:
+                            pass
+                    except Exception as e:
+                        max_y, max_x = _stdscr.getmaxyx()
+                        err = f"Error saving PDF: {e}"
+                        attr = self.theme.help_bar if self.state.has_colors else 0
+                        self.formatter._addstr_clip(_stdscr, max_y - 2, 0, err[: max_x - 1], attr)
+                        _stdscr.refresh()
+                        time.sleep(1.5)
 
                 # Show help
                 case c if c == ord('?'):
@@ -579,7 +673,7 @@ class SessionsBrowser:
     def run(self, _text: bool = True) -> None:
         """
         Docstring for run
-        
+
         :param self: Description
         :param _text: Description
         :type _text: bool
@@ -587,12 +681,12 @@ class SessionsBrowser:
 
         # --- Using curses to call on the main loop, self._curses.main()
         curses.wrapper(self._curses_main)
-        
+
         #for values, _url, _meta in self.view_rows:
         #    print(values)
 
         print(D.EXIT_MESSAGE)
-        
+
     # ─── END OF run() ─────────────────────────────────────────────────────────
 
 # ─── END OF class SessionsBrowser ─────────────────────────────────────────────
