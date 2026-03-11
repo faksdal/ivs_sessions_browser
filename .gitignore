@@ -57,7 +57,6 @@ src/ivs_sessions_browser/version.py
 # Files suggested to be ignored by user
 .editorconfig
 .pre-commit-config.yaml
-pdf_columns
 pyrightconfig.json
 pytest.ini
 ruff.toml
