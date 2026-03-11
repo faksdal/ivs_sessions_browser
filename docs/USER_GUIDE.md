@@ -76,7 +76,7 @@ Available options:
 - `--output FILE` - Write output to file and exit (use `-` for stdout)
 - `-p, --pretty-print [ALL|OP|TYPE|... ]` - Select output columns (pipe-delimited), default `ALL`
 - `--verbose-fetch` - Show fetch/progress output even when using `--output`
-- `--format {text|json|csv}` - Output format flag (currently `text` is implemented)
+- `--format {text|json|csv|pdf}` - Output format flag (`text` and `pdf` are implemented)
 - `--append` - Append to output file instead of overwriting
 - `--version` - Show version and exit
 
@@ -97,6 +97,9 @@ Available options:
 
 # Export to file and exit
 ./run_browser --year 2025 --output sessions.txt
+
+# Export a colored PDF using the same pretty-printed lines
+./run_browser --year 2025 --output sessions.pdf --format pdf
 
 # Export selected columns to stdout
 ./run_browser --year 2025 --output - --pretty-print OP|TYPE|STATIONS
@@ -332,6 +335,14 @@ Use `--verbose-fetch` to re-enable progress/status output.
 ```bash
 ./run_browser --year 2025 --output sessions.csv --format csv
 ```
+
+### PDF Format
+
+```bash
+./run_browser --year 2025 --output sessions.pdf --format pdf
+```
+
+PDF export reuses the same pretty-printed lines as text export and preserves the configured row colors in a monospaced layout. `--append` is not supported for PDF output.
 
 ### Append Mode
 ```bash

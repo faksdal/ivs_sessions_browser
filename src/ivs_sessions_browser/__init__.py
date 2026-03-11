@@ -29,6 +29,7 @@ from .defs              import (
     ARGUMENT_FORMATTER_CLASS,
     PRETTY_PRINT_ALLOWED_COLUMNS,
 )
+from .pdf_export        import write_ansi_lines_pdf
 from .sessions_browser  import SessionsBrowser
 # ─── END OF Import section ────────────────────────────────────────────────────
 
@@ -111,8 +112,8 @@ def main() -> None:
                             metavar='ALL|OP|TYPE|CODE|START|DOY|DUR|STATIONS|DB|OPS|CORR|STATUS|ANALYS',
                             help='pretty print columns; use ALL (default) or pipe-delimited names (e.g. OP|TYPE|STATIONS). ANALYSIS is accepted as alias for ANALYS.')
     
-    arg_parser.add_argument('--format', choices=('text', 'json', 'csv'),
-                            default='text', help='output format (default: text)')
+    arg_parser.add_argument('--format', choices=('text', 'json', 'csv', 'pdf'),
+                            default='text', help='output format (default: text); pdf preserves row colors in file export')
     
     arg_parser.add_argument('-a', '--append', action='store_true',
                             help='append to output file instead of overwriting')
@@ -148,13 +149,49 @@ def main() -> None:
 
     # If user requested output to file/stdout, produce textual output and exit
     if args.output:
-        # Only 'text' format implemented for now
-        if args.format != 'text':
-            print(f"Requested format '{args.format}' not implemented; only 'text' is supported.")
+        if args.format not in ('text', 'pdf'):
+            print(f"Requested format '{args.format}' not implemented; only 'text' and 'pdf' are supported.")
             raise SystemExit(2)
 
-        # Generate textual output
+        # Generate textual output lines; PDF export reuses the same ANSI-colored lines.
         lines = sb.render_sessions_list(args.pretty_print)
+
+        if args.format == 'pdf':
+            if args.append:
+                print("PDF export does not support --append; write a new file instead.")
+                raise SystemExit(2)
+
+            if args.output == '-':
+                import sys
+                out = sys.stdout.buffer
+                try:
+                    write_ansi_lines_pdf(lines, out)
+                except BrokenPipeError:
+                    devnull_fd = os.open(os.devnull, os.O_WRONLY)
+                    os.dup2(devnull_fd, sys.stdout.fileno())
+                    raise SystemExit(0)
+                raise SystemExit(0)
+
+            import tempfile
+
+            target_dir = os.path.dirname(args.output) or '.'
+            tmp_name = None
+            try:
+                with tempfile.NamedTemporaryFile('wb', delete=False, dir=target_dir) as tf:
+                    tmp_name = tf.name
+                    write_ansi_lines_pdf(lines, tf)
+                if tmp_name is not None:
+                    os.replace(tmp_name, args.output)
+            except OSError as exc:
+                print(f"Failed to write PDF output file: {exc}")
+                try:
+                    if tmp_name and os.path.exists(tmp_name):
+                        os.remove(tmp_name)
+                except Exception:
+                    pass
+                raise SystemExit(2) from exc
+
+            raise SystemExit(0)
 
         # Write to stdout
         if args.output == '-':

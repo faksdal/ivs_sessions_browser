@@ -160,6 +160,7 @@ Most usage is interactive (TUI). Command-line flags typically include:
 --filters "code:R1|R4"         # initial filter expression
 --output -                     # write text output to stdout and exit
 --pretty-print OP|TYPE|STATIONS
+--format pdf                  # write a colored PDF using the same pretty-printed lines
 --verbose-fetch                # show fetch/progress output even with --output
 ```
 
@@ -209,6 +210,18 @@ Notes:
 Full details:
 - 🔎 Filtering: [`docs/FILTER_SYNTAX.md`](docs/FILTER_SYNTAX.md)
 - ⌨️ Keys: [`docs/KEY_BINDINGS.md`](docs/KEY_BINDINGS.md)
+
+## Export formats
+
+- `--format text` writes the ANSI-colored textual listing.
+- `--format pdf` writes a monospaced PDF that preserves the existing header and row colors from the textual export.
+- `--append` only applies to text output; PDF export always writes a new file.
+
+Example:
+
+```bash
+./run_browser --year 2025 --output sessions.pdf --format pdf
+```
 
 ---
 

@@ -7,6 +7,7 @@
 requests>=2.31
 beautifulsoup4>=4.12
 python-dateutil>=2.8
+reportlab>=4.0
 tqdm>=4.65
 
 # If you prefer faster parsing, install one of these:
