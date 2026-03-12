@@ -50,14 +50,14 @@ class Tui:
 
         self.operator_bindings      = load_operator_bindings()
         self.operator_assignments   = load_operator_assignments()
-        
+
         # Create reverse mapping: operator label -> operator key (for color lookup)
         self.operator_label_to_key  = {v: k for k, v in self.operator_bindings.items() if v}
 
         # Create an empty list to store parsed rows, we will .append() to this
         # in the build_list() method as we go along
         self.full_list: list[tuple[list[str], str | None, dict]] = []
-        
+
         # Create filter and sort instance for filtering/sorting operations
         self.filter_sort = FilterAndSort()
 
@@ -82,7 +82,7 @@ class Tui:
         """
 
         self._addstr_clip(_stdscr, 0, 0, "  " + D.HEADER_LINE, _theme.header)
-        self._addstr_clip(_stdscr, 1, 0, "  " + "─" * len(D.HEADER_LINE))        
+        self._addstr_clip(_stdscr, 1, 0, "  " + "─" * len(D.HEADER_LINE))
     # ─── END OF draw_header() ─────────────────────────────────────────────────
 
 
@@ -103,19 +103,13 @@ class Tui:
         win.box()
 
         for i, text in enumerate(D.HELP_TEXT, start=1):
-            attr = 0
+            # Keep help display simple: underline/bold title, highlight cyan lines
             if i == 1:  # title
-                attr = curses.A_UNDERLINE | curses.A_BOLD
-            elif "Green" in text:
-                attr = _theme.released
-            elif "Yellow" in text:
-                attr = _theme.processing
-            elif "Magenta" in text:
-                attr = _theme.cancelled
-            elif "White" in text:
-                attr = _theme.none
+                attr = curses.A_UNDERLINE | curses.A_BOLD | (_theme.header if _theme.header else 0)
             elif "Cyan" in text:
-                attr = _theme.filtered
+                attr = _theme.filtered if getattr(_theme, "filtered", 0) else 0
+            else:
+                attr = 0
 
             win.addnstr(i, 2, text, width - 4, attr)
 
@@ -166,10 +160,10 @@ class Tui:
         """
 
         max_y, max_x = _stdscr.getmaxyx()
-        
+
         # Main help text with keyboard shortcuts
         help_text = D.HELP_BAR_TEXT
-        
+
         # Operator bindings (only show configured operators)
         ops_text = ""
         if self.operator_bindings:
@@ -197,7 +191,7 @@ class Tui:
                + (f" Filter: {_current_filter}" if _current_filter else "")
                + "  "
                + right)[: max_x - 1]
-        
+
         bar_attr = _theme.help_bar if _state.has_colors else _theme.reversed
         self._addstr_clip(_stdscr, max_y - 1, 0, bar, bar_attr)
     # ─── END OF draw_helpbar() ────────────────────────────────────────────────
@@ -264,13 +258,13 @@ class Tui:
             # Get operator label from 'op' column and look up color
             op_label = vals[D.FIELD_INDEX.get("op", 0)].strip()
             op_key = self.operator_label_to_key.get(op_label, "0")  # Default to "0" (unassigned)
-            
+
             # Determine row color based on operator
             if _state.has_colors and op_key in _theme.operator_colors:
                 row_color = _theme.operator_colors[op_key]
             else:
                 row_color = 0
-            
+
             # Determine selection and basic flags; draw line first without A_REVERSE
             selected = (i == _state.selected)
             bold_flag = curses.A_BOLD if selected else 0
@@ -284,7 +278,7 @@ class Tui:
             # Draw each column with operator color and white separators
             x_pos = 2   # The marker is gone, but to align with header which has
                         # 2 spaces padding, we keep x_pos starting at 2
-            
+
             white_sep = curses.color_pair(1) if _state.has_colors else 0  # white
 
             for idx, part in enumerate(parts):
@@ -298,7 +292,7 @@ class Tui:
                     if i_pos != -1:
                         # Draw intensives in theme color; will be overridden by chgat when selected
                         # intensives_attr = _theme.intensivess if _state.has_colors else curses.A_BOLD
-                        
+
                         # The [I] marker will be drawn in the current row color if
                         # colors are supported, otherwise it will be bold. When
                         # the row is selected, the entire row will be reversed, which
@@ -483,17 +477,17 @@ class Tui:
                                    _ascending: bool = True) -> list[D.Row]:
         """
         Apply filters and sorting to self.full_list and return the filtered/sorted view.
-        
+
         Uses the FilterAndSort class to apply complex filtering with OR/AND logic
         for stations and other fields, plus sorting by any column.
-        
+
         :param _query: Filter query string (e.g., "code: r1|r4; stations: Nn&Ns")
         :param _show_removed: Whether to show stations marked as removed
         :param _sort_key: Field name to sort by (matches FIELD_INDEX keys)
         :param _ascending: Sort in ascending order if True, descending if False
         :return: Filtered and sorted list of Row tuples
         """
-        
+
         return self.filter_sort.apply(
             self.full_list,
             _query or "",
@@ -585,7 +579,7 @@ class Tui:
         # Track observed maximum widths for each column
         obs             = [0] * num
         any_intensive   = False
-        
+
         # Scan all rows in self.full_list to find maximum data widths
         for values, _url, meta in self.full_list:
             any_intensive = any_intensive or bool(meta.get("intensive"))
@@ -606,7 +600,7 @@ class Tui:
         D.HEADER_DICT = dict(D.HEADERS)
         D.WIDTHS = widths
         D.HEADER_LINE = " | ".join([f"{title:<{w}}" for title, w in D.HEADERS])
-        
+
         # Update instance header_line to reflect the new computed widths
         self.header_line = D.HEADER_LINE
     # ─── END OF recompute_header_widths() ─────────────────────────────────────

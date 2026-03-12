@@ -53,6 +53,7 @@ class TUITheme:
     filtered:   int = 0
     reversed:   int = 0
     removed:    int = 0
+    # (No legacy semantic aliases; use existing theme attributes)
     operator_colors:          dict[str, int] = field(default_factory=dict)
     operator_colors_selected: dict[str, int] = field(default_factory=dict)
 
@@ -73,6 +74,8 @@ class TUITheme:
         curses.init_pair(4, curses.COLOR_CYAN, -1)                      # filtered highlight
         curses.init_pair(5, curses.COLOR_YELLOW, -1)                    # removed
 
+        # No additional semantic color pairs required
+
         # Map color names to curses color constants
         color_map = {
             "white":   curses.COLOR_WHITE,
@@ -89,7 +92,7 @@ class TUITheme:
         operator_colors = {}
         operator_colors_selected = {}
         pair_idx = 10
-        
+
         for op_key, color_name in sorted(_operator_colors.items()):
             color_name_lower = color_name.lower()
             if color_name_lower in color_map:
@@ -98,7 +101,7 @@ class TUITheme:
                 curses.init_pair(pair_idx, fg_color, -1)
                 operator_colors[op_key] = curses.color_pair(pair_idx)
                 pair_idx += 1
-                
+
                 # Selected: same color on cyan background
                 curses.init_pair(pair_idx, fg_color, curses.COLOR_CYAN)
                 operator_colors_selected[op_key] = curses.color_pair(pair_idx)

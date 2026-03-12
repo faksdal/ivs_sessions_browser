@@ -63,7 +63,7 @@ HELP_TEXT = [
     "",
     "Filtering:",
     "  Filter by headers; type, code, start, etc.",
-    "  / : Enter filter (field:value, supports AND/OR (&,|))",
+    "  / : Enter filter (field:value[;field:value], supports AND/OR (&,|))",
     "  C : Clear filters",
     # "  R : Toggle show/hide removed stations",
     "",
@@ -71,12 +71,8 @@ HELP_TEXT = [
     "  q or Q : Quit",
     "  ? : Show this help",
     "",
-    "Color legend:",
-    "  Green    = Released",
-    "  Yellow   = Processing / Waiting",
-    "  Magenta  = Cancelled",
-    "  White    = No status",
-    "  Cyan     = Active filters",
+    "  Cyan      = Active filters",
+    "  Any other = Assigned operator (if any)",
     "",
     "",
     "Hit any key to close this help",
@@ -120,7 +116,7 @@ Dict = dict
 Row = tuple[list[str], str | None, dict[str, Any]]
 
 # UI/layout placeholders
-HELP_TEXT: list[str] = []
+# (HELP_TEXT is defined above; avoid overwriting it here)
 # HEADERS: list[str] = []
 HEADERS                     = [("Op",       2),
                                ("Type",     14),    # 16 in 2022
@@ -174,7 +170,7 @@ BASE_URL    = ""
 
 NAVIGATION_KEYS: dict[str, str] = {}
 
-# Help bar text displayed at bottom of TUI  
+# Help bar text displayed at bottom of TUI
 # HELP_BAR_TEXT = "↑↓-PgUp/PgDn-Home/End:Move Enter:Open /:Filter C:Clear T:Jump to today R:Hide/show removed ?:Help q/Q:Quit"
 HELP_BAR_TEXT = "↑↓-PgUp/PgDn-Home/End:Move Enter:Open /:Filters C:Clear filters T:Jump to today ?:Help q/Q:Quit"
 
