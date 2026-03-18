@@ -109,7 +109,6 @@ class FetchSessions:
             # Initialize variables
             html    = ""
             lm      = None
-
             
             # Give the user some output based on whether we're checking mirrors
             # or just fetching HTML content
