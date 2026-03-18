@@ -18,6 +18,7 @@ import curses
 import os
 import time
 import webbrowser
+from urllib.parse import urlsplit, urlunsplit
 from .pdf_export import write_ansi_lines_pdf
 
 # Project defined imports
@@ -199,11 +200,13 @@ class SessionsBrowser:
         elif self.scope == "intensive":
             for base_url in base_url_list:
                 retval.append(f"{base_url}/intensive/{year}")
+                # retval.append(f"{base_url}/{year}")
 
         elif self.scope == "both":
             for base_url in base_url_list:
                 retval.append(f"{base_url}/{year}")
                 retval.append(f"{base_url}/intensive/{year}")
+                # retval.append(f"{base_url}/{year}")
 
         return retval
     # ─── END OF _urls_for_scope() ─────────────────────────────────────────────
@@ -525,10 +528,28 @@ class SessionsBrowser:
                 if self.view_rows:
                     _, url, _ = self.view_rows[self.state.selected]
                     if url:
-                        webbrowser.open(url)
+                        webbrowser.open(self._trim_intensive_from_url(url))
             case _:
                 pass
     # ─── END OF _navigate() ───────────────────────────────────────────────────
+
+
+
+    def _trim_intensive_from_url(self, _url: str) -> str:
+        """
+        Remove '/intensive' from the URL path if present.
+
+        Example:
+        https://ivscc.gsfc.nasa.gov/sessions/intensive/2026/r1234
+        ->
+        https://ivscc.gsfc.nasa.gov/sessions/2026/r1234
+        """
+        parts       = urlsplit(_url)
+        new_path    = parts.path.replace("/intensive/", "/", 1)
+        new_path    = new_path.replace("/intensive", "", 1)
+        
+        return urlunsplit((parts.scheme, parts.netloc, new_path, parts.query, parts.fragment))
+    # ─── END OF _trim_intensive_from_url() ────────────────────────────────────
 
 
 
