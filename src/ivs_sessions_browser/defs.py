@@ -72,6 +72,7 @@ HELP_TEXT = [
     "  ? : Show this help",
     "  P : Print visible to .pdf and open",
     "",
+    "Colours:",
     "  Cyan      = Active filters",
     "  Any other = Assigned operator (if any)",
     "",
