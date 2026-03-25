@@ -13,7 +13,7 @@ If you have any question, comment or feedback to this script; jon@jonleithe.no
 - **Open in browser**: jump to the IVS page for a session
 - **Station filtering**: filter active/removed/all station sets in expressions
 - **Jump to today**: one-key shortcut to the current session row
-- **Inline help**: `?` or `#!` shows a centered help box
+- **Inline help**: `?` shows a centered help box
 
 See also:
 - 📄 [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md)
