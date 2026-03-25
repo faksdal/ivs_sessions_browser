@@ -70,6 +70,7 @@ HELP_TEXT = [
     "Other:",
     "  q or Q : Quit",
     "  ? : Show this help",
+    "  P : Print visible to .pdf and open",
     "",
     "  Cyan      = Active filters",
     "  Any other = Assigned operator (if any)",
