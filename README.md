@@ -155,7 +155,9 @@ ivs-sessions-browser
 Most usage is interactive (TUI). Command-line flags typically include:
 
 ```
---year 2025                    # which IVS year to fetch (1979 onwards)
+--year 2025                    # single year
+--year "2022,2023"             # explicit multi-year list
+--year "2022-2025"             # inclusive year range
 --scope master|intensive|both  # select scope
 --filters "code:R1|R4"         # initial filter expression
 --output -                     # write text output to stdout and exit

@@ -40,12 +40,12 @@ class SessionsBrowser:
 
     """
 
-    def __init__(self, _year: int, _scope: str, _mirrors: bool = False, _filters: str | None = None) -> None:
+    def __init__(self, _year: int | list[int], _scope: str, _mirrors: bool = False, _filters: str | None = None) -> None:
         """
         Docstring for __init__
 
-        :param _year:       Which year to fetch sessions for (e.g., 2025)
-        :type _year:        int
+        :param _year:       Which year(s) to fetch sessions for (e.g., 2025 or [2022, 2023])
+        :type _year:        int | list[int]
         :param _scope:      Which schedules to include (master, intensive, both)
         :type _scope:       str
         :param _mirrors:    Whether to check mirror websites for the latest update
@@ -56,7 +56,11 @@ class SessionsBrowser:
         """
 
         # Store user input parameters
-        self.year       = _year
+        if isinstance(_year, int):
+            self.years = [_year]
+        else:
+            self.years = list(dict.fromkeys(int(y) for y in _year))
+        self.year       = self.years[0]
         self.scope      = _scope
         self.filters    = _filters
 
@@ -170,7 +174,7 @@ class SessionsBrowser:
         Defined in sessions_browser.py.
 
         _urls_for_scope() builds the list of urls to download session data from,
-        based on the year and scope provided by the user. The list contains both
+        based on the year(s) and scope provided by the user. The list contains both
         primary site, and any mirrors
 
         Primary and mirror sites are defined in IVSCC_BASE_URLS in defs.py.
@@ -181,7 +185,6 @@ class SessionsBrowser:
         """
 
         base_url_list   : list[str] = D.IVSCC_BASE_URLS
-        year            : int       = (int)(self.year)
         retval          : list[str] = []
         quiet = os.getenv("IVS_SESSIONS_QUIET") == "1"
 
@@ -195,18 +198,19 @@ class SessionsBrowser:
 
         if self.scope == "master":
             for base_url in base_url_list:
-                retval.append(f"{base_url}/{year}")
+                for year in self.years:
+                    retval.append(f"{base_url}/{year}")
 
         elif self.scope == "intensive":
             for base_url in base_url_list:
-                retval.append(f"{base_url}/intensive/{year}")
-                # retval.append(f"{base_url}/{year}")
+                for year in self.years:
+                    retval.append(f"{base_url}/intensive/{year}")
 
         elif self.scope == "both":
             for base_url in base_url_list:
-                retval.append(f"{base_url}/{year}")
-                retval.append(f"{base_url}/intensive/{year}")
-                # retval.append(f"{base_url}/{year}")
+                for year in self.years:
+                    retval.append(f"{base_url}/{year}")
+                    retval.append(f"{base_url}/intensive/{year}")
 
         return retval
     # ─── END OF _urls_for_scope() ─────────────────────────────────────────────
@@ -231,14 +235,14 @@ class SessionsBrowser:
 
         # ANSI color codes
         ANSI_COLORS = {
-            "white": "\033[97m",
-            "green": "\033[92m",
-            "yellow": "\033[93m",
-            "cyan": "\033[96m",
-            "magenta": "\033[95m",
-            "blue": "\033[94m",
-            "red": "\033[91m",
-            "black": "\033[30m",
+            "white"     : "\033[97m",
+            "green"     : "\033[92m",
+            "yellow"    : "\033[93m",
+            "cyan"      : "\033[96m",
+            "magenta"   : "\033[95m",
+            "blue"      : "\033[94m",
+            "red"       : "\033[91m",
+            "black"     : "\033[30m",
         }
         ANSI_RESET = "\033[0m"
         ANSI_BOLD = "\033[1m"

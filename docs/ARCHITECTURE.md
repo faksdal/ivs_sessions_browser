@@ -6,7 +6,7 @@ This document explains how the CLI/TUI flow is wired together so contributors ca
 ## High-level flow
 1. User runs `./run_browser`, `ivs-sessions-browser`, or `python -m ivs_sessions_browser`.
 2. `__main__.py` calls `ivs_sessions_browser.main()` from `__init__.py`.
-3. `main()` builds the CLI argument parser, parses arguments for `--year`, `--scope`, `--filters`, `--mirrors`, output options, and `--version`.
+3. `main()` builds the CLI argument parser, parses arguments for `--year` (single, CSV, or range expression), `--scope`, `--filters`, `--mirrors`, output options, and `--version`.
 4. `SessionsBrowser` is constructed with parsed arguments and computes the URL list for the chosen scope and mirror preferences.
 5. `FetchSessions` retrieves HTML data from the most recently updated master/intensive pages (comparing timestamps when `--mirrors` is specified).
 6. The HTML is parsed into row data, filtered, and sorted by `Tui` class using helper methods from `FilterAndSort`.
@@ -99,7 +99,8 @@ Type definitions and data classes:
 - `PageData` - holds URL and HTML content for a fetched page
 
 ## CLI surface (current)
-- `--year` (int, default: current year)
+- `--year` (year expression, default: current year)
+  - Accepted forms: `2025`, `2022,2023`, `2022-2025`, `2022,2024-2026`
 - `--scope` (master|intensive|both; default: both)
 - `--filters` (string filter expression following documented syntax)
 - `--mirrors` (compare timestamps across mirror sites, select most recent)

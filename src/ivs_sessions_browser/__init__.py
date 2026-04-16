@@ -57,6 +57,68 @@ def _parse_pretty_columns(value: str) -> str | list[str]:
     # De-duplicate while preserving order
     deduped_cols: list[str] = list(dict.fromkeys(cols))
     return deduped_cols
+# ─── END OF _parse_pretty_columns() ───────────────────────────────────────────
+
+
+
+def _parse_years(value: str) -> list[int]:
+    """
+    Parse year expression into a de-duplicated ordered list of years.
+
+    Accepted forms:
+      - "2025"
+      - "2022,2023"
+      - "2022-2025"
+      - "2022,2024-2026"
+    """
+
+    text = value.strip()
+    if not text:
+        raise argparse.ArgumentTypeError("Year expression cannot be empty")
+
+    years: list[int] = []
+
+    for token in [part.strip() for part in text.split(",") if part.strip()]:
+        if "-" in token:
+            bounds = [p.strip() for p in token.split("-", 1)]
+            if len(bounds) != 2:
+                raise argparse.ArgumentTypeError(
+                    f"Invalid year range '{token}'. Use YYYY-YYYY"
+                )
+            try:
+                start = int(bounds[0])
+                end = int(bounds[1])
+            except ValueError as exc:
+                raise argparse.ArgumentTypeError(
+                    f"Invalid year range '{token}'. Use numeric years"
+                ) from exc
+
+            if start > end:
+                raise argparse.ArgumentTypeError(
+                    f"Invalid year range '{token}'. Start year must be <= end year"
+                )
+
+            years.extend(range(start, end + 1))
+        else:
+            try:
+                years.append(int(token))
+            except ValueError as exc:
+                raise argparse.ArgumentTypeError(
+                    f"Invalid year '{token}'. Use YYYY, YYYY,YYYY, or YYYY-YYYY"
+                ) from exc
+
+    if not years:
+        raise argparse.ArgumentTypeError("No valid years found")
+
+    for y in years:
+        if y < 1979:
+            raise argparse.ArgumentTypeError(
+                f"Year '{y}' is out of range. Earliest supported year is 1979"
+            )
+
+    # De-duplicate while preserving order
+    return list(dict.fromkeys(years))
+# ─── END OF _parse_years() ────────────────────────────────────────────────────
 
 
 
@@ -86,9 +148,9 @@ def main() -> None:
                                          formatter_class    = ARGUMENT_FORMATTER_CLASS)
 
     arg_parser.add_argument("--year",
-                            type=int,
-                            default=datetime.now().year,
-                            help="Year (yyyy) (default: current year from system date)"
+                            type=_parse_years,
+                            default=[datetime.now().year],
+                            help="Year expression (default: current year). Examples: 2025, 2022,2023, 2022-2025, 2022,2024-2026"
     )
     arg_parser.add_argument("--scope",
                             choices=("master", "intensive", "both"),

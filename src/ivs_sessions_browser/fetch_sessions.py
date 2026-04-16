@@ -13,6 +13,7 @@ Description: Fetch and choose most-recent IVS session HTML pages.
 # ──────────────────────────────────────────────────────────────────────────────
 import os
 from urllib import response
+from urllib.parse import urlsplit
 import certifi
 import requests
 import importlib.resources as pkg_resources
@@ -59,34 +60,66 @@ class FetchSessions:
         schedules.
         """ 
 
-        # Split URLs into master and intensive
-        urls_master, urls_intensive = self._split_urls(_urls)
+        grouped_urls = self._group_urls_by_schedule_key(_urls)
 
-        # Declare PageData objects to hold results
-        page_master     = PageData(html = "", last_modified = None)
-        page_intensive  = PageData(html = "", last_modified = None)
-
-        # Find most recent pages for master and intensive, and store results in
-        # page_master and page_intensive
-        page_master     = self._find_most_recent_page(urls_master, _timeout)
-        page_intensive  = self._find_most_recent_page(urls_intensive, _timeout)
+        pages: list[PageData] = []
+        for _key, group in grouped_urls.items():
+            page = self._find_most_recent_page(group, _timeout)
+            if page.url:
+                pages.append(page)
 
         quiet = os.getenv("IVS_SESSIONS_QUIET") == "1"
 
         if self.mirrors and not quiet:
-            if page_master.url:
-                print(f"Most recent master schedule URL: {page_master.url} - Last modified: {page_master.last_modified}")
+            if pages:
+                print("Most recent schedule URL per year/scope:")
+                for p in pages:
+                    key = self._schedule_key_from_url(p.url)
+                    print(f"  {key}: {p.url} - Last modified: {p.last_modified}")
             else:
-                print("No master schedule URL fetched.")
+                print("No schedule URLs fetched.")
 
-            if page_intensive.url:
-                print(f"Most recent intensive schedule URL: {page_intensive.url} - Last modified: {page_intensive.last_modified}")
-            else:
-                print("No intensive schedule URL fetched.")
-
-        # return pager_master and page_intensive attributes as a list
-        return [page_master, page_intensive]
+        return pages
     # ─── END OF fetch_html_from_urls() ─────────────────────────────────────────────
+
+
+
+    def _group_urls_by_schedule_key(self, _urls: list[str]) -> dict[str, list[str]]:
+        """
+        Group candidate URLs by schedule key under /sessions, preserving order.
+
+        Example keys:
+          - "2025"
+          - "intensive/2025"
+        """
+
+        grouped: dict[str, list[str]] = {}
+
+        for url in _urls:
+            key = self._schedule_key_from_url(url)
+            grouped.setdefault(key, []).append(url)
+
+        return grouped
+    # ─── END OF _group_urls_by_schedule_key() ───────────────────────────────
+
+
+
+    def _schedule_key_from_url(self, _url: str) -> str:
+        """
+        Extract the schedule key from URL path relative to /sessions/.
+        """
+
+        path = urlsplit(_url).path.rstrip("/")
+        marker = "/sessions/"
+        idx = path.find(marker)
+
+        if idx >= 0:
+            key = path[idx + len(marker):]
+            if key:
+                return key
+
+        return path
+    # ─── END OF _schedule_key_from_url() ─────────────────────────────────────
 
 
 
