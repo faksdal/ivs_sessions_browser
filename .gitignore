@@ -30,7 +30,6 @@ htmlcov/
 .ipynb_checkpoints/
 
 # IDE / editor files
-.vscode/
 .idea/
 *.swp
 *.swo
