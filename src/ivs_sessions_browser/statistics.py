@@ -2,6 +2,8 @@
 # isort: skip_file
 
 """
+Defined in statistics.py
+
 Filename:       statistics.py
 Author:         jole
 Created:        19.04.2026
@@ -20,8 +22,9 @@ import re
 from . import defs as D
 
 
-START_FORMAT = "%Y-%m-%d %H:%M"
+START_FORMAT        = "%Y-%m-%d %H:%M"
 STATION_TOKEN_RE    = re.compile(r"[A-Z][a-z0-9]")
+REMOVED_BLOCK_RE    = re.compile(r"\[[^\]]*\]")
 
 
 @dataclass
@@ -62,14 +65,23 @@ def _parse_start(value: str) -> datetime | None:
 
 
 
-def _station_tokens(values: list[str], meta: dict) -> list[str]:
+def _station_tokens(values: list[str], meta: dict, include_removed: bool = True) -> list[str]:
     active = (meta.get("active") or "").strip()
     removed = (meta.get("removed") or "").strip()
 
     # Prefer metadata if available since it separates active/removed reliably.
-    source = f"{active} {removed}".strip()
+    if include_removed:
+        source = f"{active} {removed}".strip()
+    else:
+        source = active
+
     if not source:
         source = _safe_value(values, "stations")
+
+    # Fallback safety: if only active stations are requested but metadata is
+    # unavailable, strip removed block(s) often rendered as "[HbMgSa]".
+    if not include_removed and source:
+        source = REMOVED_BLOCK_RE.sub("", source)
 
     return STATION_TOKEN_RE.findall(source)
 
@@ -194,37 +206,52 @@ def build_statistics_report(all_rows: list[D.Row], view_rows: list[D.Row], top_n
 
 def station_contribution_percentages(rows: list[D.Row], top_n: int | None = None) -> list[tuple[str, int, float]]:
     """
-    Return station contribution percentages from the provided rows.
+    Defined in statistics.py
 
-    Contribution is calculated as station-token share over all station tokens:
-    percent = count / total_station_tokens * 100
+    Return station participation percentages from the provided rows.
+
+    Participation is calculated as session share over all sessions:
+    - each station is counted at most once per session
+    - removed stations are excluded
+    - percent = sessions_with_station / total_sessions * 100
 
     :param rows: Session rows to analyze.
     :param top_n: Optional cap on number of returned stations.
-    :return: List of (station, count, percent), sorted descending by count.
+    :return: List of (station, session_count, percent), sorted descending.
     """
 
-    stats = summarize_rows(rows)
-    total = sum(stats.by_station.values())
-    if total <= 0:
+    total_sessions = len(rows)
+    if total_sessions <= 0:
         return []
 
-    items = stats.by_station.most_common(top_n)
-    return [(station, count, (100.0 * count / total)) for station, count in items]
+    sessions_by_station: Counter[str] = Counter()
+    for values, _url, meta in rows:
+        stations_in_session = set(_station_tokens(values, meta, include_removed=False))
+        for station in stations_in_session:
+            sessions_by_station[station] += 1
+
+    items = sessions_by_station.most_common(top_n)
+    return [
+        (station, count, (100.0 * count / total_sessions))
+        for station, count in items
+    ]
 
 
 
 def write_station_contribution_plot(
     rows: list[D.Row],
     output_path: str | Path | None = None,
-    top_n: int = 20,
+    top_n: int | None = None,
 ) -> Path:
     """
-    Create a horizontal bar chart of station contribution percentages.
+    Defined in statistics.py
+
+    Create a horizontal bar chart of station participation percentages.
 
     :param rows: Session rows to analyze.
     :param output_path: Output PNG path. If None, auto-generate in current dir.
-    :param top_n: Number of stations to include (descending by contribution).
+    :param top_n: Number of stations to include (descending by participation).
+                  If None, include all stations.
     :return: Path to saved PNG file.
     :raises ValueError: If no station tokens are available.
     """
@@ -247,12 +274,12 @@ def write_station_contribution_plot(
     else:
         out = Path(output_path)
 
-    fig_h = max(5.0, min(14.0, 1.2 + 0.42 * len(labels)))
+    fig_h = max(5.0, min(24.0, 1.2 + 0.42 * len(labels)))
     fig, ax = plt.subplots(figsize=(11.5, fig_h))
 
     bars = ax.barh(labels, percentages, color="#2f6c8f", alpha=0.9)
-    ax.set_xlabel("Contribution (%)")
-    ax.set_title("Station Contribution by Percentage")
+    ax.set_xlabel("Sessions with station (%)")
+    ax.set_title("Station Participation by Session (%)")
     ax.set_xlim(0, max(percentages) * 1.12)
     ax.grid(axis="x", linestyle="--", alpha=0.35)
 

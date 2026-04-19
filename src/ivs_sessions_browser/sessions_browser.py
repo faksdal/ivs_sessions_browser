@@ -20,6 +20,7 @@ import time
 import webbrowser
 from urllib.parse import urlsplit, urlunsplit
 from .pdf_export import write_ansi_lines_pdf
+from .statistics import SessionStatistics, build_statistics_report, summarize_rows, write_station_contribution_plot
 
 # Project defined imports
 from .                          import defs as D
@@ -40,7 +41,9 @@ class SessionsBrowser:
 
     """
 
-    PDF_STATUS_MESSAGE_DELAY_SECONDS = 1.9
+    PDF_STATUS_MESSAGE_DELAY_SECONDS    = 1.9
+    STATS_TOP_N                         = 8
+    STATION_PLOT_TOP_N                  = None
 
     def __init__(self, _year: int | list[int], _scope: str, _mirrors: bool = False, _filters: str | None = None) -> None:
         """
@@ -501,6 +504,15 @@ class SessionsBrowser:
                 case c if c == ord('?'):
                     self.formatter.show_help(_stdscr, self.theme)
 
+                # Show statistics
+                # case c if c in (ord('S'), ord('s')):
+                case c if c == ord('S'):
+                    self._show_statistics(_stdscr)
+
+                # Plot station contribution percentages
+                case c if c == ord('G'):
+                    self._plot_station_contributions(_stdscr)
+
                 # Quit the script and return to terminal
                 case c if c in (ord('q'), ord('Q')):
                     quit = True
@@ -570,6 +582,101 @@ class SessionsBrowser:
         
         return urlunsplit((parts.scheme, parts.netloc, new_path, parts.query, parts.fragment))
     # ─── END OF _trim_intensive_from_url() ────────────────────────────────────
+
+
+
+    def get_statistics(self, _visible_only: bool = False) -> SessionStatistics:
+        """
+        Defined in sessions_browser.py.
+
+        Compute statistics from loaded rows.
+
+        :param _visible_only: If True, summarize only currently filtered rows.
+        :return: SessionStatistics dataclass instance.
+        """
+
+        rows = self.view_rows if _visible_only else self.formatter.full_list
+        return summarize_rows(rows)
+    # ─── END OF get_statistics() ──────────────────────────────────────────────
+
+
+
+    def _show_statistics(self, _stdscr) -> None:
+        """
+        Defined in sessions_browser.py.
+
+        Show a compact statistics window for loaded and visible sessions.
+        """
+
+        lines = build_statistics_report(
+            self.formatter.full_list,
+            self.view_rows,
+            top_n=self.STATS_TOP_N,
+        )
+
+        max_y, max_x = _stdscr.getmaxyx()
+        footer = "Press any key to close"
+        display_lines = lines + ["", footer]
+
+        width = min(max(len(line) for line in display_lines) + 4, max_x - 4)
+        height = min(len(display_lines) + 2, max_y - 4)
+
+        if width < 20 or height < 6:
+            return
+
+        top = (max_y - height) // 2
+        left = (max_x - width) // 2
+
+        win = curses.newwin(height, width, top, left)
+        win.box()
+
+        max_visible = height - 2
+        for i, line in enumerate(display_lines[:max_visible]):
+            attr = self.theme.header if (i == 0 and self.state.has_colors) else 0
+            win.addnstr(i + 1, 2, line, width - 4, attr)
+
+        win.refresh()
+        win.getch()
+    # ─── END OF _show_statistics() ───────────────────────────────────────────
+
+
+
+    def _plot_station_contributions(self, _stdscr) -> None:
+        """
+        Defined in sessions_browser.py.
+
+        Create and open a plot of station contribution percentages.
+        """
+
+        max_y, max_x = _stdscr.getmaxyx()
+        attr = self.theme.help_bar if self.state.has_colors else 0
+
+        try:
+            filename = f"station-contribution-{time.strftime('%Y%m%d-%H%M%S')}.png"
+            out_path = os.path.join(os.getcwd(), filename)
+
+            write_station_contribution_plot(
+                self.formatter.full_list,
+                output_path=out_path,
+                top_n=self.STATION_PLOT_TOP_N,
+            )
+
+            msg = f"Saved station plot: {out_path}"
+            self.formatter._addstr_clip(_stdscr, max_y - 2, 0, msg[: max_x - 1], attr)
+            _stdscr.refresh()
+            time.sleep(self.PDF_STATUS_MESSAGE_DELAY_SECONDS)
+
+            try:
+                webbrowser.open(f"file://{out_path}")
+            except Exception:
+                pass
+
+        except Exception as e:
+            err = f"Error creating station plot: {e}"
+            self.formatter._addstr_clip(_stdscr, max_y - 2, 0, err[: max_x - 1], attr)
+            _stdscr.refresh()
+            time.sleep(self.PDF_STATUS_MESSAGE_DELAY_SECONDS)
+    # ─── END OF _plot_station_contributions() ────────────────────────────────
 
 
 
