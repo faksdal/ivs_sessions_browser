@@ -6,7 +6,7 @@
       "type": "debugpy",
       "request": "launch",
       "module": "ivs_sessions_browser",
-      "args":["--scope", "master", "--filters", "stations:Ns|Nn;start:2026-04"],
+      "args":["--scope", "both", "--filters", "stations:Ns|Nn", "--year", "2022-2024"],
       "cwd": "${workspaceFolder}",
       "env": {
         "PYTHONPATH": "${workspaceFolder}/src"
