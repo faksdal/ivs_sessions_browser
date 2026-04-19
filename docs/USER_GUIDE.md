@@ -72,7 +72,7 @@ Available options:
 - `--year YYYY` - Specify year (default: current year)
 - `--scope {master|intensive|both}` - Session type (default: both)
 - `--filters "expression"` - Initial filter expression
-- `--mirrors` - Check mirror sites for most recent data
+- `--mirrors` - Check mirror sites for most recent data, or in case master site is down
 - `--output FILE` - Write output to file and exit (use `-` for stdout)
 - `-p, --pretty-print [ALL|OP|TYPE|... ]` - Select output columns (pipe-delimited), default `ALL`
 - `--verbose-fetch` - Show fetch/progress output even when using `--output`

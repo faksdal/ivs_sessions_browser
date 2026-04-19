@@ -171,7 +171,7 @@ Run with `-h/--help` (help) to see current options.
 Once inside the TUI:
 - Use arrow keys / PgUp / PgDn / Home / End to navigate
 - Press `T` to jump to today
-- Press `/` to enter a filter
+- Press `/` to enter/edit a filter
 - Press `C` to clear filters
 - Press `0-5` to assign an operator to the selected session (or clear with '0')
 - Press `Enter` to open the selected session in your browser
