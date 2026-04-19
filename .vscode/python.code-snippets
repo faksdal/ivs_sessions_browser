@@ -1,0 +1,30 @@
+{
+  "Docstring with filename": {
+    "scope": "python",
+    "prefix": "docf",
+    "description": "Docstring header with current filename",
+    "body": [
+      "\"\"\"",
+      "Defined in ${TM_FILENAME}",
+      "",
+      "${1:Describe what this function does.}",
+      "\"\"\""
+    ]
+  },
+  "Module docstring with filename": {
+    "scope": "python",
+    "prefix": "moddocf",
+    "description": "Module docstring including metadata and current filename",
+    "body": [
+      "\"\"\"",
+      "Defined in ${TM_FILENAME}",
+      "",
+      "Filename:       ${TM_FILENAME}",
+      "Author:         ${1:your_name}",
+      "Created:        ${CURRENT_YEAR}-${CURRENT_MONTH}-${CURRENT_DATE}",
+      "",
+      "Description:    ${2:Module description}",
+      "\"\"\""
+    ]
+  }
+}
