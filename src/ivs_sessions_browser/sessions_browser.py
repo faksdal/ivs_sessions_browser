@@ -40,6 +40,8 @@ class SessionsBrowser:
 
     """
 
+    PDF_STATUS_MESSAGE_DELAY_SECONDS = 1.9
+
     def __init__(self, _year: int | list[int], _scope: str, _mirrors: bool = False, _filters: str | None = None) -> None:
         """
         Docstring for __init__
@@ -220,6 +222,7 @@ class SessionsBrowser:
     def render_sessions_list(self, pretty_print: str | list[str] = "ALL") -> list[str]:
         """
         Defined in sessions_browser.py.
+
         This method is responsible for rendering the session list as formatted
         text output with ANSI colors, suitable for printing to console or web display.
 
@@ -313,18 +316,27 @@ class SessionsBrowser:
 
     def _curses_main(self, _stdscr) -> None:
         """
-        This constitutes the main loop of the application.
-        """
+        Defined in sessions_browser.py       
 
-        self.theme              = TUITheme.init_theme(self.operator_colors) # <- use class, not instance
+        This method is the main loop of the TUI, responsible for rendering the
+        interface, handling user input, and updating the display accordingly.
+        
+        It is called by curses.wrapper() in the run() method, which sets up the
+        curses environment and passes the standard screen (_stdscr) to this        
+        """
+    
+        # Use class, not instance
+        self.theme = TUITheme.init_theme(self.operator_colors)
 
         # Set global has_colors in TUIState instance
-        self.state.has_colors   = curses.has_colors()
+        self.state.has_colors = curses.has_colors()
 
         _stdscr.keypad(True)
-        curses.curs_set(0)  # --- Hide the cursor
+        # Hide the cursor in the TUI
+        curses.curs_set(0)  
         curses.use_default_colors()
         if self.state.has_colors:
+            # Initialize color support
             curses.start_color()
         _stdscr.clear()
 
@@ -337,7 +349,6 @@ class SessionsBrowser:
         # Start the main loop
         quit: bool = False
         while not quit:
-
             # Determine the view height of the current terminal screen
             max_y, _                = _stdscr.getmaxyx()
             self.state.view_height  = max(1, max_y - 3)
@@ -425,7 +436,8 @@ class SessionsBrowser:
 
                 # Save to PDF
                 case c if c == ord('P'):
-                    # Prompt user for which columns to include (ALL or pipe-separated list)
+                    # Prompt user for which columns to include (ALL or
+                    # pipe-separated list)
                     prompt = "PDF columns (ALL or pipe-separated, e.g. OP|TYPE|STATIONS): "
                     # Use configured default (string 'ALL' or list of cols)
                     if isinstance(getattr(self, 'pdf_default_columns', None), list):
@@ -450,7 +462,7 @@ class SessionsBrowser:
                             attr = self.theme.help_bar if self.state.has_colors else 0
                             self.formatter._addstr_clip(_stdscr, max_y - 2, 0, err[: max_x - 1], attr)
                             _stdscr.refresh()
-                            time.sleep(1.5)
+                            time.sleep(self.PDF_STATUS_MESSAGE_DELAY_SECONDS)
                             break
                         # De-duplicate while preserving order
                         pretty = list(dict.fromkeys(cols))
@@ -470,7 +482,7 @@ class SessionsBrowser:
                         attr = self.theme.help_bar if self.state.has_colors else 0
                         self.formatter._addstr_clip(_stdscr, max_y - 2, 0, msg[: max_x - 1], attr)
                         _stdscr.refresh()
-                        time.sleep(1.5)
+                        time.sleep(self.PDF_STATUS_MESSAGE_DELAY_SECONDS)
 
                         # Try to open the saved file in the system viewer
                         try:
@@ -483,7 +495,7 @@ class SessionsBrowser:
                         attr = self.theme.help_bar if self.state.has_colors else 0
                         self.formatter._addstr_clip(_stdscr, max_y - 2, 0, err[: max_x - 1], attr)
                         _stdscr.refresh()
-                        time.sleep(1.5)
+                        time.sleep(self.PDF_STATUS_MESSAGE_DELAY_SECONDS)
 
                 # Show help
                 case c if c == ord('?'):
@@ -504,6 +516,8 @@ class SessionsBrowser:
 
     def _navigate(self, _key: int, _stdscr) -> None:
         """
+        Defined in sessions_browser.py.
+
         Handle navigation keys: up/down arrows, page up/down, home/end and the enter key
         to open the selected session in browser.
 
@@ -541,6 +555,8 @@ class SessionsBrowser:
 
     def _trim_intensive_from_url(self, _url: str) -> str:
         """
+        Defined in sessions_browser.py.
+
         Remove '/intensive' from the URL path if present.
 
         Example:
@@ -559,6 +575,8 @@ class SessionsBrowser:
 
     def _get_input(self, _stdscr, _theme, _prompt: str, _initial: str = "") -> str:
         """
+        Defined in sessions_browser.py.
+
         Get editable input from the user with an initial value pre-filled.
 
         :param _stdscr: Where to print
@@ -579,7 +597,13 @@ class SessionsBrowser:
         scroll: int = 0
 
         def _recalc_scroll():
-            """Keep the cursor visible by adjusting horizontal scroll."""
+            """
+            Defined in sessions_browser.py.
+
+            Keep the cursor visible by adjusting horizontal scroll.
+            This is called after any change to cursor position or buffer content.
+            """
+
             nonlocal scroll
             visible_width = max_x - 1
             text_space = visible_width - len(_prompt)
@@ -651,7 +675,12 @@ class SessionsBrowser:
 
 
     def _clear_filters(self) -> None:
-        """Clear all active filters and reset view."""
+        """
+        Defined in sessions_browser.py.
+
+        Clear all active filters and reset view.
+        """
+
         self.filters = ""
         self.view_rows = self.formatter.apply_filters_and_sorting(
             _query=self.filters,
@@ -666,12 +695,15 @@ class SessionsBrowser:
 
     def _apply_operator_assignment(self, _session_code: str, _operator_label: str) -> None:
         """
+        Defined in sessions_browser.py.
+
         Assign (or clear) an operator label for a given session code.
         Updates the rendered row values in view_rows.
 
         :param _session_code: Session code to assign operator to
         :param _operator_label: Operator label (empty string clears)
         """
+
         session_code = (_session_code or "").strip()
         if not session_code:
             return
@@ -697,21 +729,19 @@ class SessionsBrowser:
 
     def run(self, _text: bool = True) -> None:
         """
-        Docstring for run
-
-        :param self: Description
-        :param _text: Description
-        :type _text: bool
+        Defined in sessions_browser.py.
+        
+        Run the TUI application. This method initializes the curses environment
+        and starts the main loop defined in _curses_main().
+        
+        When the user exits the TUI, it prints an exit message.                 
         """
 
-        # --- Using curses to call on the main loop, self._curses.main()
+        # Using curses to call on the main loop, self._curses.main()
         curses.wrapper(self._curses_main)
 
-        #for values, _url, _meta in self.view_rows:
-        #    print(values)
-
+        # Print exit message after exiting curses mode
         print(D.EXIT_MESSAGE)
 
     # ─── END OF run() ─────────────────────────────────────────────────────────
-
 # ─── END OF class SessionsBrowser ─────────────────────────────────────────────
