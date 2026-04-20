@@ -242,16 +242,24 @@ def write_station_contribution_plot(
     rows: list[D.Row],
     output_path: str | Path | None = None,
     top_n: int | None = None,
+    chart_type: str = "barh",
+    aggregate_below_pct: float | None = None,
+    others_label: str = "Others",
 ) -> Path:
     """
     Defined in statistics.py
 
-    Create a horizontal bar chart of station participation percentages.
+    Create a station contribution plot.
 
     :param rows: Session rows to analyze.
     :param output_path: Output PNG path. If None, auto-generate in current dir.
     :param top_n: Number of stations to include (descending by participation).
                   If None, include all stations.
+    :param chart_type: Plot style. Supported values are "barh" and "pie".
+    :param aggregate_below_pct: If set to a positive value, stations with
+                                participation percentage lower than this value
+                                are grouped into a single "Others" entry.
+    :param others_label: Label to use for the grouped "Others" entry.
     :return: Path to saved PNG file.
     :raises ValueError: If no station tokens are available.
     """
@@ -260,39 +268,86 @@ def write_station_contribution_plot(
     if not station_data:
         raise ValueError("No station data available for plotting")
 
+    if aggregate_below_pct is not None and aggregate_below_pct > 0:
+        kept: list[tuple[str, int, float]] = []
+        others_count = 0
+        others_pct = 0.0
+
+        total_mentions = sum(count for _station, count, _pct in station_data)
+
+        for station, count, pct in station_data:
+            # For pie charts, users read percentages as slice share, so apply
+            # threshold using that same denominator.
+            if chart_type == "pie" and total_mentions > 0:
+                compare_pct = 100.0 * count / total_mentions
+            else:
+                compare_pct = pct
+
+            if compare_pct < aggregate_below_pct:
+                others_count += count
+                others_pct += pct
+            else:
+                kept.append((station, count, pct))
+
+        if others_count > 0:
+            kept.append((others_label, others_count, others_pct))
+
+        station_data = kept
+
     # Lazy import so non-plot workflows do not require matplotlib at import time.
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
-    labels = [item[0] for item in station_data][::-1]
-    percentages = [item[2] for item in station_data][::-1]
+    labels      = [item[0] for item in station_data]
+    counts      = [item[1] for item in station_data]
+    percentages = [item[2] for item in station_data]
 
     if output_path is None:
-        ts = datetime.now().strftime("%Y%m%d-%H%M%S")
+        ts  = datetime.now().strftime("%Y%m%d-%H%M%S")
         out = Path(f"station-contribution-{ts}.png")
     else:
         out = Path(output_path)
 
-    fig_h = max(5.0, min(24.0, 1.2 + 0.42 * len(labels)))
-    fig, ax = plt.subplots(figsize=(11.5, fig_h))
+    if chart_type == "pie":
+        fig, ax = plt.subplots(figsize=(10.5, 8.5))
 
-    bars = ax.barh(labels, percentages, color="#2f6c8f", alpha=0.9)
-    ax.set_xlabel("Sessions with station (%)")
-    ax.set_title("Station Participation by Session (%)")
-    ax.set_xlim(0, max(percentages) * 1.12)
-    ax.grid(axis="x", linestyle="--", alpha=0.35)
-
-    for bar, pct in zip(bars, percentages):
-        y = bar.get_y() + (bar.get_height() / 2.0)
-        ax.text(
-            bar.get_width() + 0.15,
-            y,
-            f"{pct:.1f}%",
-            va="center",
-            ha="left",
-            fontsize=9,
+        # Pie slices use each station's share of all participation mentions.
+        wedges, _texts, _autotexts = ax.pie(
+            counts,
+            labels=labels,
+            autopct="%1.1f%%",
+            startangle=120,
+            pctdistance=0.75,
+            wedgeprops={"linewidth": 0.8, "edgecolor": "white"},
+            textprops={"fontsize": 9},
         )
+        ax.set_title("Station Share of Participation Mentions (%)")
+        ax.axis("equal")
+
+    else:
+        labels = labels[::-1]
+        percentages = percentages[::-1]
+
+        fig_h = max(5.0, min(24.0, 1.2 + 0.42 * len(labels)))
+        fig, ax = plt.subplots(figsize=(11.5, fig_h))
+
+        bars = ax.barh(labels, percentages, color="#2f6c8f", alpha=0.9)
+        ax.set_xlabel("Sessions with station (%)")
+        ax.set_title("Station Participation by Session (%)")
+        ax.set_xlim(0, max(percentages) * 1.12)
+        ax.grid(axis="x", linestyle="--", alpha=0.35)
+
+        for bar, pct in zip(bars, percentages):
+            y = bar.get_y() + (bar.get_height() / 2.0)
+            ax.text(
+                bar.get_width() + 0.15,
+                y,
+                f"{pct:.1f}%",
+                va="center",
+                ha="left",
+                fontsize=9,
+            )
 
     fig.tight_layout()
     fig.savefig(out, dpi=160)

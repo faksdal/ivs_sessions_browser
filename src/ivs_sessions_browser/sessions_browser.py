@@ -44,6 +44,8 @@ class SessionsBrowser:
     PDF_STATUS_MESSAGE_DELAY_SECONDS    = 1.9
     STATS_TOP_N                         = 8
     STATION_PLOT_TOP_N                  = None
+    STATION_PLOT_CHART_TYPE             = "pie"
+    STATION_PLOT_OTHERS_BELOW_PCT       = 3.0
 
     def __init__(self, _year: int | list[int], _scope: str, _mirrors: bool = False, _filters: str | None = None) -> None:
         """
@@ -648,17 +650,21 @@ class SessionsBrowser:
         Create and open a plot of station contribution percentages.
         """
 
-        max_y, max_x = _stdscr.getmaxyx()
-        attr = self.theme.help_bar if self.state.has_colors else 0
+        max_y, max_x    = _stdscr.getmaxyx()
+        attr            = self.theme.help_bar if self.state.has_colors else 0
 
         try:
             filename = f"station-contribution-{time.strftime('%Y%m%d-%H%M%S')}.png"
             out_path = os.path.join(os.getcwd(), filename)
 
+            # Call the plotting function from statistics.py, which returns the
+            # path to the saved PNG file
             write_station_contribution_plot(
                 self.formatter.full_list,
                 output_path=out_path,
                 top_n=self.STATION_PLOT_TOP_N,
+                chart_type=self.STATION_PLOT_CHART_TYPE,
+                aggregate_below_pct=self.STATION_PLOT_OTHERS_BELOW_PCT,
             )
 
             msg = f"Saved station plot: {out_path}"
