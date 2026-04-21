@@ -4,7 +4,7 @@ A terminal-based TUI for browsing [IVS session schedules](https://ivscc.gsfc.nas
 
 It is worth noting that this script is developed on Linux, for Linux terminal and optimized for a dark background!
 It is not tested by me on anything else.
-If you have any question, comment or feedback to this script; jon@jonleithe.no
+If you have any question, comment or feedback to this script; dev@jonleithe.no
    -jole 2026
 
 - **TUI**: curses interface with smooth navigation
