@@ -44,8 +44,9 @@ class SessionsBrowser:
     PDF_STATUS_MESSAGE_DELAY_SECONDS    = 1.9
     STATS_TOP_N                         = 8
     STATION_PLOT_TOP_N                  = None
-    STATION_PLOT_CHART_TYPE             = "pie"
-    STATION_PLOT_OTHERS_BELOW_PCT       = 3.0
+    # STATION_PLOT_CHART_TYPE             = "pie"
+    STATION_PLOT_CHART_TYPE             = "barh"
+    STATION_PLOT_OTHERS_BELOW_PCT       = 0.0
 
     def __init__(self, _year: int | list[int], _scope: str, _mirrors: bool = False, _filters: str | None = None) -> None:
         """

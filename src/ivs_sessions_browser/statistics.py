@@ -249,6 +249,10 @@ def write_station_contribution_plot(
     """
     Defined in statistics.py
 
+    Called by the main loop, This is the main entry point
+    for generating a station contribution plot. For now it is linked to the 'G'
+    key.
+
     Create a station contribution plot.
 
     :param rows: Session rows to analyze.
