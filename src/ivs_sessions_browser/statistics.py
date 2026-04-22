@@ -493,16 +493,17 @@ def write_station_contribution_plot(
 
     if metric == "session_share_pct":
         x_label = "Sessions with station (%)"
-        title = "Station Participation by Session (%)"
+        title   = "Station Participation by Session (%)"
         value_fmt: Callable[[float], str] = lambda val: f"{val:.1f}%"
+        
     elif metric == "hours":
-        x_label = "Scheduled observing hours"
-        title = "Station Contribution by Scheduled Hours"
-        value_fmt = lambda val: f"{val:.1f}h"
+        x_label     = "Scheduled observing hours"
+        title       = "Station Contribution by Scheduled Hours"
+        value_fmt   = lambda val: f"{val:.1f}h"
     else:
         x_label = "Weighted contribution hours"
-        title = "Station Contribution by Weighted Hours"
-        value_fmt = lambda val: f"{val:.1f}wh"
+        title       = "Station Contribution by Weighted Hours"
+        value_fmt   = lambda val: f"{val:.1f}wh"
 
     if output_path is None:
         ts  = datetime.now().strftime("%Y%m%d-%H%M%S")
