@@ -18,6 +18,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 import re
+from typing import Callable
 
 from . import defs as D
 
@@ -25,6 +26,19 @@ from . import defs as D
 START_FORMAT        = "%Y-%m-%d %H:%M"
 STATION_TOKEN_RE    = re.compile(r"[A-Z][a-z0-9]")
 REMOVED_BLOCK_RE    = re.compile(r"\[[^\]]*\]")
+NUMERIC_RE          = re.compile(r"\d+(?:\.\d+)?")
+
+DEFAULT_TYPE_WEIGHTS: dict[str, float] = {
+    "intensive": 1.5,
+    "default": 1.0,
+}
+
+DEFAULT_STATUS_WEIGHTS: dict[str, float] = {
+    "released": 1.0,
+    "processing": 0.7,
+    "waiting": 0.4,
+    "cancelled": 0.0,
+}
 
 
 @dataclass
@@ -42,6 +56,7 @@ class SessionStatistics:
     by_status: Counter[str]
     by_operator: Counter[str]
     by_station: Counter[str]
+    total_observed_hours: float
 
 
 
@@ -62,6 +77,39 @@ def _parse_start(value: str) -> datetime | None:
         return datetime.strptime(text, START_FORMAT)
     except ValueError:
         return None
+
+
+
+def _parse_duration_hours(value: str) -> float:
+    """
+    Parse a duration field into hours.
+
+    Supports common schedule formats such as:
+    - "24" (hours)
+    - "12.5" (hours)
+    - "12h"
+    - "HH:MM" (e.g., "01:30" -> 1.5)
+    """
+
+    text = (value or "").strip().lower()
+    if not text:
+        return 0.0
+
+    if ":" in text:
+        hh, mm = text.split(":", 1)
+        try:
+            return max(float(hh), 0.0) + (max(float(mm), 0.0) / 60.0)
+        except ValueError:
+            return 0.0
+
+    m = NUMERIC_RE.search(text)
+    if not m:
+        return 0.0
+
+    try:
+        return max(float(m.group(0)), 0.0)
+    except ValueError:
+        return 0.0
 
 
 
@@ -99,6 +147,7 @@ def summarize_rows(rows: list[D.Row]) -> SessionStatistics:
     unique_codes: set[str] = set()
     rows_with_operator = 0
     intensive_count = 0
+    total_observed_hours = 0.0
     start_values: list[datetime] = []
 
     for values, _url, meta in rows:
@@ -130,6 +179,8 @@ def summarize_rows(rows: list[D.Row]) -> SessionStatistics:
         if bool(meta.get("intensive")):
             intensive_count += 1
 
+        total_observed_hours += _parse_duration_hours(_safe_value(values, "dur"))
+
         start_dt = _parse_start(_safe_value(values, "start"))
         if start_dt is not None:
             start_values.append(start_dt)
@@ -155,6 +206,7 @@ def summarize_rows(rows: list[D.Row]) -> SessionStatistics:
         by_status=by_status,
         by_operator=by_operator,
         by_station=by_station,
+        total_observed_hours=total_observed_hours,
     )
 
 
@@ -171,8 +223,14 @@ def _format_counter(counter: Counter, top_n: int) -> str:
 
 
 def build_statistics_report(all_rows: list[D.Row], view_rows: list[D.Row], top_n: int = 8) -> list[str]:
-    all_stats = summarize_rows(all_rows)
-    view_stats = summarize_rows(view_rows)
+    """
+    Defined in statistics.py
+
+    Build a list of human-readable statistics lines from the provided rows.
+    """
+
+    all_stats   = summarize_rows(all_rows)
+    view_stats  = summarize_rows(view_rows)
 
     intensive_pct = 0.0
     if all_stats.row_count > 0:
@@ -190,6 +248,7 @@ def build_statistics_report(all_rows: list[D.Row], view_rows: list[D.Row], top_n
         f"Unique session codes: {all_stats.unique_codes}",
         f"Intensive sessions: {all_stats.intensive_count} ({intensive_pct:.1f}%)",
         f"Rows with operator assignment: {all_stats.rows_with_operator}",
+        f"Total scheduled hours: {all_stats.total_observed_hours:.1f}",
         f"Date span: {span}",
         f"Years: {_format_counter(all_stats.by_year, top_n)}",
         f"Top stations: {_format_counter(all_stats.by_station, top_n)}",
@@ -199,6 +258,11 @@ def build_statistics_report(all_rows: list[D.Row], view_rows: list[D.Row], top_n
         f"Top statuses: {_format_counter(all_stats.by_status, top_n)}",
         f"Top operators: {_format_counter(all_stats.by_operator, top_n)}",
     ]
+
+    station_lines = station_contribution_summary(all_rows, top_n=top_n)
+    if station_lines:
+        lines.append("Top station contribution (sessions % | hours | weighted):")
+        lines.extend(station_lines)
 
     return lines
 
@@ -238,11 +302,121 @@ def station_contribution_percentages(rows: list[D.Row], top_n: int | None = None
 
 
 
+def station_contribution_metrics(
+    rows: list[D.Row],
+    top_n: int | None = None,
+    type_weights: dict[str, float] | None = None,
+    status_weights: dict[str, float] | None = None,
+) -> list[dict[str, float | int | str]]:
+    """
+    Compute station contribution metrics using session count, share, hours,
+    and weighted hours.
+
+    A station is counted at most once per session and removed stations are
+    excluded.
+    """
+
+    total_sessions = len(rows)
+    if total_sessions <= 0:
+        return []
+
+    type_w = {
+        **DEFAULT_TYPE_WEIGHTS,
+        **(type_weights or {}),
+    }
+    status_w = {
+        **DEFAULT_STATUS_WEIGHTS,
+        **(status_weights or {}),
+    }
+
+    session_count_by_station: Counter[str] = Counter()
+    hours_by_station: Counter[str] = Counter()
+    weighted_by_station: Counter[str] = Counter()
+
+    for values, _url, meta in rows:
+        stations_in_session = set(_station_tokens(values, meta, include_removed=False))
+        if not stations_in_session:
+            continue
+
+        duration_hours = _parse_duration_hours(_safe_value(values, "dur"))
+
+        session_type = ("intensive" if bool(meta.get("intensive")) else "default")
+        type_factor = float(type_w.get(session_type, type_w.get("default", 1.0)))
+
+        status = _safe_value(values, "status").lower()
+        status_factor = float(status_w.get(status, 1.0))
+
+        weighted_hours = duration_hours * type_factor * status_factor
+
+        for station in stations_in_session:
+            session_count_by_station[station] += 1
+            hours_by_station[station] += duration_hours
+            weighted_by_station[station] += weighted_hours
+
+    def _sort_key(item: tuple[str, int]) -> tuple[float, int, str]:
+        station, session_count = item
+        return (
+            weighted_by_station.get(station, 0.0),
+            session_count,
+            station,
+        )
+
+    sorted_stations = sorted(
+        session_count_by_station.items(),
+        key=_sort_key,
+        reverse=True,
+    )
+
+    if top_n is not None:
+        sorted_stations = sorted_stations[:top_n]
+
+    results: list[dict[str, float | int | str]] = []
+    for station, session_count in sorted_stations:
+        session_share_pct = 100.0 * float(session_count) / float(total_sessions)
+        hours = float(hours_by_station.get(station, 0.0))
+        weighted = float(weighted_by_station.get(station, 0.0))
+
+        results.append(
+            {
+                "station": station,
+                "session_count": int(session_count),
+                "session_share_pct": session_share_pct,
+                "hours": hours,
+                "weighted_hours": weighted,
+            }
+        )
+
+    return results
+
+
+
+def station_contribution_summary(rows: list[D.Row], top_n: int = 8) -> list[str]:
+    """
+    Build compact textual station contribution lines for stats UI.
+    """
+
+    metrics = station_contribution_metrics(rows, top_n=top_n)
+    lines: list[str] = []
+    for item in metrics:
+        station = str(item["station"])
+        session_count = int(item["session_count"])
+        session_share_pct = float(item["session_share_pct"])
+        hours = float(item["hours"])
+        weighted_hours = float(item["weighted_hours"])
+        lines.append(
+            f"  {station}: {session_count} ({session_share_pct:.1f}%) | {hours:.1f}h | {weighted_hours:.1f}wh"
+        )
+
+    return lines
+
+
+
 def write_station_contribution_plot(
     rows: list[D.Row],
     output_path: str | Path | None = None,
     top_n: int | None = None,
     chart_type: str = "barh",
+    metric: str = "session_share_pct",
     aggregate_below_pct: float | None = None,
     others_label: str = "Others",
 ) -> Path:
@@ -268,9 +442,19 @@ def write_station_contribution_plot(
     :raises ValueError: If no station tokens are available.
     """
 
-    station_data = station_contribution_percentages(rows, top_n=top_n)
-    if not station_data:
+    metrics = station_contribution_metrics(rows, top_n=top_n)
+    if not metrics:
         raise ValueError("No station data available for plotting")
+
+    if metric not in {"session_share_pct", "hours", "weighted_hours"}:
+        raise ValueError(f"Unsupported metric '{metric}'")
+
+    station_data: list[tuple[str, int, float]] = []
+    for item in metrics:
+        station = str(item["station"])
+        session_count = int(item["session_count"])
+        metric_value = float(item[metric])
+        station_data.append((station, session_count, metric_value))
 
     if aggregate_below_pct is not None and aggregate_below_pct > 0:
         kept: list[tuple[str, int, float]] = []
@@ -303,9 +487,22 @@ def write_station_contribution_plot(
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
-    labels      = [item[0] for item in station_data]
-    counts      = [item[1] for item in station_data]
-    percentages = [item[2] for item in station_data]
+    labels = [item[0] for item in station_data]
+    counts = [item[1] for item in station_data]
+    values = [item[2] for item in station_data]
+
+    if metric == "session_share_pct":
+        x_label = "Sessions with station (%)"
+        title = "Station Participation by Session (%)"
+        value_fmt: Callable[[float], str] = lambda val: f"{val:.1f}%"
+    elif metric == "hours":
+        x_label = "Scheduled observing hours"
+        title = "Station Contribution by Scheduled Hours"
+        value_fmt = lambda val: f"{val:.1f}h"
+    else:
+        x_label = "Weighted contribution hours"
+        title = "Station Contribution by Weighted Hours"
+        value_fmt = lambda val: f"{val:.1f}wh"
 
     if output_path is None:
         ts  = datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -318,7 +515,7 @@ def write_station_contribution_plot(
 
         # Pie slices use each station's share of all participation mentions.
         wedges, _texts, _autotexts = ax.pie(
-            counts,
+            values,
             labels=labels,
             autopct="%1.1f%%",
             startangle=120,
@@ -326,28 +523,28 @@ def write_station_contribution_plot(
             wedgeprops={"linewidth": 0.8, "edgecolor": "white"},
             textprops={"fontsize": 9},
         )
-        ax.set_title("Station Share of Participation Mentions (%)")
+        ax.set_title(title)
         ax.axis("equal")
 
     else:
         labels = labels[::-1]
-        percentages = percentages[::-1]
+        values = values[::-1]
 
         fig_h = max(5.0, min(24.0, 1.2 + 0.42 * len(labels)))
         fig, ax = plt.subplots(figsize=(11.5, fig_h))
 
-        bars = ax.barh(labels, percentages, color="#2f6c8f", alpha=0.9)
-        ax.set_xlabel("Sessions with station (%)")
-        ax.set_title("Station Participation by Session (%)")
-        ax.set_xlim(0, max(percentages) * 1.12)
+        bars = ax.barh(labels, values, color="#2f6c8f", alpha=0.9)
+        ax.set_xlabel(x_label)
+        ax.set_title(title)
+        ax.set_xlim(0, max(values) * 1.12)
         ax.grid(axis="x", linestyle="--", alpha=0.35)
 
-        for bar, pct in zip(bars, percentages):
+        for bar, value in zip(bars, values):
             y = bar.get_y() + (bar.get_height() / 2.0)
             ax.text(
                 bar.get_width() + 0.15,
                 y,
-                f"{pct:.1f}%",
+                value_fmt(value),
                 va="center",
                 ha="left",
                 fontsize=9,

@@ -46,6 +46,7 @@ class SessionsBrowser:
     STATION_PLOT_TOP_N                  = None
     # STATION_PLOT_CHART_TYPE             = "pie"
     STATION_PLOT_CHART_TYPE             = "barh"
+    STATION_PLOT_METRIC                 = "session_share_pct"
     STATION_PLOT_OTHERS_BELOW_PCT       = 0.0
 
     def __init__(self, _year: int | list[int], _scope: str, _mirrors: bool = False, _filters: str | None = None) -> None:
@@ -662,10 +663,11 @@ class SessionsBrowser:
             # path to the saved PNG file
             write_station_contribution_plot(
                 self.formatter.full_list,
-                output_path=out_path,
-                top_n=self.STATION_PLOT_TOP_N,
-                chart_type=self.STATION_PLOT_CHART_TYPE,
-                aggregate_below_pct=self.STATION_PLOT_OTHERS_BELOW_PCT,
+                output_path         = out_path,
+                top_n               = self.STATION_PLOT_TOP_N,
+                chart_type          = self.STATION_PLOT_CHART_TYPE,
+                metric              = self.STATION_PLOT_METRIC,
+                aggregate_below_pct = self.STATION_PLOT_OTHERS_BELOW_PCT,
             )
 
             msg = f"Saved station plot: {out_path}"
