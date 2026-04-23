@@ -27,6 +27,7 @@ START_FORMAT        = "%Y-%m-%d %H:%M"
 STATION_TOKEN_RE    = re.compile(r"[A-Z][a-z0-9]")
 REMOVED_BLOCK_RE    = re.compile(r"\[[^\]]*\]")
 NUMERIC_RE          = re.compile(r"\d+(?:\.\d+)?")
+PROGRAM_PREFIX_RE   = re.compile(r"^[A-Za-z]+\d*")
 
 DEFAULT_TYPE_WEIGHTS: dict[str, float] = {
     "intensive": 1.5,
@@ -56,7 +57,17 @@ class SessionStatistics:
     by_status: Counter[str]
     by_operator: Counter[str]
     by_station: Counter[str]
+    by_program: Counter[str]
+    by_year_hours: Counter[int]
+    by_program_hours: Counter[str]
+    stations_per_session: Counter[int]
     total_observed_hours: float
+    total_active_station_mentions: int
+    total_baselines: int
+    total_baseline_hours: float
+    cancelled_count: int
+    non_cancelled_count: int
+    reduced_network_count: int
 
 
 
@@ -135,6 +146,56 @@ def _station_tokens(values: list[str], meta: dict, include_removed: bool = True)
 
 
 
+def _program_bucket(values: list[str], meta: dict) -> str:
+    """
+    Build a coarse, stable program bucket from type/code metadata.
+    """
+
+    if bool(meta.get("intensive")):
+        return "INT"
+
+    type_text = _safe_value(values, "type").strip()
+    code = _safe_value(values, "code").strip().upper()
+    type_lower = type_text.lower()
+
+    if "vgos" in type_lower or code.startswith("VG"):
+        return "VGOS"
+    if code.startswith("R1"):
+        return "R1"
+    if code.startswith("R4"):
+        return "R4"
+
+    if type_text:
+        m = PROGRAM_PREFIX_RE.match(type_text)
+        if m:
+            return m.group(0).upper()
+        return type_text.upper()
+
+    if code:
+        m = PROGRAM_PREFIX_RE.match(code)
+        if m:
+            return m.group(0).upper()
+
+    return "UNKNOWN"
+
+
+
+def _status_bucket(value: str) -> str:
+    text = (value or "").strip().lower()
+    if not text:
+        return "unknown"
+    if "cancel" in text:
+        return "cancelled"
+    if "release" in text:
+        return "released"
+    if "process" in text:
+        return "processing"
+    if "wait" in text:
+        return "waiting"
+    return text
+
+
+
 def summarize_rows(rows: list[D.Row]) -> SessionStatistics:
     by_year: Counter[int] = Counter()
     by_type: Counter[str] = Counter()
@@ -143,11 +204,21 @@ def summarize_rows(rows: list[D.Row]) -> SessionStatistics:
     by_status: Counter[str] = Counter()
     by_operator: Counter[str] = Counter()
     by_station: Counter[str] = Counter()
+    by_program: Counter[str] = Counter()
+    by_year_hours: Counter[int] = Counter()
+    by_program_hours: Counter[str] = Counter()
+    stations_per_session: Counter[int] = Counter()
 
     unique_codes: set[str] = set()
     rows_with_operator = 0
     intensive_count = 0
     total_observed_hours = 0.0
+    total_active_station_mentions = 0
+    total_baselines = 0
+    total_baseline_hours = 0.0
+    cancelled_count = 0
+    non_cancelled_count = 0
+    reduced_network_count = 0
     start_values: list[datetime] = []
 
     for values, _url, meta in rows:
@@ -176,15 +247,39 @@ def summarize_rows(rows: list[D.Row]) -> SessionStatistics:
         if status:
             by_status[status] += 1
 
+        status_group = _status_bucket(status)
+        if status_group == "cancelled":
+            cancelled_count += 1
+        else:
+            non_cancelled_count += 1
+
         if bool(meta.get("intensive")):
             intensive_count += 1
 
-        total_observed_hours += _parse_duration_hours(_safe_value(values, "dur"))
+        duration_hours = _parse_duration_hours(_safe_value(values, "dur"))
+        total_observed_hours += duration_hours
+
+        program = _program_bucket(values, meta)
+        by_program[program] += 1
+        by_program_hours[program] += duration_hours
 
         start_dt = _parse_start(_safe_value(values, "start"))
         if start_dt is not None:
             start_values.append(start_dt)
             by_year[start_dt.year] += 1
+            by_year_hours[start_dt.year] += duration_hours
+
+        active_stations = set(_station_tokens(values, meta, include_removed=False))
+        n_stations = len(active_stations)
+        stations_per_session[n_stations] += 1
+        total_active_station_mentions += n_stations
+
+        if 0 < n_stations < 3:
+            reduced_network_count += 1
+
+        baselines = (n_stations * (n_stations - 1)) // 2
+        total_baselines += baselines
+        total_baseline_hours += float(baselines) * duration_hours
 
         for token in _station_tokens(values, meta):
             by_station[token] += 1
@@ -206,7 +301,17 @@ def summarize_rows(rows: list[D.Row]) -> SessionStatistics:
         by_status=by_status,
         by_operator=by_operator,
         by_station=by_station,
+        by_program=by_program,
+        by_year_hours=by_year_hours,
+        by_program_hours=by_program_hours,
+        stations_per_session=stations_per_session,
         total_observed_hours=total_observed_hours,
+        total_active_station_mentions=total_active_station_mentions,
+        total_baselines=total_baselines,
+        total_baseline_hours=total_baseline_hours,
+        cancelled_count=cancelled_count,
+        non_cancelled_count=non_cancelled_count,
+        reduced_network_count=reduced_network_count,
     )
 
 
@@ -215,10 +320,51 @@ def _format_counter(counter: Counter, top_n: int) -> str:
     if not counter:
         return "-"
 
+    def _fmt_count(value: float | int) -> str:
+        if isinstance(value, float):
+            return f"{value:.1f}" if not value.is_integer() else f"{int(value)}"
+        return str(value)
+
     parts: list[str] = []
     for key, count in counter.most_common(top_n):
-        parts.append(f"{key}({count})")
+        parts.append(f"{key}({_fmt_count(count)})")
     return ", ".join(parts)
+
+
+
+def _format_year_hours(counter: Counter[int], top_n: int) -> str:
+    if not counter:
+        return "-"
+
+    parts: list[str] = []
+    for year, value in sorted(counter.items(), key=lambda item: item[0], reverse=True)[:top_n]:
+        parts.append(f"{year}({value:.1f}h)")
+    return ", ".join(parts)
+
+
+
+def _trend_text(counter: Counter[int], unit: str) -> str:
+    """
+    Return compact trend text from earliest to latest year.
+    """
+
+    if len(counter) < 2:
+        return "-"
+
+    years = sorted(counter.keys())
+    first_year = years[0]
+    last_year = years[-1]
+    first_val = float(counter[first_year])
+    last_val = float(counter[last_year])
+    delta = last_val - first_val
+
+    if first_val > 0:
+        pct = (100.0 * delta / first_val)
+        sign = "+" if delta >= 0 else ""
+        return f"{first_year}->{last_year}: {first_val:.1f}{unit} to {last_val:.1f}{unit} ({sign}{pct:.1f}%)"
+
+    sign = "+" if delta >= 0 else ""
+    return f"{first_year}->{last_year}: {first_val:.1f}{unit} to {last_val:.1f}{unit} ({sign}{delta:.1f}{unit})"
 
 
 
@@ -241,16 +387,45 @@ def build_statistics_report(all_rows: list[D.Row], view_rows: list[D.Row], top_n
     else:
         span = "-"
 
+    visible_share = 0.0
+    if all_stats.row_count > 0:
+        visible_share = 100.0 * view_stats.row_count / all_stats.row_count
+
+    avg_duration_hours = (all_stats.total_observed_hours / all_stats.row_count) if all_stats.row_count else 0.0
+    avg_stations = (all_stats.total_active_station_mentions / all_stats.row_count) if all_stats.row_count else 0.0
+    avg_baselines = (all_stats.total_baselines / all_stats.row_count) if all_stats.row_count else 0.0
+
+    cancelled_pct = (100.0 * all_stats.cancelled_count / all_stats.row_count) if all_stats.row_count else 0.0
+    non_cancelled_pct = (100.0 * all_stats.non_cancelled_count / all_stats.row_count) if all_stats.row_count else 0.0
+
+    year_count = len(all_stats.by_year)
+    sessions_per_year = (all_stats.row_count / year_count) if year_count else 0.0
+    hours_per_year = (all_stats.total_observed_hours / year_count) if year_count else 0.0
+
     lines = [
         "Session Statistics",
         f"Loaded rows: {all_stats.row_count}",
-        f"Visible rows: {view_stats.row_count}",
+        f"Visible rows: {view_stats.row_count} ({visible_share:.1f}%)",
         f"Unique session codes: {all_stats.unique_codes}",
         f"Intensive sessions: {all_stats.intensive_count} ({intensive_pct:.1f}%)",
         f"Rows with operator assignment: {all_stats.rows_with_operator}",
         f"Total scheduled hours: {all_stats.total_observed_hours:.1f}",
+        f"Average session duration: {avg_duration_hours:.2f}h",
+        f"Average active stations/session: {avg_stations:.2f}",
+        f"Average baselines/session: {avg_baselines:.2f}",
+        f"Total baseline-hours proxy: {all_stats.total_baseline_hours:.1f}",
+        f"Cancelled sessions: {all_stats.cancelled_count} ({cancelled_pct:.1f}%)",
+        f"Non-cancelled proxy success: {all_stats.non_cancelled_count} ({non_cancelled_pct:.1f}%)",
+        f"Reduced-network sessions (<3 stations): {all_stats.reduced_network_count}",
         f"Date span: {span}",
+        f"Sessions/year (avg): {sessions_per_year:.1f}",
+        f"Hours/year (avg): {hours_per_year:.1f}",
+        f"Session trend: {_trend_text(all_stats.by_year, '')}",
+        f"Hours trend: {_trend_text(all_stats.by_year_hours, 'h')}",
         f"Years: {_format_counter(all_stats.by_year, top_n)}",
+        f"Yearly hours: {_format_year_hours(all_stats.by_year_hours, top_n)}",
+        f"Program mix: {_format_counter(all_stats.by_program, top_n)}",
+        f"Program hours: {_format_counter(all_stats.by_program_hours, top_n)}",
         f"Top stations: {_format_counter(all_stats.by_station, top_n)}",
         f"Top correlators: {_format_counter(all_stats.by_correlator, top_n)}",
         f"Top ops centers: {_format_counter(all_stats.by_ops_center, top_n)}",

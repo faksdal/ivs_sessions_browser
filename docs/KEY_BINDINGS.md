@@ -17,6 +17,8 @@
 | Key | Action | Description |
 |-----|--------|-------------|
 | `Enter` | Open in browser | Open selected session page in default web browser |
+| `S` | Show statistics | Open operational statistics (trend, network, reliability metrics) |
+| `G` | Plot station contribution | Save/open station contribution chart (cycles metric each press) |
 | `?` | Show help | Display help popup with key bindings and color legend |
 
 ## Filtering
@@ -88,3 +90,4 @@ The bottom status bar shows:
 4. **Help always available**: Press `?` anytime to see the help screen with all key bindings
 5. **Clear and retry**: Use `C` to clear filters if you want to start fresh
 6. **Removed stations view**: Use filters like `stations_removed:Ft|Ur` or `stations_all:Ft|Ur` to inspect removed stations
+7. **Stats popup navigation**: In statistics view, use `↑/↓` or `PgUp/PgDn` to scroll, `q` or `Enter` to close

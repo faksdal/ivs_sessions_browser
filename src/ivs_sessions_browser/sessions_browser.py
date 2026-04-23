@@ -621,28 +621,52 @@ class SessionsBrowser:
         )
 
         max_y, max_x = _stdscr.getmaxyx()
-        footer = "Press any key to close"
+        footer = "Up/Down scroll, q/Enter close"
         display_lines = lines + ["", footer]
 
         width = min(max(len(line) for line in display_lines) + 4, max_x - 4)
-        height = min(len(display_lines) + 2, max_y - 4)
+        height = min(max_y - 4, max(8, min(len(display_lines) + 2, max_y - 4)))
 
-        if width < 20 or height < 6:
+        if width < 20 or height < 8:
             return
 
         top = (max_y - height) // 2
         left = (max_x - width) // 2
-
         win = curses.newwin(height, width, top, left)
-        win.box()
+        win.keypad(True)
 
         max_visible = height - 2
-        for i, line in enumerate(display_lines[:max_visible]):
-            attr = self.theme.header if (i == 0 and self.state.has_colors) else 0
-            win.addnstr(i + 1, 2, line, width - 4, attr)
+        scroll = 0
+        max_scroll = max(0, len(display_lines) - max_visible)
 
-        win.refresh()
-        win.getch()
+        while True:
+            win.erase()
+            win.box()
+
+            visible = display_lines[scroll: scroll + max_visible]
+            for i, line in enumerate(visible):
+                absolute_idx = scroll + i
+                if absolute_idx == 0 and self.state.has_colors:
+                    attr = self.theme.header
+                elif absolute_idx == len(display_lines) - 1 and self.state.has_colors:
+                    attr = self.theme.help_bar
+                else:
+                    attr = 0
+                win.addnstr(i + 1, 2, line, width - 4, attr)
+
+            win.refresh()
+            key = win.getch()
+
+            if key in (ord("q"), ord("Q"), 10, 13, curses.KEY_ENTER, 27):
+                break
+            if key in (curses.KEY_DOWN, ord("j")):
+                scroll = min(max_scroll, scroll + 1)
+            elif key in (curses.KEY_UP, ord("k")):
+                scroll = max(0, scroll - 1)
+            elif key == curses.KEY_NPAGE:
+                scroll = min(max_scroll, scroll + max_visible)
+            elif key == curses.KEY_PPAGE:
+                scroll = max(0, scroll - max_visible)
     # ─── END OF _show_statistics() ───────────────────────────────────────────
 
 

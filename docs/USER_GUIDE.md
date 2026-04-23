@@ -145,6 +145,19 @@ Press **Enter** while a session is selected to open the full session page in you
 - Analysis reports
 - Download links for data files
 
+### Statistics and Contribution Views
+
+- Press **S** to open the statistics dialog.
+- The statistics report includes:
+   - Session and hour trends over years
+   - Program mix and yearly observing hours
+   - Network size proxies (active stations/session, baselines/session, baseline-hours)
+   - Reliability proxies (cancelled share, non-cancelled share, reduced-network sessions)
+- In the statistics dialog, use **↑/↓** or **PgUp/PgDn** to scroll, and **q** or **Enter** to close.
+
+- Press **G** to generate a station contribution plot.
+   - Repeated presses cycle the plotted metric between session share, hours, and weighted hours.
+
 ## Filtering Sessions
 
 Filtering is one of the most powerful features of the IVS Sessions Browser. It allows you to quickly narrow down thousands of sessions to exactly what you need.
