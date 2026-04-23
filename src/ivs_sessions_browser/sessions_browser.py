@@ -46,8 +46,9 @@ class SessionsBrowser:
     STATION_PLOT_TOP_N                  = None
     # STATION_PLOT_CHART_TYPE             = "pie"
     STATION_PLOT_CHART_TYPE             = "barh"
-    STATION_PLOT_METRIC                 = "session_share_pct"
-    STATION_PLOT_OTHERS_BELOW_PCT       = 0.0
+    STATION_PLOT_METRIC                 = "session_share_pct"   # initial / fallback
+    _STATION_PLOT_METRICS               = ("session_share_pct", "hours", "weighted_hours")
+    STATION_PLOT_OTHERS_BELOW_PCT       = 3.0
 
     def __init__(self, _year: int | list[int], _scope: str, _mirrors: bool = False, _filters: str | None = None) -> None:
         """
@@ -137,6 +138,7 @@ class SessionsBrowser:
         # UI, such as selected session, applied filters, etc., and the theme (colors, styles, etc.)
         self.state              = UIState()
         self.theme: TUITheme    = None  # <- initialized in self._curses_main()
+        self._station_plot_metric_idx: int = 0  # index into _STATION_PLOT_METRICS
 
         # self.operators = load_operators()
         self.operator_bindings      = load_operator_bindings()
@@ -655,6 +657,12 @@ class SessionsBrowser:
         max_y, max_x    = _stdscr.getmaxyx()
         attr            = self.theme.help_bar if self.state.has_colors else 0
 
+        # Advance to the next metric in the cycle before plotting
+        self._station_plot_metric_idx = (
+            self._station_plot_metric_idx + 1
+        ) % len(self._STATION_PLOT_METRICS)
+        current_metric = self._STATION_PLOT_METRICS[self._station_plot_metric_idx]
+
         try:
             filename = f"station-contribution-{time.strftime('%Y%m%d-%H%M%S')}.png"
             out_path = os.path.join(os.getcwd(), filename)
@@ -666,11 +674,16 @@ class SessionsBrowser:
                 output_path         = out_path,
                 top_n               = self.STATION_PLOT_TOP_N,
                 chart_type          = self.STATION_PLOT_CHART_TYPE,
-                metric              = self.STATION_PLOT_METRIC,
+                metric              = current_metric,
                 aggregate_below_pct = self.STATION_PLOT_OTHERS_BELOW_PCT,
             )
 
-            msg = f"Saved station plot: {out_path}"
+            metric_labels = {
+                "session_share_pct": "session %",
+                "hours":             "hours",
+                "weighted_hours":    "weighted hours",
+            }
+            msg = f"[{metric_labels[current_metric]}] Saved station plot: {out_path}"
             self.formatter._addstr_clip(_stdscr, max_y - 2, 0, msg[: max_x - 1], attr)
             _stdscr.refresh()
             time.sleep(self.PDF_STATUS_MESSAGE_DELAY_SECONDS)
