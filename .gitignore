@@ -47,6 +47,7 @@ Thumbs.db
 .env.*
 
 # Local runtime artifacts
+.codex
 *.pid
 *.tmp
 
