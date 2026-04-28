@@ -74,7 +74,7 @@ ivs_sessions_browser/
 ## Installation
 
 ```bash
-git clone git@github.com:faksdal/ivs_sessions_browser.git
+git clone git@github.com:jonleithe/ivs_sessions_browser.git
 cd ivs_sessions_browser
 
 python3 -m venv .venv
