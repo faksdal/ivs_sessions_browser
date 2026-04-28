@@ -149,6 +149,7 @@ class SessionsBrowser:
             pdf_columns_path = D.CONFIG_DIR / "pdf_columns"
             if not pdf_columns_path.exists():
                 try:
+                    pdf_columns_path.parent.mkdir(parents=True, exist_ok=True)
                     pdf_columns_path.write_text("ALL", encoding="utf-8")
                 except Exception:
                     pass

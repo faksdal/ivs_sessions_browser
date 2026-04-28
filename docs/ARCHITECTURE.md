@@ -4,8 +4,8 @@
 This document explains how the CLI/TUI flow is wired together so contributors can follow execution from entry point through data fetching, parsing, filtering, and rendering. The goal is to provide a clear understanding of how all components interact to deliver an interactive terminal-based browser for IVS session schedules.
 
 ## High-level flow
-1. User runs `./run_browser`, `ivs-sessions-browser`, or `python -m ivs_sessions_browser`.
-2. `__main__.py` calls `ivs_sessions_browser.main()` from `__init__.py`.
+1. User runs `ivs-sessions-browser`, `python -m ivs_sessions_browser`, or `./run_browser`.
+2. The selected entry point calls `ivs_sessions_browser.main()` from `__init__.py`.
 3. `main()` builds the CLI argument parser, parses arguments for `--year` (single, CSV, or range expression), `--scope`, `--filters`, `--mirrors`, output options, and `--version`.
 4. `SessionsBrowser` is constructed with parsed arguments and computes the URL list for the chosen scope and mirror preferences.
 5. `FetchSessions` retrieves HTML data from the most recently updated master/intensive pages (comparing timestamps when `--mirrors` is specified).
@@ -19,7 +19,7 @@ This document explains how the CLI/TUI flow is wired together so contributors ca
 ### Entry points
 - **Shell wrapper**: `run_browser` in project root sets `PYTHONPATH=src` and execs `.venv/bin/python3 scripts/run_sessions_browser.py`.
 - **Module entry**: `src/ivs_sessions_browser/__main__.py` calls `main()` from `__init__.py`.
-- **Console script** (after `pip install -e .`): `ivs-sessions-browser` command invokes `__main__:main()`.
+- **Console script** (after `pip install -e .`): `ivs-sessions-browser` command invokes `ivs_sessions_browser:main`.
 - **CLI parser and dispatcher**: `src/ivs_sessions_browser/__init__.py` defines `main()` which:
   - Builds argument parser using constants from `defs.py`
   - Parses command-line arguments
@@ -76,11 +76,11 @@ Implements filtering and sorting logic:
 
 #### `operators.py`
 Manages operator configuration and session assignments:
-- `load_operator_bindings()` - loads key-to-label mappings from `operators.json`
+- `load_operator_bindings()` - loads key-to-label mappings from `~/.config/ivs_sessions_browser/operators.json`
 - `load_operator_colors()` - loads color assignments for each operator
-- `load_operator_assignments()` - loads session-to-operator mappings from `operator_assignments.json`
+- `load_operator_assignments()` - loads session-to-operator mappings from `~/.config/ivs_sessions_browser/operator_assignments.json`
 - `save_operator_assignments(data)` - persists session assignments to JSON
-- Configuration files stored in project root (or configurable via `defs.CONFIG_DIR`)
+- Configuration files are stored in `~/.config/ivs_sessions_browser/` by default (or configurable via `defs.CONFIG_DIR`)
 
 #### `tui_state.py` and `TUITheme`
 - `UIState` - dataclass holding TUI state: selected row, offset, view height, colors availability
@@ -131,8 +131,8 @@ Type definitions and data classes:
 - **Browser integration**: Enter opens selected session in default web browser
 
 ## Configuration files
-- `operators.json` - operator bindings (key → label) and colors
-- `operator_assignments.json` - session code → operator label mappings
+- `~/.config/ivs_sessions_browser/operators.json` - operator bindings (key → label) and colors
+- `~/.config/ivs_sessions_browser/operator_assignments.json` - session code → operator label mappings
 
 ## Future enhancements
 - Additional output formats (full JSON structure, richer CSV)

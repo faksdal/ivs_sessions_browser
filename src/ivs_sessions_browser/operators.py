@@ -12,6 +12,7 @@ Notes:
 
 
 import json
+from importlib import resources
 from pathlib import Path
 from typing import Any
 from . import defs as D
@@ -21,12 +22,22 @@ ASSIGNMENTS_PATH    = D.CONFIG_DIR / D.ASSIGNMENTS_FILENAME
 
 
 
-def _load_json(path: Path) -> Any:
+def _load_packaged_json(filename: str) -> Any:
+    try:
+        resource = resources.files("ivs_sessions_browser").joinpath(filename)
+        return json.loads(resource.read_text(encoding="utf-8"))
+    except (FileNotFoundError, json.JSONDecodeError, ModuleNotFoundError):
+        return {}
+
+
+def _load_json(path: Path, *, fallback_package_file: str | None = None) -> Any:
     # dir = Path.cwd()
     try:
         with path.open("r", encoding="utf-8") as f:
             return json.load(f)
     except FileNotFoundError:
+        if fallback_package_file is not None:
+            return _load_packaged_json(fallback_package_file)
         return {}
 
 
@@ -41,7 +52,8 @@ def load_operator_bindings(path: Path = OPERATORS_PATH) -> dict[str, str]:
     operators.json:
       { "bindings": { "1": "OP1", ... } }
     """
-    raw         = _load_json(path)
+    fallback    = D.OPERATORS_FILENAME if path == OPERATORS_PATH else None
+    raw         = _load_json(path, fallback_package_file=fallback)
     bindings    = raw.get("bindings", {}) if isinstance(raw, dict) else {}
     return {str(k): str(v) for k, v in bindings.items()}
 
@@ -52,7 +64,8 @@ def load_operator_colors(path: Path = OPERATORS_PATH) -> dict[str, str]:
       { "colors": { "1": "green", "2": "yellow", ... } }
     Returns dict mapping operator key to color name.
     """
-    raw     = _load_json(path)
+    fallback = D.OPERATORS_FILENAME if path == OPERATORS_PATH else None
+    raw     = _load_json(path, fallback_package_file=fallback)
     colors  = raw.get("colors", {}) if isinstance(raw, dict) else {}
     return {str(k): str(v) for k, v in colors.items()}
 

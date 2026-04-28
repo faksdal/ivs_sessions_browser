@@ -181,8 +181,6 @@ HELP_BAR_TEXT = "↑↓-PgUp/PgDn-Home/End:Move Enter:Open /:Filters C:Clear fil
 
 # Configuration filenames and directory (shared constants)
 # Use the user's config directory by default; tests or dev can override.
-# Default config directory: current directory for development. Tests/dev can
-# override by assigning a different value to `defs.CONFIG_DIR` at runtime.
-CONFIG_DIR              = Path(".")
+CONFIG_DIR              = Path.home() / ".config" / "ivs_sessions_browser"
 OPERATORS_FILENAME      = "operators.json"
 ASSIGNMENTS_FILENAME    = "operator_assignments.json"

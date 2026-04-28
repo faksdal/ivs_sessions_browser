@@ -38,7 +38,7 @@ The following fields can be used in filters (match column headers):
 | `correlator` / `corr` | Correlator | `BONN`, `WASH`, `SHAO` |
 | `status` | Session status | `Released`, `Processing`, `Waiting`, `Cancelled` |
 | `analysis` / `analys` | Analysis center | `NASA`, `BKG`, `SHA` |  
-| `op` | Operator assignment | Operator labels from `operators.json` |
+| `op` | Operator assignment | Operator labels from `~/.config/ivs_sessions_browser/operators.json` |
 
 ## Non-Stations Fields (OR Logic)
 
@@ -148,7 +148,7 @@ Matches released sessions starting on February 6, 2025.
 ```
 op: Alice
 ```
-Matches sessions assigned to operator "Alice" (as defined in `operators.json`).
+Matches sessions assigned to operator "Alice" (as defined in `~/.config/ivs_sessions_browser/operators.json`).
 
 ```
 op: Alice|Bob; status: processing

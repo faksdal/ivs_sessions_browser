@@ -30,7 +30,7 @@ The IVS Sessions Browser is a terminal-based user interface (TUI) for browsing, 
    pip install -r requirements.txt
    ```
 
-4. **Optional - Editable install for console command:**
+4. **Editable install for console command:**
    ```bash
    pip install -e .
    ```
@@ -42,24 +42,24 @@ The IVS Sessions Browser is a terminal-based user interface (TUI) for browsing, 
 
 Choose one of these methods:
 
-**Method 1: Wrapper script (recommended)**
+**Method 1: Console script (recommended after install)**
+```bash
+ivs-sessions-browser
+```
+
+**Method 2: Wrapper script**
 ```bash
 ./run_browser
 ```
 
-**Method 2: Direct with PYTHONPATH**
+**Method 3: Direct with PYTHONPATH**
 ```bash
 PYTHONPATH=src python3 scripts/run_sessions_browser.py
 ```
 
-**Method 3: As a module**
+**Method 4: As a module**
 ```bash
-PYTHONPATH=src python3 -m ivs_sessions_browser
-```
-
-**Method 4: Console script (after editable install)**
-```bash
-ivs-sessions-browser
+python -m ivs_sessions_browser
 ```
 
 ### Command-Line Options
@@ -263,7 +263,7 @@ Operator assignment allows you to tag sessions with operator names for tracking 
 
 ### Configuration
 
-Edit `operators.json` in the project root:
+Edit `~/.config/ivs_sessions_browser/operators.json`:
 
 ```json
 {
@@ -291,7 +291,7 @@ Edit `operators.json` in the project root:
 1. Navigate to a session
 2. Press a number key `0-5` to assign the corresponding operator
 3. The session row will change color to match the operator's configured color
-4. Assignments are saved to `operator_assignments.json`
+4. Assignments are saved to `~/.config/ivs_sessions_browser/operator_assignments.json`
 
 ### Filtering by Operator
 
@@ -320,7 +320,7 @@ Shows sessions assigned to either Alice or Bob.
 
 ### Operator Colors
 
-When operators are assigned, the row color reflects the operator's configured color (from `operators.json`), making it easy to visually identify who is responsible for each session.
+When operators are assigned, the row color reflects the operator's configured color (from `~/.config/ivs_sessions_browser/operators.json`), making it easy to visually identify who is responsible for each session.
 
 ### Removed Stations
 
@@ -403,7 +403,12 @@ For the best experience:
 ModuleNotFoundError: No module named 'ivs_sessions_browser'
 ```
 
-**Solution**: Set PYTHONPATH:
+**Solution**: Install the package in editable mode:
+```bash
+pip install -e .
+```
+
+Or set PYTHONPATH:
 ```bash
 PYTHONPATH=src python3 scripts/run_sessions_browser.py
 ```

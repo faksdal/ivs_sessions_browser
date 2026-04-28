@@ -1,15 +1,30 @@
 [build-system]
-requires = ["setuptools>=45", "wheel", "setuptools-scm>=7"]
+requires = ["setuptools>=68", "setuptools-scm>=8"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "ivs_sessions_browser"
+name = "ivs-sessions-browser"
 dynamic = ["version"]
 description = "A terminal-based TUI for browsing IVS session schedules with fast filtering and keyboard navigation"
 readme = "README.md"
 requires-python = ">=3.10"
-license = {text = "LICENSE"}
-authors = [{name = "leijon"}]
+license = {file = "LICENSE"}
+authors = [{name = "jole"}]
+keywords = ["ivs", "vlbi", "sessions", "tui", "curses"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console :: Curses",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Scientific/Engineering",
+]
 
 dependencies = [
     "requests>=2.31",
@@ -17,6 +32,7 @@ dependencies = [
     "python-dateutil>=2.8",
     "reportlab>=4.0",
     "matplotlib>=3.8",
+    "tqdm>=4.65",
 ]
 
 [project.optional-dependencies]
@@ -25,13 +41,28 @@ dev = [
 ]
 
 [project.scripts]
-ivs-sessions-browser = "ivs_sessions_browser.__main__:main"
+ivs-sessions-browser = "ivs_sessions_browser:main"
+
+[project.urls]
+Homepage = "https://github.com/faksdal/ivs_sessions_browser"
+Repository = "https://github.com/faksdal/ivs_sessions_browser"
+Documentation = "https://github.com/faksdal/ivs_sessions_browser/tree/v4/docs"
+Issues = "https://github.com/faksdal/ivs_sessions_browser/issues"
 
 [tool.setuptools]
 packages = ["ivs_sessions_browser"]
 package-dir = {"" = "src"}
 
+[tool.setuptools.package-data]
+ivs_sessions_browser = [
+    "operators.json",
+    "certs/*.pem",
+    "certs/README.md",
+]
+
 [tool.setuptools_scm]
 write_to = "src/ivs_sessions_browser/version.py"
+tag_regex = "^v(?P<version>\\d+\\.\\d+\\.\\d+)$"
+git_describe_command = "git describe --dirty --tags --long --match v[0-9]*"
 version_scheme = "post-release"
-local_scheme = "node-and-date"
+local_scheme = "no-local-version"
