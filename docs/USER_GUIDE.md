@@ -263,17 +263,19 @@ Operator assignment allows you to tag sessions with operator names for tracking 
 
 ### Configuration
 
-Edit `~/.config/ivs_sessions_browser/operators.json`:
+On first use, IVS Sessions Browser creates a default operator configuration at
+`~/.config/ivs_sessions_browser/operators.json`. Edit that file to customize
+operator labels and colors:
 
 ```json
 {
   "bindings": {
     "0": "",
-    "1": "Alice",
-    "2": "Bob",
-    "3": "Charlie",
-    "4": "",
-    "5": ""
+    "1": "U1",
+    "2": "U2",
+    "3": "U3",
+    "4": "U4",
+    "5": "U5"
   },
   "colors": {
     "0": "white",
@@ -292,6 +294,15 @@ Edit `~/.config/ivs_sessions_browser/operators.json`:
 2. Press a number key `0-5` to assign the corresponding operator
 3. The session row will change color to match the operator's configured color
 4. Assignments are saved to `~/.config/ivs_sessions_browser/operator_assignments.json`
+
+### PDF Column Defaults
+
+The default PDF columns are read from `~/.config/ivs_sessions_browser/pdf_columns`.
+If the file is missing, it is created with:
+
+```text
+op|start|code|stations|corr
+```
 
 ### Filtering by Operator
 

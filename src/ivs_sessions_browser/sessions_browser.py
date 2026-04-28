@@ -34,6 +34,39 @@ from .operators         import load_operator_assignments, load_operator_bindings
 
 
 
+def _load_pdf_default_columns() -> str | list[str]:
+    try:
+        pdf_columns_path = D.CONFIG_DIR / D.PDF_COLUMNS_FILENAME
+        if not pdf_columns_path.exists():
+            try:
+                pdf_columns_path.parent.mkdir(parents=True, exist_ok=True)
+                pdf_columns_path.write_text(D.PDF_COLUMNS_DEFAULT, encoding="utf-8")
+            except Exception:
+                pass
+
+        raw = ""
+        try:
+            raw = (pdf_columns_path.read_text(encoding="utf-8") or "").strip()
+        except Exception:
+            raw = ""
+
+        if not raw:
+            return list(D.PDF_COLUMNS_DEFAULT_LIST)
+
+        raw_up = raw.strip().upper()
+        if raw_up == "ALL":
+            return "ALL"
+
+        cols = [c.strip().upper() for c in raw_up.split("|") if c.strip()]
+        invalid = [c for c in cols if c not in D.PRETTY_PRINT_ALLOWED_COLUMNS]
+        if invalid:
+            return list(D.PDF_COLUMNS_DEFAULT_LIST)
+
+        return cols
+    except Exception:
+        return list(D.PDF_COLUMNS_DEFAULT_LIST)
+
+
 class SessionsBrowser:
     """
     Class representing the IVS Sessions Browser object.
@@ -145,37 +178,7 @@ class SessionsBrowser:
         self.operator_assignments   = load_operator_assignments()
         self.operator_colors        = load_operator_colors()
         # Read default PDF columns from user-editable file in CONFIG_DIR
-        try:
-            pdf_columns_path = D.CONFIG_DIR / "pdf_columns"
-            if not pdf_columns_path.exists():
-                try:
-                    pdf_columns_path.parent.mkdir(parents=True, exist_ok=True)
-                    pdf_columns_path.write_text("ALL", encoding="utf-8")
-                except Exception:
-                    pass
-
-            raw = ""
-            try:
-                raw = (pdf_columns_path.read_text(encoding="utf-8") or "").strip()
-            except Exception:
-                raw = ""
-
-            if not raw:
-                self.pdf_default_columns = "ALL"
-            else:
-                raw_up = raw.strip().upper()
-                if raw_up == "ALL":
-                    self.pdf_default_columns = "ALL"
-                else:
-                    cols = [c.strip().upper() for c in raw_up.split("|") if c.strip()]
-                    invalid = [c for c in cols if c not in D.PRETTY_PRINT_ALLOWED_COLUMNS]
-                    if invalid:
-                        self.pdf_default_columns = "ALL"
-                    else:
-                        # store as list for later use
-                        self.pdf_default_columns = cols
-        except Exception:
-            self.pdf_default_columns = "ALL"
+        self.pdf_default_columns = _load_pdf_default_columns()
         # ─── END OF Format and render session data ────────────────────────────
     # ─── END OF __init__() ────────────────────────────────────────────────────
 

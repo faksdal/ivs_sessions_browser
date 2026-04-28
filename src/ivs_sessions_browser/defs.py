@@ -184,3 +184,6 @@ HELP_BAR_TEXT = "↑↓-PgUp/PgDn-Home/End:Move Enter:Open /:Filters C:Clear fil
 CONFIG_DIR              = Path.home() / ".config" / "ivs_sessions_browser"
 OPERATORS_FILENAME      = "operators.json"
 ASSIGNMENTS_FILENAME    = "operator_assignments.json"
+PDF_COLUMNS_FILENAME    = "pdf_columns"
+PDF_COLUMNS_DEFAULT     = "op|start|code|stations|corr"
+PDF_COLUMNS_DEFAULT_LIST = ["OP", "START", "CODE", "STATIONS", "CORR"]

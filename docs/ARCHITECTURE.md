@@ -131,8 +131,9 @@ Type definitions and data classes:
 - **Browser integration**: Enter opens selected session in default web browser
 
 ## Configuration files
-- `~/.config/ivs_sessions_browser/operators.json` - operator bindings (key → label) and colors
+- `~/.config/ivs_sessions_browser/operators.json` - operator bindings (key → label) and colors; created from the packaged default when missing
 - `~/.config/ivs_sessions_browser/operator_assignments.json` - session code → operator label mappings
+- `~/.config/ivs_sessions_browser/pdf_columns` - default PDF export columns; created as `op|start|code|stations|corr` when missing
 
 ## Future enhancements
 - Additional output formats (full JSON structure, richer CSV)

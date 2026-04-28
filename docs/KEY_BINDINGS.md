@@ -39,7 +39,7 @@
 | `4` | Assign operator 4 | Assign operator bound to key "4" to selected session |
 | `5` | Assign operator 5 | Assign operator bound to key "5" to selected session |
 
-**Note**: Operator bindings and colors are configured in `~/.config/ivs_sessions_browser/operators.json`. Each key (0-5) can be mapped to an operator name/label, and each operator can have a custom color for visual identification in the TUI.
+**Note**: Operator bindings and colors are configured in `~/.config/ivs_sessions_browser/operators.json`, which is created from packaged defaults when missing. Each key (0-5) can be mapped to an operator name/label, and each operator can have a custom color for visual identification in the TUI.
 
 ## Application Control
 

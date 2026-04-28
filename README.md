@@ -61,6 +61,8 @@ ivs_sessions_browser/
 > **Note:** The project uses the **src/** layout. For development, install it with `pip install -e .`.
 > Inside PyCharm, mark `src/` as **Sources Root** or use the editable virtualenv interpreter.
 > User-editable settings are read from `~/.config/ivs_sessions_browser/`.
+> Missing `operators.json` and `pdf_columns` files are created there from defaults.
+> Edit `~/.config/ivs_sessions_browser/operators.json` to replace the default `U1`-`U5` operator labels with your local operator names.
 
 ---
 

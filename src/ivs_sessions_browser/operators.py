@@ -30,6 +30,20 @@ def _load_packaged_json(filename: str) -> Any:
         return {}
 
 
+def _ensure_packaged_default(path: Path, filename: str) -> None:
+    if path.exists():
+        return
+
+    default_data = _load_packaged_json(filename)
+    if not default_data:
+        return
+
+    try:
+        _save_json(default_data, path)
+    except OSError:
+        pass
+
+
 def _load_json(path: Path, *, fallback_package_file: str | None = None) -> Any:
     # dir = Path.cwd()
     try:
@@ -37,6 +51,13 @@ def _load_json(path: Path, *, fallback_package_file: str | None = None) -> Any:
             return json.load(f)
     except FileNotFoundError:
         if fallback_package_file is not None:
+            _ensure_packaged_default(path, fallback_package_file)
+            if path.exists():
+                try:
+                    with path.open("r", encoding="utf-8") as f:
+                        return json.load(f)
+                except (FileNotFoundError, json.JSONDecodeError, OSError):
+                    pass
             return _load_packaged_json(fallback_package_file)
         return {}
 
