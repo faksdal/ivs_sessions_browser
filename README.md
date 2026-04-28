@@ -77,6 +77,21 @@ ivs_sessions_browser/
 
 ## Installation
 
+### From PyPI
+
+For normal use as a command-line app, `pipx` is recommended:
+
+```bash
+pipx install ivs-sessions-browser
+ivs-sessions-browser --init-config
+ivs-sessions-browser
+```
+
+On Linux distributions with externally managed Python environments, avoid
+installing into system Python with `pip --break-system-packages`.
+
+### From source
+
 ```bash
 git clone git@github.com:jonleithe/ivs_sessions_browser.git
 cd ivs_sessions_browser
@@ -146,6 +161,7 @@ Most usage is interactive (TUI). Command-line flags typically include:
 --pretty-print OP|TYPE|STATIONS
 --format pdf                  # write a colored PDF using the same pretty-printed lines
 --verbose-fetch                # show fetch/progress output even with --output
+--init-config                  # create default user config files and exit
 ```
 
 Run with `-h/--help` (help) to see current options.

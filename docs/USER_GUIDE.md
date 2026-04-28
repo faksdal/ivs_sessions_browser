@@ -11,6 +11,19 @@ The IVS Sessions Browser is a terminal-based user interface (TUI) for browsing, 
 - Linux/macOS terminal with curses support (Windows users: install `windows-curses`)
 - Internet access to fetch schedules from ivscc.gsfc.nasa.gov
 
+### PyPI Install
+
+For normal command-line use, install with `pipx`:
+
+```bash
+pipx install ivs-sessions-browser
+ivs-sessions-browser --init-config
+ivs-sessions-browser
+```
+
+This keeps the app isolated from system Python. On distributions with
+externally managed Python environments, avoid `pip --break-system-packages`.
+
 ### Setup Steps
 
 1. **Clone the repository:**
@@ -84,6 +97,7 @@ Available options:
 - `--format {text|pdf}` - Output format flag (default: `text`)
 - `--append` - Append to output file instead of overwriting
 - `--version` - Show version and exit
+- `--init-config` - Create default user config files and exit before fetching session data
 
 ### Examples
 
@@ -285,13 +299,16 @@ operator labels and colors:
   "colors": {
     "0": "white",
     "1": "green",
-    "2": "blue",
-    "3": "yellow",
-    "4": "magenta",
-    "5": "cyan"
+    "2": "yellow",
+    "3": "red",
+    "4": "blue",
+    "5": "magenta"
   }
 }
 ```
+
+Key `0` clears the assignment. Keys `1` through `5` default to generic labels
+`U1` through `U5`; edit those labels before regular use.
 
 ### Assigning Operators
 
@@ -337,6 +354,7 @@ Shows sessions assigned to either Alice or Bob.
 ### Operator Colors
 
 When operators are assigned, the row color reflects the operator's configured color (from `~/.config/ivs-sessions-browser/operators.json`), making it easy to visually identify who is responsible for each session.
+The `Op` column expands to fit the longest saved assignment label in `operator_assignments.json`.
 
 ### Removed Stations
 

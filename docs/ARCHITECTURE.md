@@ -6,13 +6,14 @@ This document explains how the CLI/TUI flow is wired together so contributors ca
 ## High-level flow
 1. User runs `ivs-sessions-browser`, `python -m ivs_sessions_browser`, or `./run_browser`.
 2. The selected entry point calls `ivs_sessions_browser.main()` from `__init__.py`.
-3. `main()` builds the CLI argument parser, parses arguments for `--year` (single, CSV, or range expression), `--scope`, `--filters`, `--mirrors`, output options, and `--version`.
-4. `SessionsBrowser` is constructed with parsed arguments and computes the URL list for the chosen scope and mirror preferences.
-5. `FetchSessions` retrieves HTML data from the most recently updated master/intensive pages (comparing timestamps when `--mirrors` is specified).
-6. The HTML is parsed into row data, filtered, and sorted by `Tui` class using helper methods from `FilterAndSort`.
-7. Either:
+3. `main()` builds the CLI argument parser, parses arguments for `--year` (single, CSV, or range expression), `--scope`, `--filters`, `--mirrors`, output options, `--init-config`, and `--version`.
+4. Default user config files are initialized before network fetches; if `--init-config` was supplied, the program exits here.
+5. `SessionsBrowser` is constructed with parsed arguments and computes the URL list for the chosen scope and mirror preferences.
+6. `FetchSessions` retrieves HTML data from the most recently updated master/intensive pages (comparing timestamps when `--mirrors` is specified).
+7. The HTML is parsed into row data, filtered, and sorted by `Tui` class using helper methods from `FilterAndSort`.
+8. Either:
    - Interactive TUI is launched (default) via curses, or
-  - Text output is written to file/stdout and the program exits.
+   - Text output is written to file/stdout and the program exits.
 
 ## Detailed flow
 
@@ -23,6 +24,7 @@ This document explains how the CLI/TUI flow is wired together so contributors ca
 - **CLI parser and dispatcher**: `src/ivs_sessions_browser/__init__.py` defines `main()` which:
   - Builds argument parser using constants from `defs.py`
   - Parses command-line arguments
+  - Initializes default user config files, or exits immediately for `--init-config`
   - Creates `SessionsBrowser` instance
   - Either launches TUI or produces formatted output
 
@@ -63,7 +65,7 @@ Responsible for TUI rendering and session data formatting:
 - `draw_rows(_stdscr, rows, highlight_tokens, _theme, _state)` - renders session rows with colors
 - `draw_helpbar(_stdscr, ...)` - displays bottom status/help bar
 - `show_help(_stdscr, _theme)` - shows centered help popup
-- `recompute_header_widths()` - dynamically adjusts column widths based on content
+- `recompute_header_widths()` - dynamically adjusts column widths based on content, starting from immutable base widths so repeated recomputes do not expand columns
 - Uses operator configuration for row coloring based on assigned operators
 
 #### `FilterAndSort` (`filter_and_sort.py`)
@@ -111,6 +113,7 @@ Type definitions and data classes:
   - `--format` (text|pdf; default: text)
   - `--append` - append to output file instead of overwriting
 - `--version` - reports package version from setuptools-scm
+- `--init-config` - creates default config files in `~/.config/ivs-sessions-browser/` and exits before fetching session data
 
 ## Data sources
 - Base URLs: `defs.IVSCC_BASE_URLS` lists primary (gsfc.nasa.gov) and mirror IVS session roots (oan.es, ivscc-vcc.org).
@@ -126,6 +129,7 @@ Type definitions and data classes:
 - **Navigation**: Arrow keys, PgUp/PgDn, Home/End, jump to today with `T`
 - **Filtering**: `/` to enter filter, `C` to clear (including station filters: `stations`, `stations_removed`, `stations_all`)
 - **Operator assignment**: `0-5` keys assign configured operators to sessions
+- **Dynamic Op width**: the operator column expands to fit saved assignment labels from `operator_assignments.json`
 - **Colors**: Status-based colors (green=released, yellow=processing/waiting, magenta=cancelled) and operator-specific colors
 - **Help**: `?` displays inline help with key bindings and examples
 - **Browser integration**: Enter opens selected session in default web browser
