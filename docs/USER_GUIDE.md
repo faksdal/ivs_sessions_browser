@@ -42,6 +42,11 @@ The IVS Sessions Browser is a terminal-based user interface (TUI) for browsing, 
 
 Choose one of these methods:
 
+To create the editable default config files without fetching session data:
+```bash
+ivs-sessions-browser --init-config
+```
+
 **Method 1: Console script (recommended after install)**
 ```bash
 ivs-sessions-browser
@@ -264,7 +269,7 @@ Operator assignment allows you to tag sessions with operator names for tracking 
 ### Configuration
 
 On first use, IVS Sessions Browser creates a default operator configuration at
-`~/.config/ivs_sessions_browser/operators.json`. Edit that file to customize
+`~/.config/ivs-sessions-browser/operators.json`. Edit that file to customize
 operator labels and colors:
 
 ```json
@@ -293,11 +298,11 @@ operator labels and colors:
 1. Navigate to a session
 2. Press a number key `0-5` to assign the corresponding operator
 3. The session row will change color to match the operator's configured color
-4. Assignments are saved to `~/.config/ivs_sessions_browser/operator_assignments.json`
+4. Assignments are saved to `~/.config/ivs-sessions-browser/operator_assignments.json`
 
 ### PDF Column Defaults
 
-The default PDF columns are read from `~/.config/ivs_sessions_browser/pdf_columns`.
+The default PDF columns are read from `~/.config/ivs-sessions-browser/pdf_columns`.
 If the file is missing, it is created with:
 
 ```text
@@ -331,7 +336,7 @@ Shows sessions assigned to either Alice or Bob.
 
 ### Operator Colors
 
-When operators are assigned, the row color reflects the operator's configured color (from `~/.config/ivs_sessions_browser/operators.json`), making it easy to visually identify who is responsible for each session.
+When operators are assigned, the row color reflects the operator's configured color (from `~/.config/ivs-sessions-browser/operators.json`), making it easy to visually identify who is responsible for each session.
 
 ### Removed Stations
 

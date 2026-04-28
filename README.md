@@ -60,9 +60,9 @@ ivs_sessions_browser/
 
 > **Note:** The project uses the **src/** layout. For development, install it with `pip install -e .`.
 > Inside PyCharm, mark `src/` as **Sources Root** or use the editable virtualenv interpreter.
-> User-editable settings are read from `~/.config/ivs_sessions_browser/`.
-> Missing `operators.json` and `pdf_columns` files are created there from defaults.
-> Edit `~/.config/ivs_sessions_browser/operators.json` to replace the default `U1`-`U5` operator labels with your local operator names.
+> User-editable settings are read from `~/.config/ivs-sessions-browser/`.
+> Missing `operators.json` and `pdf_columns` files are created there from defaults the first time `ivs-sessions-browser` runs.
+> Edit `~/.config/ivs-sessions-browser/operators.json` to replace the default `U1`-`U5` operator labels with your local operator names.
 
 ---
 
@@ -98,6 +98,11 @@ You can now run:
 ivs-sessions-browser
 ```
 On Windows, use `.\.venv\Scripts\ivs-sessions-browser.exe`.
+
+To create the editable default config files without starting the TUI:
+```bash
+ivs-sessions-browser --init-config
+```
 
 ---
 
@@ -174,7 +179,7 @@ Filtering:
 
 Operator Assignment:
   0-5                      Assign operator to selected session
-                          (operators configured in ~/.config/ivs_sessions_browser/operators.json)
+                          (operators configured in ~/.config/ivs-sessions-browser/operators.json)
 
 Other:
   ?                        Show this help screen

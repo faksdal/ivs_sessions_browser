@@ -40,7 +40,7 @@ def _load_pdf_default_columns() -> str | list[str]:
         if not pdf_columns_path.exists():
             try:
                 pdf_columns_path.parent.mkdir(parents=True, exist_ok=True)
-                pdf_columns_path.write_text(D.PDF_COLUMNS_DEFAULT, encoding="utf-8")
+                pdf_columns_path.write_text(D.PDF_COLUMNS_DEFAULT + "\n", encoding="utf-8")
             except Exception:
                 pass
 

@@ -90,7 +90,7 @@
   - Save last filter between sessions
   - Remember window size and layout preferences
   - Configurable default scope (master/intensive/both)
-  - Per-user configuration file (`~/.config/ivs_sessions_browser/`)
+  - Per-user configuration file (`~/.config/ivs-sessions-browser/`)
 
 - **Enhanced Navigation** 📋
   - Bookmarks for frequently viewed sessions

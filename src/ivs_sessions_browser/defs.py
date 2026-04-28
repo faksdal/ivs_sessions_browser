@@ -181,7 +181,7 @@ HELP_BAR_TEXT = "↑↓-PgUp/PgDn-Home/End:Move Enter:Open /:Filters C:Clear fil
 
 # Configuration filenames and directory (shared constants)
 # Use the user's config directory by default; tests or dev can override.
-CONFIG_DIR              = Path.home() / ".config" / "ivs_sessions_browser"
+CONFIG_DIR              = Path.home() / ".config" / "ivs-sessions-browser"
 OPERATORS_FILENAME      = "operators.json"
 ASSIGNMENTS_FILENAME    = "operator_assignments.json"
 PDF_COLUMNS_FILENAME    = "pdf_columns"

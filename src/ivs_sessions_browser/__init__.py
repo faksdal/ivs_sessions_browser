@@ -29,8 +29,9 @@ from .defs              import (
     ARGUMENT_FORMATTER_CLASS,
     PRETTY_PRINT_ALLOWED_COLUMNS,
 )
+from .operators         import load_operator_bindings, load_operator_colors
 from .pdf_export        import write_ansi_lines_pdf
-from .sessions_browser  import SessionsBrowser
+from .sessions_browser  import SessionsBrowser, _load_pdf_default_columns
 # ─── END OF Import section ────────────────────────────────────────────────────
 
 
@@ -132,6 +133,14 @@ except ImportError:
 # ─── END OF Version ───────────────────────────────────────────────────────────
 
 
+def _ensure_user_config_files() -> None:
+    # pip/pipx install cannot write user config into $HOME; the app creates
+    # editable defaults when explicitly requested or before a normal run.
+    load_operator_bindings()
+    load_operator_colors()
+    _load_pdf_default_columns()
+
+
 
 # ──────────────────────────────────────────────────────────────────────────────
 # main(); Main entry point (used by pyproject.toml [project.scripts])
@@ -186,6 +195,9 @@ def main() -> None:
     arg_parser.add_argument('--verbose-fetch', action='store_true',
                             help='show fetch progress and source-status messages even when using --output')
 
+    arg_parser.add_argument('--init-config', action='store_true',
+                            help='create default user config files in ~/.config/ivs-sessions-browser and exit')
+
     # Provide a standard --version flag exposing package version
     # Note: setuptools-scm will automatically update the __version__ variable
     # during build, so this will always reflect the current package version.
@@ -193,12 +205,21 @@ def main() -> None:
 
     args = arg_parser.parse_args()
 
+    if args.init_config:
+        _ensure_user_config_files()
+        print("Config initialized in ~/.config/ivs-sessions-browser")
+        raise SystemExit(0)
+
     # Script-friendly mode: suppress progress/status chatter when user requested
     # textual output (stdout/file) via -o/--output.
     if args.output and not args.verbose_fetch:
         os.environ["IVS_SESSIONS_QUIET"] = "1"
     else:
         os.environ.pop("IVS_SESSIONS_QUIET", None)
+
+    # Ensure first-run user-editable config files exist before network fetches
+    # or TUI setup.
+    _ensure_user_config_files()
 
     # Define the SessionsBrowser instance, and read html data from web
     # After a successful creation, sb.list_html_data_page contains the fetched HTML data

@@ -76,11 +76,11 @@ Implements filtering and sorting logic:
 
 #### `operators.py`
 Manages operator configuration and session assignments:
-- `load_operator_bindings()` - loads key-to-label mappings from `~/.config/ivs_sessions_browser/operators.json`
+- `load_operator_bindings()` - loads key-to-label mappings from `~/.config/ivs-sessions-browser/operators.json`
 - `load_operator_colors()` - loads color assignments for each operator
-- `load_operator_assignments()` - loads session-to-operator mappings from `~/.config/ivs_sessions_browser/operator_assignments.json`
+- `load_operator_assignments()` - loads session-to-operator mappings from `~/.config/ivs-sessions-browser/operator_assignments.json`
 - `save_operator_assignments(data)` - persists session assignments to JSON
-- Configuration files are stored in `~/.config/ivs_sessions_browser/` by default (or configurable via `defs.CONFIG_DIR`)
+- Configuration files are stored in `~/.config/ivs-sessions-browser/` by default (or configurable via `defs.CONFIG_DIR`)
 
 #### `tui_state.py` and `TUITheme`
 - `UIState` - dataclass holding TUI state: selected row, offset, view height, colors availability
@@ -131,9 +131,9 @@ Type definitions and data classes:
 - **Browser integration**: Enter opens selected session in default web browser
 
 ## Configuration files
-- `~/.config/ivs_sessions_browser/operators.json` - operator bindings (key → label) and colors; created from the packaged default when missing
-- `~/.config/ivs_sessions_browser/operator_assignments.json` - session code → operator label mappings
-- `~/.config/ivs_sessions_browser/pdf_columns` - default PDF export columns; created as `op|start|code|stations|corr` when missing
+- `~/.config/ivs-sessions-browser/operators.json` - operator bindings (key → label) and colors; created from the packaged default when missing
+- `~/.config/ivs-sessions-browser/operator_assignments.json` - session code → operator label mappings
+- `~/.config/ivs-sessions-browser/pdf_columns` - default PDF export columns; created as `op|start|code|stations|corr` when missing
 
 ## Future enhancements
 - Additional output formats (full JSON structure, richer CSV)
