@@ -76,7 +76,7 @@ Available options:
 - `--output FILE` - Write output to file and exit (use `-` for stdout)
 - `-p, --pretty-print [ALL|OP|TYPE|... ]` - Select output columns (pipe-delimited), default `ALL`
 - `--verbose-fetch` - Show fetch/progress output even when using `--output`
-- `--format {text|json|csv|pdf}` - Output format flag (`text` and `pdf` are implemented)
+- `--format {text|pdf}` - Output format flag (default: `text`)
 - `--append` - Append to output file instead of overwriting
 - `--version` - Show version and exit
 
@@ -337,16 +337,6 @@ Use `--verbose-fetch` to re-enable progress/status output.
 ### Text Format
 ```bash
 ./run_browser --year 2025 --output sessions.txt
-```
-
-### JSON Format (planned)
-```bash
-./run_browser --year 2025 --output sessions.json --format json
-```
-
-### CSV Format (planned)
-```bash
-./run_browser --year 2025 --output sessions.csv --format csv
 ```
 
 ### PDF Format

@@ -108,7 +108,7 @@ Type definitions and data classes:
   - `--output FILE` - write to file (use `-` for stdout) and exit
   - `--pretty-print [ALL|OP|TYPE|...]` - select output columns for textual rendering
   - `--verbose-fetch` - keep fetch/progress messages visible when using `--output`
-  - `--format` (text|json|csv; default: text; currently `text` is implemented)
+  - `--format` (text|pdf; default: text)
   - `--append` - append to output file instead of overwriting
 - `--version` - reports package version from setuptools-scm
 

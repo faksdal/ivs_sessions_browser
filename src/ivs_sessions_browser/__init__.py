@@ -174,7 +174,7 @@ def main() -> None:
                             metavar='ALL|OP|TYPE|CODE|START|DOY|DUR|STATIONS|DB|OPS|CORR|STATUS|ANALYS',
                             help='pretty print columns; use ALL (default) or pipe-delimited names (e.g. OP|TYPE|STATIONS). ANALYSIS is accepted as alias for ANALYS.')
 
-    arg_parser.add_argument('--format', choices=('text', 'pdf', 'csv'),
+    arg_parser.add_argument('--format', choices=('text', 'pdf'),
                             default='text', help='output format (default: text); pdf preserves row colors in file export')
 
     arg_parser.add_argument('-a', '--append', action='store_true',
@@ -211,10 +211,6 @@ def main() -> None:
 
     # If user requested output to file/stdout, produce textual output and exit
     if args.output:
-        if args.format not in ('text', 'pdf'):
-            print(f"Requested format '{args.format}' not implemented; only 'text' and 'pdf' are supported.")
-            raise SystemExit(2)
-
         # Generate textual output lines; PDF export reuses the same ANSI-colored lines.
         lines = sb.render_sessions_list(args.pretty_print)
 
@@ -329,4 +325,3 @@ def main() -> None:
 #    "IvsSessionParser",
 #    "DrawTUI",
 #]
-

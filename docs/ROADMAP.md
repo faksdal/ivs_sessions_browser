@@ -53,7 +53,7 @@
   - Column selection for textual output (`--pretty-print`)
   - Quiet-by-default export with optional progress override (`--verbose-fetch`)
   - Append mode (`--append`)
-  - Output format selector (`--format`, currently `text` implemented)
+  - Output format selector (`--format`, currently `text` and `pdf` implemented)
   - Version display (`--version`)
 
 ## Near-Term Roadmap (Next 6 months)

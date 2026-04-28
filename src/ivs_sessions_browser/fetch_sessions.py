@@ -65,7 +65,7 @@ class FetchSessions:
         pages: list[PageData] = []
         for _key, group in grouped_urls.items():
             page = self._find_most_recent_page(group, _timeout)
-            if page.url:
+            if page.url and page.html:
                 pages.append(page)
 
         quiet = os.getenv("IVS_SESSIONS_QUIET") == "1"
@@ -152,9 +152,10 @@ class FetchSessions:
 
             # Fetch HTML content and last modified time from the URL
             html = self._fetch_one_url_html(url, _timeout = _timeout)
+            if not html:
+                continue
 
-            if html:
-                lm = self._fetch_latest_update_from_html(html)
+            lm = self._fetch_latest_update_from_html(html)
 
             # Compare last modified time to pick most recent, setting page_data
             # attributes if this page is more recent than the current most recent
