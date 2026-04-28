@@ -149,8 +149,10 @@ Press **Enter** while a session is selected to open the full session page in you
 
 - Press **S** to open the statistics dialog.
 - The statistics report includes:
+   - Loaded and visible session counts and scheduled hours
+   - Master/intensive and cancelled/non-cancelled count/hour splits
    - Session and hour trends over years
-   - Program mix and yearly observing hours
+   - Program, type, status, operator, ops-center, and correlator breakdowns
    - Network size proxies (active stations/session, baselines/session, baseline-hours)
    - Reliability proxies (cancelled share, non-cancelled share, reduced-network sessions)
 - In the statistics dialog, use **↑/↓** or **PgUp/PgDn** to scroll, and **q** or **Enter** to close.
