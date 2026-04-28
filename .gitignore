@@ -64,3 +64,4 @@ src/ivs_sessions_browser/_version.py
 sessions*.pdf
 software_flow.md
 *.png
+git_steps
