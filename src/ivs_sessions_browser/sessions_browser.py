@@ -397,6 +397,7 @@ class SessionsBrowser:
                         if session_code:
                             self._apply_operator_assignment(session_code, operator_label)
                             save_operator_assignments(self.operator_assignments)
+                            self.formatter.recompute_header_widths()
 
                             # Advance selection by one unless we're already on the last row
                             if self.state.selected < len(self.view_rows) - 1:

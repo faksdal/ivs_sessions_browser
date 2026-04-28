@@ -571,9 +571,11 @@ class Tui:
         - Observed data length across all rows in self.full_list
         """
 
-        # Extract header titles and their minimum widths from D.HEADERS
-        titles = [t for t, _ in D.HEADERS]
-        mins   = [w for _, w in D.HEADERS]
+        # Extract header titles and stable minimum widths from the base headers.
+        # D.HEADERS is mutated after each recompute, so using it as the source
+        # of minima would make widths grow every time this method runs.
+        titles = [t for t, _ in D.BASE_HEADERS]
+        mins   = [w for _, w in D.BASE_HEADERS]
         num    = len(titles)
 
         # Track observed maximum widths for each column
@@ -585,6 +587,14 @@ class Tui:
             any_intensive = any_intensive or bool(meta.get("intensive"))
             for i in range(min(num, len(values))):
                 obs[i] = max(obs[i], len(values[i]))
+
+        # Operator labels can be wider than the sessions currently visible or
+        # fetched for this year, so include every saved assignment value.
+        op_idx = D.FIELD_INDEX.get("op", 0)
+        if 0 <= op_idx < num:
+            assignments = load_operator_assignments()
+            saved_op_width = max((len(str(op).strip()) for op in assignments.values()), default=0)
+            obs[op_idx] = max(obs[op_idx], saved_op_width)
 
         # Calculate final widths: max of (minimum width, header title length, observed data length)
         name_lens = [len(t) for t in titles]

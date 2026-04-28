@@ -122,7 +122,7 @@ Row = tuple[list[str], str | None, dict[str, Any]]
 # UI/layout placeholders
 # (HELP_TEXT is defined above; avoid overwriting it here)
 # HEADERS: list[str] = []
-HEADERS                     = [("Op",       2),
+BASE_HEADERS                = [("Op",       2),
                                ("Type",     14),    # 16 in 2022
                                ("Code",     8),
                                ("Start",    16),
@@ -135,6 +135,7 @@ HEADERS                     = [("Op",       2),
                                ("Status",   10),
                                ("Analys",   10)
                               ]
+HEADERS                     = list(BASE_HEADERS)
 # HEADER_LINE: str = ""
 HEADER_LINE = " | ".join([f"{title:<{w}}" for title, w in HEADERS])
 
