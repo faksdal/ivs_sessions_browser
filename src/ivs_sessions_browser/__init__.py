@@ -19,8 +19,11 @@ Description:    Entry point for ivs_sessions_browser package. Defines the main()
 # ──────────────────────────────────────────────────────────────────────────────
 import argparse
 import os
+import shutil
+import subprocess
 
 from datetime import datetime
+from importlib import resources
 
 # Project defined imports
 from .defs              import (
@@ -141,6 +144,33 @@ def _ensure_user_config_files() -> None:
     _load_pdf_default_columns()
 
 
+def _show_man_page() -> None:
+    resource = resources.files("ivs_sessions_browser").joinpath("man/ivs-sessions-browser.1")
+
+    try:
+        with resources.as_file(resource) as man_path:
+            man_cmd = shutil.which("man")
+            if man_cmd:
+                raise SystemExit(subprocess.run([man_cmd, str(man_path)], check=False).returncode)
+
+            groff_cmd = shutil.which("groff")
+            if groff_cmd:
+                result = subprocess.run(
+                    [groff_cmd, "-Tutf8", "-man", str(man_path)],
+                    check=False,
+                    text=True,
+                    capture_output=True,
+                )
+                if result.stdout:
+                    print(result.stdout, end="")
+                    raise SystemExit(result.returncode)
+
+            print(man_path.read_text(encoding="utf-8"), end="")
+    except FileNotFoundError:
+        print("Manual page is not available in this installation.")
+        raise SystemExit(1)
+
+
 
 # ──────────────────────────────────────────────────────────────────────────────
 # main(); Main entry point (used by pyproject.toml [project.scripts])
@@ -198,12 +228,18 @@ def main() -> None:
     arg_parser.add_argument('--init-config', action='store_true',
                             help='create default user config files in ~/.config/ivs-sessions-browser and exit')
 
+    arg_parser.add_argument('--man', action='store_true',
+                            help='show the bundled manual page and exit')
+
     # Provide a standard --version flag exposing package version
     # Note: setuptools-scm will automatically update the __version__ variable
     # during build, so this will always reflect the current package version.
     arg_parser.add_argument('--version', action='version', version=__version__)
 
     args = arg_parser.parse_args()
+
+    if args.man:
+        _show_man_page()
 
     if args.init_config:
         _ensure_user_config_files()

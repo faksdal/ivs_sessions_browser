@@ -119,6 +119,11 @@ To create the editable default config files without starting the TUI:
 ivs-sessions-browser --init-config
 ```
 
+To read the bundled manual page:
+```bash
+ivs-sessions-browser --man
+```
+
 ---
 
 ## How to run (terminal)
@@ -162,6 +167,7 @@ Most usage is interactive (TUI). Command-line flags typically include:
 --format pdf                  # write a colored PDF using the same pretty-printed lines
 --verbose-fetch                # show fetch/progress output even with --output
 --init-config                  # create default user config files and exit. Usually done after install.
+--man                          # show the bundled manual page and exit
 ```
 
 Run with `-h/--help` (help) to see current options.

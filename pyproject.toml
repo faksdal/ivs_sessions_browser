@@ -58,6 +58,7 @@ ivs_sessions_browser = [
     "operators.json",
     "certs/*.pem",
     "certs/README.md",
+    "man/*.1",
 ]
 
 [tool.setuptools_scm]

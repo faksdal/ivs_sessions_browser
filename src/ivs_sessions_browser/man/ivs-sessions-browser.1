@@ -1,0 +1,154 @@
+.TH IVS-SESSIONS-BROWSER 1 "2026-04-28" "ivs-sessions-browser" "User Commands"
+.SH NAME
+ivs-sessions-browser \- browse IVS session schedules in a terminal UI
+.SH SYNOPSIS
+.B ivs-sessions-browser
+[\fIOPTIONS\fR]
+.SH DESCRIPTION
+.B ivs-sessions-browser
+is a curses-based terminal browser for IVS master and intensive session
+schedules. It fetches session tables, displays them in a keyboard-driven TUI,
+supports filtering and sorting, and can export formatted text or colored PDF
+output.
+.PP
+User-editable configuration files are stored in
+.IR ~/.config/ivs-sessions-browser/ .
+Use
+.B --init-config
+to create default configuration files without starting the TUI.
+.SH OPTIONS
+.TP
+.BI --year " YEAR"
+Year expression to fetch. Accepted forms include
+.BR 2026 ,
+.BR 2024,2025 ,
+and
+.BR 2022-2026 .
+Defaults to the current year.
+.TP
+.BI --scope " master|intensive|both"
+Select which schedules to include. Defaults to
+.BR both .
+.TP
+.BI --filters " EXPR"
+Apply an initial filter expression.
+.TP
+.BI -o ", " --output " FILE"
+Write formatted output to
+.IR FILE
+and exit. Use
+.B -
+for standard output.
+.TP
+.BI -p ", " --pretty-print " COLUMNS"
+Select output columns. Use
+.B ALL
+or pipe-delimited column names such as
+.BR OP|START|CODE|STATIONS|CORR .
+.TP
+.BI --format " text|pdf"
+Select output format. Defaults to
+.BR text .
+.TP
+.B -a, --append
+Append text output to the output file instead of overwriting it.
+.TP
+.B -m, --mirrors
+Check configured mirror sites and use the most recently updated source.
+.TP
+.B --verbose-fetch
+Show fetch progress even when writing output to a file or stdout.
+.TP
+.B --init-config
+Create default user configuration files in
+.I ~/.config/ivs-sessions-browser/
+and exit.
+.TP
+.B --man
+Show this manual page and exit.
+.TP
+.B --version
+Show package version and exit.
+.TP
+.B -h, --help
+Show command help and exit.
+.SH FILTERS
+Filter expressions use
+.B field:value
+clauses. Multiple clauses separated by
+.B ;
+are combined with AND.
+.PP
+Examples:
+.TP
+.B code:R1|R4
+Show sessions whose code contains R1 or R4.
+.TP
+.B stations:Nn&Ns
+Show sessions with both Nn and Ns active.
+.TP
+.B stations_removed:Ft|Ur
+Show sessions where Ft or Ur appears in the removed station set.
+.TP
+.B op:Alice|Bob
+Show sessions assigned to Alice or Bob.
+.SH KEY BINDINGS
+.TP
+.B Up/Down, PgUp/PgDn, Home/End
+Move around the session list.
+.TP
+.B T
+Jump to today's session.
+.TP
+.B /
+Enter or edit a filter expression.
+.TP
+.B C
+Clear filters.
+.TP
+.B 0
+Clear the selected session's operator assignment.
+.TP
+.B 1-5
+Assign the configured operator for that key to the selected session.
+.TP
+.B Enter
+Open the selected session page in the default browser.
+.TP
+.B ?
+Show inline help.
+.TP
+.B q, Q
+Quit.
+.SH FILES
+.TP
+.I ~/.config/ivs-sessions-browser/operators.json
+Operator key bindings and row colors. Created from packaged defaults when
+missing. Keys 1-5 default to U1-U5 and should be edited for local use.
+.TP
+.I ~/.config/ivs-sessions-browser/operator_assignments.json
+Persistent mapping of session code to assigned operator label.
+.TP
+.I ~/.config/ivs-sessions-browser/pdf_columns
+Default PDF export columns. Created as
+.B op|start|code|stations|corr
+when missing.
+.SH EXAMPLES
+.TP
+.B ivs-sessions-browser --init-config
+Create editable config files and exit.
+.TP
+.B ivs-sessions-browser --year 2026 --scope both
+Browse master and intensive sessions for 2026.
+.TP
+.B ivs-sessions-browser --year 2026 --filters 'code:R1|R4; stations:Nn'
+Start the TUI with an initial filter.
+.TP
+.B ivs-sessions-browser --year 2026 --output sessions.pdf --format pdf -p OP|START|CODE|STATIONS|CORR
+Export selected columns to a PDF.
+.SH DOCUMENTATION
+Full documentation is available at:
+.br
+.I https://github.com/jonleithe/ivs_sessions_browser/tree/v4/docs
+.SH AUTHOR
+jole

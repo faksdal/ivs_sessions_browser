@@ -60,6 +60,11 @@ To create the editable default config files without fetching session data:
 ivs-sessions-browser --init-config
 ```
 
+To read the bundled manual page:
+```bash
+ivs-sessions-browser --man
+```
+
 **Method 1: Console script (recommended after install)**
 ```bash
 ivs-sessions-browser
@@ -98,6 +103,7 @@ Available options:
 - `--append` - Append to output file instead of overwriting
 - `--version` - Show version and exit
 - `--init-config` - Create default user config files and exit before fetching session data
+- `--man` - Show the bundled manual page and exit
 
 ### Examples
 

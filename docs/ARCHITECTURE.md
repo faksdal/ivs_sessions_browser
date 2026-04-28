@@ -6,7 +6,7 @@ This document explains how the CLI/TUI flow is wired together so contributors ca
 ## High-level flow
 1. User runs `ivs-sessions-browser`, `python -m ivs_sessions_browser`, or `./run_browser`.
 2. The selected entry point calls `ivs_sessions_browser.main()` from `__init__.py`.
-3. `main()` builds the CLI argument parser, parses arguments for `--year` (single, CSV, or range expression), `--scope`, `--filters`, `--mirrors`, output options, `--init-config`, and `--version`.
+3. `main()` builds the CLI argument parser, parses arguments for `--year` (single, CSV, or range expression), `--scope`, `--filters`, `--mirrors`, output options, `--init-config`, `--man`, and `--version`.
 4. Default user config files are initialized before network fetches; if `--init-config` was supplied, the program exits here.
 5. `SessionsBrowser` is constructed with parsed arguments and computes the URL list for the chosen scope and mirror preferences.
 6. `FetchSessions` retrieves HTML data from the most recently updated master/intensive pages (comparing timestamps when `--mirrors` is specified).
@@ -114,6 +114,7 @@ Type definitions and data classes:
   - `--append` - append to output file instead of overwriting
 - `--version` - reports package version from setuptools-scm
 - `--init-config` - creates default config files in `~/.config/ivs-sessions-browser/` and exits before fetching session data
+- `--man` - renders the bundled manual page and exits
 
 ## Data sources
 - Base URLs: `defs.IVSCC_BASE_URLS` lists primary (gsfc.nasa.gov) and mirror IVS session roots (oan.es, ivscc-vcc.org).
