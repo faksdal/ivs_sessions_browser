@@ -153,7 +153,7 @@ Most usage is interactive (TUI). Command-line flags typically include:
 
 ```
 --year 2025                    # single year
---year "2022,2023"             # explicit multi-year list
+--year "2021,2025"             # explicit multi-year list
 --year "2022-2025"             # inclusive year range
 --scope master|intensive|both  # select scope
 --filters "code:R1|R4"         # initial filter expression
@@ -161,7 +161,7 @@ Most usage is interactive (TUI). Command-line flags typically include:
 --pretty-print OP|TYPE|STATIONS
 --format pdf                  # write a colored PDF using the same pretty-printed lines
 --verbose-fetch                # show fetch/progress output even with --output
---init-config                  # create default user config files and exit
+--init-config                  # create default user config files and exit. Usually done after install.
 ```
 
 Run with `-h/--help` (help) to see current options.
