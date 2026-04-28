@@ -15,7 +15,7 @@ The IVS Sessions Browser is a terminal-based user interface (TUI) for browsing, 
 
 1. **Clone the repository:**
    ```bash
-   git clone git@github.com:faksdal/ivs_sessions_browser.git
+   git clone git@github.com:jonleithe/ivs_sessions_browser.git
    cd ivs_sessions_browser
    ```
 

@@ -44,10 +44,10 @@ dev = [
 ivs-sessions-browser = "ivs_sessions_browser:main"
 
 [project.urls]
-Homepage = "https://github.com/faksdal/ivs_sessions_browser"
-Repository = "https://github.com/faksdal/ivs_sessions_browser"
-Documentation = "https://github.com/faksdal/ivs_sessions_browser/tree/v4/docs"
-Issues = "https://github.com/faksdal/ivs_sessions_browser/issues"
+Homepage = "https://github.com/jonleithe/ivs_sessions_browser"
+Repository = "https://github.com/jonleithe/ivs_sessions_browser"
+Documentation = "https://github.com/jonleithe/ivs_sessions_browser/tree/v4/docs"
+Issues = "https://github.com/jonleithe/ivs_sessions_browser/issues"
 
 [tool.setuptools]
 packages = ["ivs_sessions_browser"]
