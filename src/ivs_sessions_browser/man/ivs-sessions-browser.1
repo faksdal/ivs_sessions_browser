@@ -8,8 +8,8 @@ ivs-sessions-browser \- browse IVS session schedules in a terminal UI
 .B ivs-sessions-browser
 is a curses-based terminal browser for IVS master and intensive session
 schedules. It fetches session tables, displays them in a keyboard-driven TUI,
-supports filtering and sorting, and can export formatted text or colored PDF
-output.
+supports filtering and sorting, and can export formatted text, colored PDF, or
+XLSX spreadsheet output.
 .PP
 User-editable configuration files are stored in
 .IR ~/.config/ivs-sessions-browser/ .
@@ -46,12 +46,16 @@ Select output columns. Use
 or pipe-delimited column names such as
 .BR OP|START|CODE|STATIONS|CORR .
 .TP
-.BI --format " text|pdf"
+.BI --format " text|pdf|xlsx"
 Select output format. Defaults to
 .BR text .
+PDF preserves row colors in a monospaced layout; XLSX writes spreadsheet cells
+with headers, filters, frozen first row, code hyperlinks, and operator row
+colors.
 .TP
 .B -a, --append
 Append text output to the output file instead of overwriting it.
+PDF and XLSX exports always write a new file.
 .TP
 .B -m, --mirrors
 Check configured mirror sites and use the most recently updated source.
@@ -118,6 +122,12 @@ Open the selected session page in the default browser.
 .B ?
 Show inline help.
 .TP
+.B P
+Export visible rows to a PDF and open it.
+.TP
+.B X
+Export visible rows to an XLSX workbook and open it.
+.TP
 .B q, Q
 Quit.
 .SH FILES
@@ -146,6 +156,9 @@ Start the TUI with an initial filter.
 .TP
 .B ivs-sessions-browser --year 2026 --output sessions.pdf --format pdf -p OP|START|CODE|STATIONS|CORR
 Export selected columns to a PDF.
+.TP
+.B ivs-sessions-browser --year 2026 --output sessions.xlsx --format xlsx -p OP|START|CODE|STATIONS|CORR
+Export selected columns to an XLSX workbook.
 .SH DOCUMENTATION
 Full documentation is available at:
 .br

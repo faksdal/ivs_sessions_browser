@@ -71,6 +71,7 @@ HELP_TEXT = [
     "  q or Q : Quit",
     "  ? : Show this help",
     "  P : Print visible to .pdf and open",
+    "  X : Export visible to .xlsx and open",
     "  S : Show session statistics",
     "  G : Plot station contribution (%)",
     "",
@@ -177,7 +178,7 @@ NAVIGATION_KEYS: dict[str, str] = {}
 
 # Help bar text displayed at bottom of TUI
 # HELP_BAR_TEXT = "↑↓-PgUp/PgDn-Home/End:Move Enter:Open /:Filter C:Clear T:Jump to today R:Hide/show removed ?:Help q/Q:Quit"
-HELP_BAR_TEXT = "↑↓-PgUp/PgDn-Home/End:Move Enter:Open /:Filters C:Clear filters T:Jump to today S:Stats G:Station% ?:Help q/Q:Quit"
+HELP_BAR_TEXT = "↑↓-PgUp/PgDn-Home/End:Move Enter:Open /:Filters C:Clear filters T:Jump today P:PDF X:XLSX S:Stats G:Station% ?:Help q/Q:Quit"
 
 
 # Configuration filenames and directory (shared constants)

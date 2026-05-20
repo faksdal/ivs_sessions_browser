@@ -21,6 +21,7 @@ import webbrowser
 from urllib.parse import urlsplit, urlunsplit
 from .pdf_export import write_ansi_lines_pdf
 from .statistics import SessionStatistics, build_statistics_report, summarize_rows, write_station_contribution_plot
+from .xlsx_export import write_sessions_xlsx
 
 # Project defined imports
 from .                          import defs as D
@@ -506,6 +507,66 @@ class SessionsBrowser:
                     except Exception as e:
                         max_y, max_x = _stdscr.getmaxyx()
                         err = f"Error saving PDF: {e}"
+                        attr = self.theme.help_bar if self.state.has_colors else 0
+                        self.formatter._addstr_clip(_stdscr, max_y - 2, 0, err[: max_x - 1], attr)
+                        _stdscr.refresh()
+                        time.sleep(self.PDF_STATUS_MESSAGE_DELAY_SECONDS)
+
+                # Save to XLSX
+                case c if c == ord('X'):
+                    prompt = "XLSX columns (ALL or pipe-separated, e.g. OP|TYPE|STATIONS): "
+                    if isinstance(getattr(self, 'pdf_default_columns', None), list):
+                        prefill = "|".join(self.pdf_default_columns)
+                    else:
+                        prefill = str(getattr(self, 'pdf_default_columns', 'ALL'))
+                    cols_input = self._get_input(_stdscr, self.theme, prompt, _initial=prefill)
+                    if not cols_input:
+                        cols_input = "ALL"
+
+                    pretty: str | list[str]
+                    text = cols_input.strip().upper()
+                    if text == "ALL":
+                        pretty = "ALL"
+                    else:
+                        cols = [col.strip().upper() for col in text.split("|") if col.strip()]
+                        invalid = [col for col in cols if col not in D.PRETTY_PRINT_ALLOWED_COLUMNS]
+                        if invalid:
+                            max_y, max_x = _stdscr.getmaxyx()
+                            err = f"Unknown column(s): {','.join(invalid)}"
+                            attr = self.theme.help_bar if self.state.has_colors else 0
+                            self.formatter._addstr_clip(_stdscr, max_y - 2, 0, err[: max_x - 1], attr)
+                            _stdscr.refresh()
+                            time.sleep(self.PDF_STATUS_MESSAGE_DELAY_SECONDS)
+                            break
+                        pretty = list(dict.fromkeys(cols))
+
+                    try:
+                        max_y, max_x = _stdscr.getmaxyx()
+                        filename = f"sessions-{time.strftime('%Y%m%d-%H%M%S')}.xlsx"
+                        out_path = os.path.join(os.getcwd(), filename)
+
+                        with open(out_path, "wb") as f:
+                            write_sessions_xlsx(
+                                self.view_rows,
+                                pretty,
+                                self.operator_bindings,
+                                self.operator_colors,
+                                f,
+                            )
+
+                        msg = f"Saved XLSX: {out_path}"
+                        attr = self.theme.help_bar if self.state.has_colors else 0
+                        self.formatter._addstr_clip(_stdscr, max_y - 2, 0, msg[: max_x - 1], attr)
+                        _stdscr.refresh()
+                        time.sleep(self.PDF_STATUS_MESSAGE_DELAY_SECONDS)
+
+                        try:
+                            webbrowser.open(f"file://{out_path}")
+                        except Exception:
+                            pass
+                    except Exception as e:
+                        max_y, max_x = _stdscr.getmaxyx()
+                        err = f"Error saving XLSX: {e}"
                         attr = self.theme.help_bar if self.state.has_colors else 0
                         self.formatter._addstr_clip(_stdscr, max_y - 2, 0, err[: max_x - 1], attr)
                         _stdscr.refresh()

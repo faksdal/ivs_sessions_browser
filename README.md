@@ -165,6 +165,7 @@ Most usage is interactive (TUI). Command-line flags typically include:
 --output -                     # write text output to stdout and exit
 --pretty-print OP|TYPE|STATIONS
 --format pdf                  # write a colored PDF using the same pretty-printed lines
+--format xlsx                 # write an Excel workbook with spreadsheet cells
 --verbose-fetch                # show fetch/progress output even with --output
 --init-config                  # create default user config files and exit. Usually done after install.
 --man                          # show the bundled manual page and exit
@@ -221,12 +222,14 @@ Full details:
 
 - `--format text` writes the ANSI-colored textual listing.
 - `--format pdf` writes a monospaced PDF that preserves the existing header and row colors from the textual export.
-- `--append` only applies to text output; PDF export always writes a new file.
+- `--format xlsx` writes spreadsheet cells with headers, filters, frozen first row, code hyperlinks, and operator row colors.
+- `--append` only applies to text output; PDF and XLSX export always write a new file.
 
 Example:
 
 ```bash
 ./run_browser --year 2025 --output sessions.pdf --format pdf
+./run_browser --year 2025 --output sessions.xlsx --format xlsx
 ```
 
 ---

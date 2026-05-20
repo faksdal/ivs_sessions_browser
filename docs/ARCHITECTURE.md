@@ -110,7 +110,7 @@ Type definitions and data classes:
   - `--output FILE` - write to file (use `-` for stdout) and exit
   - `--pretty-print [ALL|OP|TYPE|...]` - select output columns for textual rendering
   - `--verbose-fetch` - keep fetch/progress messages visible when using `--output`
-  - `--format` (text|pdf; default: text)
+  - `--format` (text|pdf|xlsx; default: text)
   - `--append` - append to output file instead of overwriting
 - `--version` - reports package version from setuptools-scm
 - `--init-config` - creates default config files in `~/.config/ivs-sessions-browser/` and exits before fetching session data
@@ -134,6 +134,7 @@ Type definitions and data classes:
 - **Colors**: Status-based colors (green=released, yellow=processing/waiting, magenta=cancelled) and operator-specific colors
 - **Help**: `?` displays inline help with key bindings and examples
 - **Browser integration**: Enter opens selected session in default web browser
+- **Exports**: `P` saves visible rows to PDF; `X` saves visible rows to XLSX
 
 ## Configuration files
 - `~/.config/ivs-sessions-browser/operators.json` - operator bindings (key → label) and colors; created from the packaged default when missing

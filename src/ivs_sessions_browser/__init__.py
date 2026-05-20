@@ -35,6 +35,7 @@ from .defs              import (
 from .operators         import load_operator_bindings, load_operator_colors
 from .pdf_export        import write_ansi_lines_pdf
 from .sessions_browser  import SessionsBrowser, _load_pdf_default_columns
+from .xlsx_export       import write_sessions_xlsx
 # ─── END OF Import section ────────────────────────────────────────────────────
 
 
@@ -201,7 +202,7 @@ def main() -> None:
                             help="Initial filters (see help for syntax)")
 
     arg_parser.add_argument('-o', '--output', metavar='FILE',
-                            help='write textual output to FILE (use - for stdout), and exit')
+                            help='write output to FILE (use - for stdout), and exit')
 
     #arg_parser.add_argument('-p', '--pretty-print', action='store_true',
     #                        help='pretty print the output')
@@ -213,8 +214,8 @@ def main() -> None:
                             metavar='ALL|OP|TYPE|CODE|START|DOY|DUR|STATIONS|DB|OPS|CORR|STATUS|ANALYS',
                             help='pretty print columns; use ALL (default) or pipe-delimited names (e.g. OP|TYPE|STATIONS). ANALYSIS is accepted as alias for ANALYS.')
 
-    arg_parser.add_argument('--format', choices=('text', 'pdf'),
-                            default='text', help='output format (default: text); pdf preserves row colors in file export')
+    arg_parser.add_argument('--format', choices=('text', 'pdf', 'xlsx'),
+                            default='text', help='output format (default: text); pdf preserves row colors, xlsx writes spreadsheet cells')
 
     arg_parser.add_argument('-a', '--append', action='store_true',
                             help='append to output file instead of overwriting')
@@ -268,13 +269,13 @@ def main() -> None:
 
     # If user requested output to file/stdout, produce textual output and exit
     if args.output:
-        # Generate textual output lines; PDF export reuses the same ANSI-colored lines.
-        lines = sb.render_sessions_list(args.pretty_print)
-
         if args.format == 'pdf':
             if args.append:
                 print("PDF export does not support --append; write a new file instead.")
                 raise SystemExit(2)
+
+            # PDF export reuses the same ANSI-colored lines as text output.
+            lines = sb.render_sessions_list(args.pretty_print)
 
             if args.output == '-':
                 import sys
@@ -307,6 +308,57 @@ def main() -> None:
                 raise SystemExit(2) from exc
 
             raise SystemExit(0)
+
+        if args.format == 'xlsx':
+            if args.append:
+                print("XLSX export does not support --append; write a new file instead.")
+                raise SystemExit(2)
+
+            if args.output == '-':
+                import sys
+                out = sys.stdout.buffer
+                try:
+                    write_sessions_xlsx(
+                        sb.view_rows,
+                        args.pretty_print,
+                        sb.operator_bindings,
+                        sb.operator_colors,
+                        out,
+                    )
+                except BrokenPipeError:
+                    devnull_fd = os.open(os.devnull, os.O_WRONLY)
+                    os.dup2(devnull_fd, sys.stdout.fileno())
+                    raise SystemExit(0)
+                raise SystemExit(0)
+
+            import tempfile
+
+            target_dir = os.path.dirname(args.output) or '.'
+            tmp_name = None
+            try:
+                with tempfile.NamedTemporaryFile('wb', delete=False, dir=target_dir) as tf:
+                    tmp_name = tf.name
+                    write_sessions_xlsx(
+                        sb.view_rows,
+                        args.pretty_print,
+                        sb.operator_bindings,
+                        sb.operator_colors,
+                        tf,
+                    )
+                if tmp_name is not None:
+                    os.replace(tmp_name, args.output)
+            except OSError as exc:
+                print(f"Failed to write XLSX output file: {exc}")
+                try:
+                    if tmp_name and os.path.exists(tmp_name):
+                        os.remove(tmp_name)
+                except Exception:
+                    pass
+                raise SystemExit(2) from exc
+
+            raise SystemExit(0)
+
+        lines = sb.render_sessions_list(args.pretty_print)
 
         # Write to stdout
         if args.output == '-':
