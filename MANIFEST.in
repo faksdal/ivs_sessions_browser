@@ -1,0 +1,25 @@
+include LICENSE
+include README.md
+include pyproject.toml
+include requirements.txt
+recursive-include src/ivs_sessions_browser/certs *.pem README.md
+recursive-include src/ivs_sessions_browser/man *.1
+recursive-include src/ivs_sessions_browser *.json
+recursive-include docs *.md
+
+exclude .gitignore
+exclude operator_assignments.json
+exclude operator_assignments.json.sos
+exclude operators.json
+exclude pdf_columns
+exclude run_browser
+exclude sessions-*.pdf
+exclude station-contribution-*.png
+exclude Untitled*.xlsx
+exclude docs/*.png
+prune scripts
+prune .github
+prune .vscode
+prune .venv
+prune build
+prune dist
