@@ -38,6 +38,9 @@ HEADER_FONT    = Font(bold=True, color="000000")
 HEADER_ALIGN   = Alignment(vertical="top", wrap_text=False)
 CELL_ALIGN     = Alignment(vertical="top", wrap_text=False)
 
+TABLE_START_ROW = 5
+TABLE_START_COL = 2
+
 
 def _selected_indices(pretty_print: str | list[str]) -> list[int]:
     if pretty_print == "ALL":
@@ -80,20 +83,20 @@ def sessions_to_xlsx_bytes(
     wb = Workbook()
     ws = wb.active
     ws.title = "Sessions"
-    ws.freeze_panes = "A2"
+    ws.freeze_panes = ws.cell(row=TABLE_START_ROW + 1, column=TABLE_START_COL).coordinate
 
-    for col_num, idx in enumerate(selected_indices, start=1):
-        cell = ws.cell(row=1, column=col_num, value=D.HEADERS[idx][0])
+    for col_num, idx in enumerate(selected_indices, start=TABLE_START_COL):
+        cell = ws.cell(row=TABLE_START_ROW, column=col_num, value=D.HEADERS[idx][0])
         cell.fill = HEADER_FILL
         cell.font = HEADER_FONT
         cell.alignment = HEADER_ALIGN
 
     type_idx = D.FIELD_INDEX.get("type", 1)
-    for row_num, (values, url, meta) in enumerate(rows, start=2):
+    for row_num, (values, url, meta) in enumerate(rows, start=TABLE_START_ROW + 1):
         font_color = _row_font_color(values, operator_bindings, operator_colors)
         row_font = Font(color=font_color)
 
-        for col_num, idx in enumerate(selected_indices, start=1):
+        for col_num, idx in enumerate(selected_indices, start=TABLE_START_COL):
             value = values[idx].strip()
             if idx == type_idx and meta.get("intensive"):
                 value = f"{value} [I]".strip()
@@ -104,15 +107,20 @@ def sessions_to_xlsx_bytes(
 
             if idx == D.FIELD_INDEX.get("code") and url:
                 cell.hyperlink = url
-                cell.style = "Hyperlink"
+                cell.font = Font(color=font_color)
 
-    ws.auto_filter.ref = ws.dimensions
+    filter_start = ws.cell(row=TABLE_START_ROW, column=TABLE_START_COL).coordinate
+    filter_end = ws.cell(
+        row=max(TABLE_START_ROW, ws.max_row),
+        column=TABLE_START_COL + len(selected_indices) - 1,
+    ).coordinate
+    ws.auto_filter.ref = f"{filter_start}:{filter_end}"
 
-    for col_num, idx in enumerate(selected_indices, start=1):
+    for col_num, idx in enumerate(selected_indices, start=TABLE_START_COL):
         width = D.HEADERS[idx][1] + 2
         max_content_width = max(
             len(str(ws.cell(row=row_num, column=col_num).value or ""))
-            for row_num in range(1, ws.max_row + 1)
+            for row_num in range(TABLE_START_ROW, ws.max_row + 1)
         )
         ws.column_dimensions[get_column_letter(col_num)].width = min(
             max(width, max_content_width + 2),
