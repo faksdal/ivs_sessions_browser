@@ -29,6 +29,7 @@
 |-----|--------|-------------|
 | `/` | Enter filter | Enter filter mode to type a filter expression |
 | `C` | Clear filters | Clear all active filters and show all sessions |
+| `D` | Save default filter | Save the current filter to startup defaults; with no active filter, clear the saved default |
 
 ## Operator Assignment
 
@@ -91,6 +92,7 @@ The bottom status bar shows:
 3. **Browser integration**: Press `Enter` on any session to view full details on the IVS website
 4. **Help always available**: Press `?` anytime to see the help screen with all key bindings
 5. **Clear and retry**: Use `C` to clear filters if you want to start fresh
-6. **Removed stations view**: Use filters like `stations_removed:Ft|Ur` or `stations_all:Ft|Ur` to inspect removed stations
-7. **Stats popup navigation**: In statistics view, use `↑/↓`, `j/k`, or `PgUp/PgDn` to scroll, `q`, `Enter`, or `Esc` to close
-8. **Quick exports**: Use `P` or `X` after filtering to export exactly the visible rows
+6. **Remember a filter**: Use `D` after applying a useful filter to make it the startup default
+7. **Removed stations view**: Use filters like `stations_removed:Ft|Ur` or `stations_all:Ft|Ur` to inspect removed stations
+8. **Stats popup navigation**: In statistics view, use `↑/↓`, `j/k`, or `PgUp/PgDn` to scroll, `q`, `Enter`, or `Esc` to close
+9. **Quick exports**: Use `P` or `X` after filtering to export exactly the visible rows

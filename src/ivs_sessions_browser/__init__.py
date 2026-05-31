@@ -18,9 +18,11 @@ Description:    Entry point for ivs_sessions_browser package. Defines the main()
 # Import section
 # ──────────────────────────────────────────────────────────────────────────────
 import argparse
+import json
 import os
 import shutil
 import subprocess
+import sys
 
 from datetime import datetime
 from importlib import resources
@@ -30,7 +32,9 @@ from .defs              import (
     ARGUMENT_DESCRIPTION,
     ARGUMENT_EPILOG,
     ARGUMENT_FORMATTER_CLASS,
+    CONFIG_DIR,
     PRETTY_PRINT_ALLOWED_COLUMNS,
+    STARTUP_DEFAULTS_FILENAME,
 )
 from .operators         import load_operator_bindings, load_operator_colors
 from .pdf_export        import write_ansi_lines_pdf
@@ -126,6 +130,113 @@ def _parse_years(value: str) -> list[int]:
 # ─── END OF _parse_years() ────────────────────────────────────────────────────
 
 
+STARTUP_DEFAULTS_PATH = CONFIG_DIR / STARTUP_DEFAULTS_FILENAME
+STARTUP_DEFAULTS_TEMPLATE: dict[str, object] = {
+    "year": None,
+    "scope": "both",
+    "filters": "",
+    "mirrors": False,
+}
+
+
+def _ensure_startup_defaults_file() -> None:
+    if STARTUP_DEFAULTS_PATH.exists():
+        return
+
+    try:
+        STARTUP_DEFAULTS_PATH.parent.mkdir(parents=True, exist_ok=True)
+        with STARTUP_DEFAULTS_PATH.open("w", encoding="utf-8") as f:
+            json.dump(STARTUP_DEFAULTS_TEMPLATE, f, indent=2, sort_keys=True)
+            f.write("\n")
+    except OSError:
+        pass
+
+
+def _coerce_startup_year(value: object) -> list[int] | None:
+    if value in (None, ""):
+        return None
+
+    if isinstance(value, int):
+        return _parse_years(str(value))
+
+    if isinstance(value, str):
+        return _parse_years(value)
+
+    if isinstance(value, list):
+        year_tokens: list[str] = []
+        for item in value:
+            if not isinstance(item, int):
+                raise ValueError("year list must contain only numeric years")
+            year_tokens.append(str(item))
+        return _parse_years(",".join(year_tokens))
+
+    raise ValueError("year must be a number, string, list of numbers, or null")
+
+
+def _load_startup_defaults() -> dict[str, object]:
+    _ensure_startup_defaults_file()
+
+    try:
+        with STARTUP_DEFAULTS_PATH.open("r", encoding="utf-8") as f:
+            raw = json.load(f)
+    except FileNotFoundError:
+        return {}
+    except (json.JSONDecodeError, OSError) as exc:
+        print(f"Ignoring invalid {STARTUP_DEFAULTS_PATH}: {exc}", file=sys.stderr)
+        return {}
+
+    if not isinstance(raw, dict):
+        print(f"Ignoring invalid {STARTUP_DEFAULTS_PATH}: expected a JSON object", file=sys.stderr)
+        return {}
+
+    defaults: dict[str, object] = {}
+
+    try:
+        year = _coerce_startup_year(raw.get("year"))
+    except (argparse.ArgumentTypeError, ValueError) as exc:
+        print(f"Ignoring invalid startup default year: {exc}", file=sys.stderr)
+        year = None
+    if year is not None:
+        defaults["year"] = year
+
+    scope = raw.get("scope")
+    if scope in ("master", "intensive", "both"):
+        defaults["scope"] = scope
+    elif scope not in (None, ""):
+        print("Ignoring invalid startup default scope: use master, intensive, or both", file=sys.stderr)
+
+    filters = raw.get("filters")
+    if isinstance(filters, str) and filters.strip():
+        defaults["filters"] = filters
+    elif filters not in (None, ""):
+        print("Ignoring invalid startup default filters: use a string", file=sys.stderr)
+
+    mirrors = raw.get("mirrors")
+    if isinstance(mirrors, bool):
+        defaults["mirrors"] = mirrors
+    elif mirrors not in (None, ""):
+        print("Ignoring invalid startup default mirrors: use true or false", file=sys.stderr)
+
+    return defaults
+
+
+def _apply_startup_defaults(args: argparse.Namespace) -> None:
+    defaults = _load_startup_defaults()
+
+    if args.year is None:
+        args.year = defaults.get("year", [datetime.now().year])
+
+    if args.scope is None:
+        args.scope = defaults.get("scope", "both")
+
+    if args.filters is None:
+        args.filters = defaults.get("filters")
+
+    if args.mirrors is None:
+        args.mirrors = defaults.get("mirrors", False)
+# ─── END OF startup defaults helpers ──────────────────────────────────────────
+
+
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Version (managed by setuptools-scm)
@@ -143,6 +254,7 @@ def _ensure_user_config_files() -> None:
     load_operator_bindings()
     load_operator_colors()
     _load_pdf_default_columns()
+    _ensure_startup_defaults_file()
 
 
 def _show_man_page() -> None:
@@ -189,13 +301,13 @@ def main() -> None:
 
     arg_parser.add_argument("--year",
                             type=_parse_years,
-                            default=[datetime.now().year],
-                            help="Year expression (default: current year). Examples: 2025, 2022,2023, 2022-2025, 2022,2024-2026"
+                            default=None,
+                            help="Year expression (default: startup_defaults.json year, or current year). Examples: 2025, 2022,2023, 2022-2025, 2022,2024-2026"
     )
     arg_parser.add_argument("--scope",
                             choices=("master", "intensive", "both"),
-                            default="both",
-                            help="Which schedules to include (master, intensive, both) (default: both)"
+                            default=None,
+                            help="Which schedules to include (master, intensive, both) (default: startup_defaults.json scope, or both)"
     )
     arg_parser.add_argument("--filters",
                             type=str,
@@ -220,8 +332,12 @@ def main() -> None:
     arg_parser.add_argument('-a', '--append', action='store_true',
                             help='append to output file instead of overwriting')
 
-    arg_parser.add_argument('-m', '--mirrors', action='store_true',
-                            help='check mirror websites for last update; default is use only primary IVSCC site (https://ivscc.gsfc.nasa.gov)')
+    mirror_group = arg_parser.add_mutually_exclusive_group()
+    mirror_group.add_argument('-m', '--mirrors', dest='mirrors', action='store_true',
+                              default=None,
+                              help='check mirror websites for last update; default is use only primary IVSCC site (https://ivscc.gsfc.nasa.gov)')
+    mirror_group.add_argument('--no-mirrors', dest='mirrors', action='store_false',
+                              help='disable mirror checking even if startup_defaults.json enables it')
 
     arg_parser.add_argument('--verbose-fetch', action='store_true',
                             help='show fetch progress and source-status messages even when using --output')
@@ -247,6 +363,8 @@ def main() -> None:
         print("Config initialized in ~/.config/ivs-sessions-browser")
         raise SystemExit(0)
 
+    _apply_startup_defaults(args)
+
     # Script-friendly mode: suppress progress/status chatter when user requested
     # textual output (stdout/file) via -o/--output.
     if args.output and not args.verbose_fetch:
@@ -263,7 +381,8 @@ def main() -> None:
     sb: SessionsBrowser = SessionsBrowser(_year     = args.year,
                                           _scope    = args.scope,
                                           _mirrors  = args.mirrors,
-                                          _filters  = args.filters)
+                                          _filters  = args.filters,
+                                          _app_version = __version__)
     # ─── END OF SessionsBrowser creation ──────────────────────────────────────
 
 

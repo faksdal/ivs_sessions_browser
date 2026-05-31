@@ -15,9 +15,11 @@ from __future__ import annotations
 from bs4        import BeautifulSoup
 
 import curses
+import json
 import os
 import time
 import webbrowser
+from importlib import resources
 from urllib.parse import urlsplit, urlunsplit
 from .pdf_export import write_ansi_lines_pdf
 from .statistics import SessionStatistics, build_statistics_report, summarize_rows, write_station_contribution_plot
@@ -68,6 +70,71 @@ def _load_pdf_default_columns() -> str | list[str]:
         return list(D.PDF_COLUMNS_DEFAULT_LIST)
 
 
+def _save_startup_default_filter(filter_text: str) -> None:
+    path = D.CONFIG_DIR / D.STARTUP_DEFAULTS_FILENAME
+    data: dict[str, object] = {
+        "filters": "",
+        "mirrors": False,
+        "scope": "both",
+        "year": None,
+    }
+
+    try:
+        if path.exists():
+            raw = json.loads(path.read_text(encoding="utf-8"))
+            if isinstance(raw, dict):
+                data.update(raw)
+    except (json.JSONDecodeError, OSError):
+        pass
+
+    data["filters"] = filter_text
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+# ─── END OF _save_startup_default_filter() ───────────────────────────────────
+
+
+def _load_app_state() -> dict[str, object]:
+    path = D.CONFIG_DIR / D.APP_STATE_FILENAME
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except (FileNotFoundError, json.JSONDecodeError, OSError):
+        return {}
+
+    return raw if isinstance(raw, dict) else {}
+
+
+def _save_app_state(state: dict[str, object]) -> None:
+    path = D.CONFIG_DIR / D.APP_STATE_FILENAME
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(state, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def _load_whats_new_lines(app_version: str) -> list[str]:
+    try:
+        resource = resources.files("ivs_sessions_browser").joinpath("WHATS_NEW.md")
+        raw = resource.read_text(encoding="utf-8")
+    except (FileNotFoundError, ModuleNotFoundError, OSError):
+        return []
+
+    lines = [line.rstrip() for line in raw.splitlines()]
+    while lines and not lines[0]:
+        lines.pop(0)
+    while lines and not lines[-1]:
+        lines.pop()
+
+    if not lines:
+        return []
+
+    title = f"What's new in version {app_version}"
+    if lines[0].lstrip("# ").strip().lower().startswith("what's new"):
+        lines[0] = title
+    else:
+        lines.insert(0, "")
+        lines.insert(0, title)
+
+    return lines
+
+
 class SessionsBrowser:
     """
     Class representing the IVS Sessions Browser object.
@@ -84,7 +151,7 @@ class SessionsBrowser:
     _STATION_PLOT_METRICS               = ("session_share_pct", "hours", "weighted_hours")
     STATION_PLOT_OTHERS_BELOW_PCT       = 3.0
 
-    def __init__(self, _year: int | list[int], _scope: str, _mirrors: bool = False, _filters: str | None = None) -> None:
+    def __init__(self, _year: int | list[int], _scope: str, _mirrors: bool = False, _filters: str | None = None, _app_version: str = "0.0.0") -> None:
         """
         Docstring for __init__
 
@@ -107,6 +174,7 @@ class SessionsBrowser:
         self.year       = self.years[0]
         self.scope      = _scope
         self.filters    = _filters
+        self.app_version = _app_version
 
         # Build the candidate URL list for the requested scope/mirrors
         self.url_list = self._urls_for_scope(_mirrors)
@@ -360,6 +428,8 @@ class SessionsBrowser:
             # self.state.selected = idx
             self.state.selected = self.state.offset = idx
 
+        self._show_whats_new_if_needed(_stdscr)
+
         # Start the main loop
         quit: bool = False
         while not quit:
@@ -438,6 +508,22 @@ class SessionsBrowser:
                     # Jump to today after clearing
                     idx = self.formatter.filter_sort.index_on_or_after_today(self.view_rows)
                     self.state.selected = self.state.offset = idx
+
+                # Save current filter as startup default
+                case c if c == ord('D'):
+                    max_y, max_x = _stdscr.getmaxyx()
+                    attr = self.theme.help_bar if self.state.has_colors else 0
+                    try:
+                        _save_startup_default_filter(self.filters or "")
+                        if self.filters:
+                            msg = "Saved current filter as startup default"
+                        else:
+                            msg = "Cleared startup default filter"
+                    except OSError as e:
+                        msg = f"Error saving startup default filter: {e}"
+                    self.formatter._addstr_clip(_stdscr, max_y - 2, 0, msg[: max_x - 1], attr)
+                    _stdscr.refresh()
+                    time.sleep(self.PDF_STATUS_MESSAGE_DELAY_SECONDS)
 
                 # Hide/show removed stations
                 # case c if c == ord('R'):
@@ -734,6 +820,87 @@ class SessionsBrowser:
             elif key == curses.KEY_PPAGE:
                 scroll = max(0, scroll - max_visible)
     # ─── END OF _show_statistics() ───────────────────────────────────────────
+
+
+    def _show_whats_new_if_needed(self, _stdscr) -> None:
+        """
+        Show the bundled "what's new" notes once per installed version.
+        """
+
+        state = _load_app_state()
+        if state.get("whats_new_seen_version") == self.app_version:
+            return
+
+        lines = _load_whats_new_lines(self.app_version)
+        if not lines:
+            return
+
+        self._show_scrollable_text_window(
+            _stdscr,
+            lines,
+            footer="Up/Down scroll, q/Enter close",
+        )
+
+        state["whats_new_seen_version"] = self.app_version
+        try:
+            _save_app_state(state)
+        except OSError:
+            pass
+    # ─── END OF _show_whats_new_if_needed() ──────────────────────────────────
+
+
+
+    def _show_scrollable_text_window(self, _stdscr, lines: list[str], footer: str) -> None:
+        """
+        Display text in a centered, scrollable popup.
+        """
+
+        display_lines = lines + ["", footer]
+        max_y, max_x = _stdscr.getmaxyx()
+        width = min(max(len(line) for line in display_lines) + 4, max_x - 4)
+        height = min(max_y - 4, max(8, min(len(display_lines) + 2, max_y - 4)))
+
+        if width < 20 or height < 8:
+            return
+
+        top = (max_y - height) // 2
+        left = (max_x - width) // 2
+        win = curses.newwin(height, width, top, left)
+        win.keypad(True)
+
+        max_visible = height - 2
+        scroll = 0
+        max_scroll = max(0, len(display_lines) - max_visible)
+
+        while True:
+            win.erase()
+            win.box()
+
+            visible = display_lines[scroll: scroll + max_visible]
+            for i, line in enumerate(visible):
+                absolute_idx = scroll + i
+                if absolute_idx == 0 and self.state.has_colors:
+                    attr = self.theme.header
+                elif absolute_idx == len(display_lines) - 1 and self.state.has_colors:
+                    attr = self.theme.help_bar
+                else:
+                    attr = 0
+                win.addnstr(i + 1, 2, line, width - 4, attr)
+
+            win.refresh()
+            key = win.getch()
+
+            if key in (ord("q"), ord("Q"), 10, 13, curses.KEY_ENTER, 27):
+                break
+            if key in (curses.KEY_DOWN, ord("j")):
+                scroll = min(max_scroll, scroll + 1)
+            elif key in (curses.KEY_UP, ord("k")):
+                scroll = max(0, scroll - 1)
+            elif key == curses.KEY_NPAGE:
+                scroll = min(max_scroll, scroll + max_visible)
+            elif key == curses.KEY_PPAGE:
+                scroll = max(0, scroll - max_visible)
+    # ─── END OF _show_scrollable_text_window() ────────────────────────────────
 
 
 

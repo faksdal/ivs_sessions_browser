@@ -96,6 +96,7 @@ Available options:
 - `--scope {master|intensive|both}` - Session type (default: both)
 - `--filters "expression"` - Initial filter expression
 - `--mirrors` - Check mirror sites for most recent data, or in case master site is down
+- `--no-mirrors` - Disable mirror checking even if startup defaults enable it
 - `--output FILE` - Write output to file and exit (use `-` for stdout)
 - `-p, --pretty-print [ALL|OP|TYPE|... ]` - Select output columns (pipe-delimited), default `ALL`
 - `--verbose-fetch` - Show fetch/progress output even when using `--output`
@@ -104,6 +105,10 @@ Available options:
 - `--version` - Show version and exit
 - `--init-config` - Create default user config files and exit before fetching session data
 - `--man` - Show the bundled manual page and exit
+
+If `--year`, `--scope`, `--filters`, or `--mirrors` are omitted, their values
+are read from `~/.config/ivs-sessions-browser/startup_defaults.json` when set.
+Command-line arguments always override the file.
 
 ### Examples
 
@@ -135,6 +140,51 @@ Available options:
 # Keep fetch progress visible while exporting
 ./run_browser --year 2025 --output sessions.txt --verbose-fetch
 ```
+
+## Startup Defaults
+
+On first use, IVS Sessions Browser creates
+`~/.config/ivs-sessions-browser/startup_defaults.json`:
+
+```json
+{
+  "filters": "",
+  "mirrors": false,
+  "scope": "both",
+  "year": null
+}
+```
+
+Use this file when you want a normal launch to start with your preferred
+schedule scope or filter. For example:
+
+```json
+{
+  "filters": "status:released; stations:Nn",
+  "mirrors": true,
+  "scope": "master",
+  "year": "2025-2026"
+}
+```
+
+Supported keys:
+- `year`: `null`, a number, a string such as `"2025,2026"` or `"2024-2026"`, or a list of numeric years
+- `scope`: `"master"`, `"intensive"`, or `"both"`
+- `filters`: any normal filter expression string
+- `mirrors`: `true` or `false`
+
+Values only apply when the matching command-line option is omitted.
+Inside the TUI, press **D** to save the current filter as the startup default.
+If no filter is active, **D** clears the saved default filter.
+
+## What's New Screen
+
+After an update, the TUI shows the bundled "what's new" notes once for the
+new installed version. The seen version is stored in
+`~/.config/ivs-sessions-browser/app_state.json`.
+
+Use **↑/↓**, **j/k**, or **PgUp/PgDn** to scroll the popup, and **q**,
+**Enter**, or **Esc** to close it.
 
 ## Using the TUI
 
@@ -207,6 +257,7 @@ Filtering is one of the most powerful features of the IVS Sessions Browser. It a
 2. Type your filter expression
 3. Press Enter to apply
 4. Press `C` to clear all filters
+5. Press `D` to save the current filter as the startup default
 
 ### Filter Syntax Overview
 

@@ -25,6 +25,7 @@ This document explains how the CLI/TUI flow is wired together so contributors ca
   - Builds argument parser using constants from `defs.py`
   - Parses command-line arguments
   - Initializes default user config files, or exits immediately for `--init-config`
+  - Applies `startup_defaults.json` for omitted startup options
   - Creates `SessionsBrowser` instance
   - Either launches TUI or produces text, PDF, or XLSX output
 
@@ -40,6 +41,7 @@ The main orchestrator class that:
 - Manages TUI state (`UIState`) and theme (`TUITheme`)
 - Loads operator configurations and session assignments
 - Runs the main curses event loop in `_curses_main()`
+- Shows bundled "what's new" notes once per installed version
 - Handles navigation, filtering, operator assignment, and browser launching
 - Handles in-TUI PDF/XLSX exports, statistics dialog, and station contribution plotting
 
@@ -108,7 +110,7 @@ Type definitions and data classes:
   - Accepted forms: `2025`, `2022,2023`, `2022-2025`, `2022,2024-2026`
 - `--scope` (master|intensive|both; default: both)
 - `--filters` (string filter expression following documented syntax)
-- `--mirrors` (compare timestamps across mirror sites, select most recent)
+- `--mirrors` / `--no-mirrors` (compare timestamps across mirror sites, select most recent; `--no-mirrors` overrides startup defaults)
 - Output controls:
   - `--output FILE` - write to file (use `-` for stdout) and exit
   - `--pretty-print [ALL|OP|TYPE|...]` - select output columns for textual rendering
@@ -131,7 +133,7 @@ Type definitions and data classes:
 
 ## TUI Features
 - **Navigation**: Arrow keys, PgUp/PgDn, Home/End, jump to today with `T`
-- **Filtering**: `/` to enter filter, `C` to clear (including station filters: `stations`, `stations_removed`, `stations_all`)
+- **Filtering**: `/` to enter filter, `C` to clear, `D` to save the current filter as the startup default (including station filters: `stations`, `stations_removed`, `stations_all`)
 - **Operator assignment**: `0-5` keys assign configured operators to sessions
 - **Dynamic Op width**: the operator column expands to fit saved assignment labels from `operator_assignments.json`
 - **Colors**: Status-based colors (green=released, yellow=processing/waiting, magenta=cancelled) and operator-specific colors
@@ -144,6 +146,8 @@ Type definitions and data classes:
 - `~/.config/ivs-sessions-browser/operators.json` - operator bindings (key → label) and colors; created from the packaged default when missing
 - `~/.config/ivs-sessions-browser/operator_assignments.json` - session code → operator label mappings
 - `~/.config/ivs-sessions-browser/pdf_columns` - default PDF export columns; created as `op|start|code|stations|corr` when missing
+- `~/.config/ivs-sessions-browser/startup_defaults.json` - optional defaults for omitted `--year`, `--scope`, `--filters`, and `--mirrors`
+- `~/.config/ivs-sessions-browser/app_state.json` - internal UI state, including the last version whose "what's new" notes were shown
 
 ## Future enhancements
 - Additional output formats (full JSON structure, richer CSV)

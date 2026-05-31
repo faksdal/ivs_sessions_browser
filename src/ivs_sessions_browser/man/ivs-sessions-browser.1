@@ -25,13 +25,22 @@ Year expression to fetch. Accepted forms include
 and
 .BR 2022-2026 .
 Defaults to the current year.
+When omitted, a configured value in
+.I ~/.config/ivs-sessions-browser/startup_defaults.json
+is used first.
 .TP
 .BI --scope " master|intensive|both"
 Select which schedules to include. Defaults to
 .BR both .
+When omitted, a configured value in
+.I ~/.config/ivs-sessions-browser/startup_defaults.json
+is used first.
 .TP
 .BI --filters " EXPR"
 Apply an initial filter expression.
+When omitted, a configured value in
+.I ~/.config/ivs-sessions-browser/startup_defaults.json
+is used first.
 .TP
 .BI -o ", " --output " FILE"
 Write formatted output to
@@ -59,6 +68,12 @@ PDF and XLSX exports always write a new file.
 .TP
 .B -m, --mirrors
 Check configured mirror sites and use the most recently updated source.
+When omitted, a configured value in
+.I ~/.config/ivs-sessions-browser/startup_defaults.json
+is used first.
+.TP
+.B --no-mirrors
+Disable mirror checking even if startup defaults enable it.
 .TP
 .B --verbose-fetch
 Show fetch progress even when writing output to a file or stdout.
@@ -110,6 +125,10 @@ Enter or edit a filter expression.
 .B C
 Clear filters.
 .TP
+.B D
+Save the current filter as the startup default. If no filter is active, clear
+the saved default filter.
+.TP
 .B 0
 Clear the selected session's operator assignment.
 .TP
@@ -150,6 +169,18 @@ Persistent mapping of session code to assigned operator label.
 Default PDF export columns. Created as
 .B op|start|code|stations|corr
 when missing.
+.TP
+.I ~/.config/ivs-sessions-browser/startup_defaults.json
+Optional startup defaults for omitted
+.BR --year ,
+.BR --scope ,
+.BR --filters ,
+and
+.BR --mirrors .
+.TP
+.I ~/.config/ivs-sessions-browser/app_state.json
+Internal UI state, including the last version whose "what's new" notes were
+shown.
 .SH EXAMPLES
 .TP
 .B ivs-sessions-browser --init-config

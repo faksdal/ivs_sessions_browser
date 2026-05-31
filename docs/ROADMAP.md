@@ -55,6 +55,7 @@
   - Append mode (`--append`)
   - Output format selector (`--format text|pdf|xlsx`)
   - Config initialization (`--init-config`)
+  - Startup defaults from `startup_defaults.json`
   - Bundled manual page (`--man`)
   - Version display (`--version`)
 

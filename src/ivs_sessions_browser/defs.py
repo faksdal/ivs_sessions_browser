@@ -65,6 +65,7 @@ HELP_TEXT = [
     "  Filter by headers; type, code, start, etc.",
     "  / : Enter filter (field:value[;field:value], supports AND/OR (&,|))",
     "  C : Clear filters",
+    "  D : Save current filter as startup default",
     # "  R : Toggle show/hide removed stations",
     "",
     "Other:",
@@ -178,7 +179,7 @@ NAVIGATION_KEYS: dict[str, str] = {}
 
 # Help bar text displayed at bottom of TUI
 # HELP_BAR_TEXT = "↑↓-PgUp/PgDn-Home/End:Move Enter:Open /:Filter C:Clear T:Jump to today R:Hide/show removed ?:Help q/Q:Quit"
-HELP_BAR_TEXT = "↑↓-PgUp/PgDn-Home/End:Move Enter:Open /:Filters C:Clear filters T:Jump today P:PDF X:XLSX S:Stats G:Station% ?:Help q/Q:Quit"
+HELP_BAR_TEXT = "↑↓-PgUp/PgDn-Home/End:Move Enter:Open /:Filters C:Clear D:Save default T:Today P:PDF X:XLSX S:Stats G:Station% ?:Help q/Q:Quit"
 
 
 # Configuration filenames and directory (shared constants)
@@ -186,6 +187,8 @@ HELP_BAR_TEXT = "↑↓-PgUp/PgDn-Home/End:Move Enter:Open /:Filters C:Clear fil
 CONFIG_DIR              = Path.home() / ".config" / "ivs-sessions-browser"
 OPERATORS_FILENAME      = "operators.json"
 ASSIGNMENTS_FILENAME    = "operator_assignments.json"
+STARTUP_DEFAULTS_FILENAME = "startup_defaults.json"
+APP_STATE_FILENAME      = "app_state.json"
 PDF_COLUMNS_FILENAME    = "pdf_columns"
 PDF_COLUMNS_DEFAULT     = "op|start|code|stations|corr"
 PDF_COLUMNS_DEFAULT_LIST = ["OP", "START", "CODE", "STATIONS", "CORR"]

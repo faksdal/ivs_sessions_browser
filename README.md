@@ -63,8 +63,10 @@ ivs_sessions_browser/
 > **Note:** The project uses the **src/** layout. For development, install it with `pip install -e .`.
 > Inside PyCharm, mark `src/` as **Sources Root** or use the editable virtualenv interpreter.
 > User-editable settings are read from `~/.config/ivs-sessions-browser/`.
-> Missing `operators.json` and `pdf_columns` files are created there from defaults the first time `ivs-sessions-browser` runs.
+> Missing `operators.json`, `pdf_columns`, and `startup_defaults.json` files are created there from defaults the first time `ivs-sessions-browser` runs.
 > Edit `~/.config/ivs-sessions-browser/operators.json` to replace the default `U1`-`U5` operator labels with your local operator names.
+> Edit `~/.config/ivs-sessions-browser/startup_defaults.json` to choose default startup `year`, `scope`, `filters`, and `mirrors` values.
+> The app also records the last displayed "what's new" version in `~/.config/ivs-sessions-browser/app_state.json`.
 
 ---
 
@@ -168,6 +170,7 @@ Most usage is interactive (TUI). Command-line flags typically include:
 --pretty-print OP|TYPE|STATIONS
 --format pdf                  # write a colored PDF using the same pretty-printed lines
 --format xlsx                 # write an Excel workbook with spreadsheet cells
+--no-mirrors                  # disable startup default mirror checking for this run
 --verbose-fetch                # show fetch/progress output even with --output
 --init-config                  # create default user config files and exit. Usually done after install.
 --man                          # show the bundled manual page and exit
@@ -175,11 +178,25 @@ Most usage is interactive (TUI). Command-line flags typically include:
 
 Run with `-h/--help` (help) to see current options.
 
+When `--year`, `--scope`, `--filters`, or `--mirrors` are omitted, the app
+checks `~/.config/ivs-sessions-browser/startup_defaults.json` before falling
+back to built-in defaults. Command-line arguments always override the file.
+
+```json
+{
+  "filters": "status:released; stations:Nn",
+  "mirrors": false,
+  "scope": "both",
+  "year": null
+}
+```
+
 Once inside the TUI:
 - Use arrow keys / PgUp / PgDn / Home / End to navigate
 - Press `T` to jump to today
 - Press `/` to enter/edit a filter
 - Press `C` to clear filters
+- Press `D` to save the current filter as the startup default
 - Press `0-5` to assign an operator to the selected session (or clear with '0')
 - Press `Enter` to open the selected session in your browser
 - Press `P` to export visible rows to PDF
@@ -201,6 +218,7 @@ Navigation:
 Filtering:
   /                        Enter a filter expression
   C                        Clear current filters
+  D                        Save current filter as startup default
   Examples:
     code:R1|R4             → match sessions with code R1 or R4
     stations:Nn&Ns         → sessions including both Nn and Ns
