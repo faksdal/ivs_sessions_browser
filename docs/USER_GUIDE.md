@@ -183,10 +183,19 @@ Press **Enter** while a session is selected to open the full session page in you
    - Program, type, status, operator, ops-center, and correlator breakdowns
    - Network size proxies (active stations/session, baselines/session, baseline-hours)
    - Reliability proxies (cancelled share, non-cancelled share, reduced-network sessions)
-- In the statistics dialog, use **↑/↓** or **PgUp/PgDn** to scroll, and **q** or **Enter** to close.
+- In the statistics dialog, use **↑/↓**, **j/k**, or **PgUp/PgDn** to scroll, and **q**, **Enter**, or **Esc** to close.
 
 - Press **G** to generate a station contribution plot.
    - Repeated presses cycle the plotted metric between session share, hours, and weighted hours.
+   - The plot is saved as `station-contribution-YYYYMMDD-HHMMSS.png` in the current working directory and opened with the system viewer when possible.
+
+### TUI Exports
+
+- Press **P** to export currently visible rows to a colored PDF.
+- Press **X** to export currently visible rows to an XLSX workbook.
+- Both prompts accept `ALL` or pipe-delimited column names such as `OP|START|CODE|STATIONS|CORR`.
+- The prompt is prefilled from `~/.config/ivs-sessions-browser/pdf_columns`.
+- Files are saved in the current working directory as timestamped `sessions-YYYYMMDD-HHMMSS.pdf` or `.xlsx` files and opened with the system viewer when possible.
 
 ## Filtering Sessions
 
@@ -414,8 +423,8 @@ Press `T` immediately after launching to jump to today's sessions, then filter f
 Start with broad filters and narrow down:
 ```
 status: released          # First: only released
-/code: R1|R4             # Then: specific codes
-/stations: Nn&Ns         # Finally: required stations
+code: R1|R4              # Then: specific codes
+stations: Nn&Ns          # Finally: required stations
 ```
 
 ### 3. Use Partial Date Matching
@@ -502,7 +511,7 @@ Press `?` anytime in the TUI for a complete keyboard reference.
 Quick reference:
 - **Navigation**: `↑↓` `PgUp` `PgDn` `Home` `End` `T`
 - **Filtering**: `/` `C`
-- **Actions**: `Enter` `0-5`
+- **Actions**: `Enter` `0-5` `P` `X` `S` `G`
 - **Help**: `?`
 - **Quit**: `q` or `Q`
 

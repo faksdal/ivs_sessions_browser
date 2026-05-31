@@ -53,8 +53,16 @@
   - Column selection for textual output (`--pretty-print`)
   - Quiet-by-default export with optional progress override (`--verbose-fetch`)
   - Append mode (`--append`)
-  - Output format selector (`--format`, currently `text` and `pdf` implemented)
+  - Output format selector (`--format text|pdf|xlsx`)
+  - Config initialization (`--init-config`)
+  - Bundled manual page (`--man`)
   - Version display (`--version`)
+
+- **Exports and Reports**
+  - Colored PDF output from CLI and TUI
+  - XLSX workbook output from CLI and TUI
+  - Statistics popup (`S`) with session, hour, network, reliability, and station contribution summaries
+  - Station contribution plot (`G`) with session share, hours, and weighted-hours metrics
 
 ## Near-Term Roadmap (Next 6 months)
 
@@ -63,8 +71,7 @@
 - **Enhanced Output Formats** 🔨
   - Full JSON export with nested structure
   - CSV export with all fields
-  - Excel/XLSX export option
-  - Include operator assignments in exports
+  - Additional report templates for operator and station summaries
 
 - **Improved Sorting** 🔨
   - Press `s` to cycle through sort modes
@@ -90,7 +97,7 @@
   - Save last filter between sessions
   - Remember window size and layout preferences
   - Configurable default scope (master/intensive/both)
-  - Per-user configuration file (`~/.config/ivs-sessions-browser/`)
+  - Additional per-user preferences under `~/.config/ivs-sessions-browser/`
 
 - **Enhanced Navigation** 📋
   - Bookmarks for frequently viewed sessions
@@ -99,7 +106,7 @@
   - Navigation history (back/forward)
 
 - **Extended Visualization** 📋
-  - Station participation statistics
+  - Year-by-year station participation trends
   - Timeline view mode showing session distribution
   - Operator workload summary
   - Session density heatmap by month
@@ -189,7 +196,6 @@
   - Example workflows and use cases
 
 - **Packaging & Distribution** 🔧
-  - PyPI distribution
   - Conda package
   - Snap/Flatpak for Linux
   - Homebrew formula for macOS
@@ -247,6 +253,6 @@ If you have ideas for features not listed here, please:
 
 ---
 
-**Last Updated**: February 2026  
+**Last Updated**: May 2026  
 **Current Version**: v4.x (development)  
 **Next Release Target**: Q2 2026

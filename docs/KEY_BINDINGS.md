@@ -17,6 +17,8 @@
 | Key | Action | Description |
 |-----|--------|-------------|
 | `Enter` | Open in browser | Open selected session page in default web browser |
+| `P` | Export PDF | Save visible rows to a timestamped PDF and open it |
+| `X` | Export XLSX | Save visible rows to a timestamped XLSX workbook and open it |
 | `S` | Show statistics | Open operational statistics (trend, network, reliability metrics) |
 | `G` | Plot station contribution | Save/open station contribution chart (cycles metric each press) |
 | `?` | Show help | Display help popup with key bindings and color legend |
@@ -90,4 +92,5 @@ The bottom status bar shows:
 4. **Help always available**: Press `?` anytime to see the help screen with all key bindings
 5. **Clear and retry**: Use `C` to clear filters if you want to start fresh
 6. **Removed stations view**: Use filters like `stations_removed:Ft|Ur` or `stations_all:Ft|Ur` to inspect removed stations
-7. **Stats popup navigation**: In statistics view, use `↑/↓` or `PgUp/PgDn` to scroll, `q` or `Enter` to close
+7. **Stats popup navigation**: In statistics view, use `↑/↓`, `j/k`, or `PgUp/PgDn` to scroll, `q`, `Enter`, or `Esc` to close
+8. **Quick exports**: Use `P` or `X` after filtering to export exactly the visible rows

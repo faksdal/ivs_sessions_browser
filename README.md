@@ -13,6 +13,8 @@ If you have any question, comment or feedback to this script; [Send email](mailt
 - **Open in browser**: jump to the IVS page for a session
 - **Station filtering**: filter active/removed/all station sets in expressions
 - **Jump to today**: one-key shortcut to the current session row
+- **Exports**: save visible rows to text, colored PDF, or XLSX
+- **Statistics**: inspect session totals and station contribution plots
 - **Inline help**: `?` shows a centered help box
 
 See also:
@@ -180,6 +182,10 @@ Once inside the TUI:
 - Press `C` to clear filters
 - Press `0-5` to assign an operator to the selected session (or clear with '0')
 - Press `Enter` to open the selected session in your browser
+- Press `P` to export visible rows to PDF
+- Press `X` to export visible rows to XLSX
+- Press `S` to show session statistics
+- Press `G` to save/open a station contribution plot; repeated presses cycle session %, hours, and weighted hours
 - Press `?` for inline help
 - Press `q/Q` to quit
 
@@ -205,6 +211,10 @@ Operator Assignment:
                           (operators configured in ~/.config/ivs-sessions-browser/operators.json)
 
 Other:
+  P                        Export visible rows to PDF and open it
+  X                        Export visible rows to XLSX and open it
+  S                        Show session statistics
+  G                        Save/open station contribution plot
   ?                        Show this help screen
 
 Notes:
@@ -272,7 +282,7 @@ Use a modern terminal with UTF-8 and 256-color support; ensure `$TERM` is e.g. `
 This project uses **setuptools-scm**. Version strings are derived from Git tags.
 To cut a release:
 ```bash
-git tag v3.0
+git tag v4.0.0
 git push --tags
 ```
 

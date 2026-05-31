@@ -13,7 +13,7 @@ This document explains how the CLI/TUI flow is wired together so contributors ca
 7. The HTML is parsed into row data, filtered, and sorted by `Tui` class using helper methods from `FilterAndSort`.
 8. Either:
    - Interactive TUI is launched (default) via curses, or
-   - Text output is written to file/stdout and the program exits.
+   - Text, PDF, or XLSX output is written to file/stdout and the program exits.
 
 ## Detailed flow
 
@@ -26,7 +26,7 @@ This document explains how the CLI/TUI flow is wired together so contributors ca
   - Parses command-line arguments
   - Initializes default user config files, or exits immediately for `--init-config`
   - Creates `SessionsBrowser` instance
-  - Either launches TUI or produces formatted output
+  - Either launches TUI or produces text, PDF, or XLSX output
 
 ### Core components
 
@@ -41,12 +41,15 @@ The main orchestrator class that:
 - Loads operator configurations and session assignments
 - Runs the main curses event loop in `_curses_main()`
 - Handles navigation, filtering, operator assignment, and browser launching
+- Handles in-TUI PDF/XLSX exports, statistics dialog, and station contribution plotting
 
 **Key methods**:
 - `_urls_for_scope(_mirrors)` - builds primary/mirror URL list for master/intensive/both
 - `render_sessions_list()` - produces ANSI-colored text output for CLI mode
 - `_curses_main(_stdscr)` - main TUI event loop handling keyboard input
 - `_navigate(key, _stdscr)` - processes navigation keys and Enter for opening sessions
+- `_show_statistics(_stdscr)` - displays scrollable session and station metrics
+- `_plot_station_contributions(_stdscr)` - saves and opens station contribution plots while cycling metrics
 - `run()` - launches the curses TUI wrapper
 
 #### `FetchSessions` (`fetch_sessions.py`)
@@ -135,6 +138,7 @@ Type definitions and data classes:
 - **Help**: `?` displays inline help with key bindings and examples
 - **Browser integration**: Enter opens selected session in default web browser
 - **Exports**: `P` saves visible rows to PDF; `X` saves visible rows to XLSX
+- **Statistics**: `S` opens a scrollable statistics popup; `G` saves station contribution plots for session share, hours, and weighted hours
 
 ## Configuration files
 - `~/.config/ivs-sessions-browser/operators.json` - operator bindings (key → label) and colors; created from the packaged default when missing
