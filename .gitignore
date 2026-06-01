@@ -50,6 +50,8 @@ Thumbs.db
 .codex
 *.pid
 *.tmp
+*.vex
+*.skd
 
 operator_assignments.json
 src/ivs_sessions_browser/version.py

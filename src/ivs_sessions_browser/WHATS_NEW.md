@@ -10,9 +10,11 @@
   skipped when the session code is already known.
 - XLSX exports keep session code links clickable while matching the row/operator
   text color.
-- Startup defaults can still be stored in `startup_defaults.json`.
+- Startup default filters can still be stored in `startup_defaults.json`.
 - Press `D` in the TUI to save the current filter as the startup default.
 - Use `--no-mirrors` to override a startup default that enables mirror checks.
 - Online help is available from the TUI, the manual page is included, and `--help` shows command-line options.
+
+Have fun! --jole
 
 Press `q`, `Enter`, or `Esc` to close this screen.
