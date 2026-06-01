@@ -20,6 +20,7 @@ from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
 
 from . import defs as D
+from .tui import Tui
 
 
 COLOR_TO_HEX = {
@@ -98,8 +99,9 @@ def sessions_to_xlsx_bytes(
 
         for col_num, idx in enumerate(selected_indices, start=TABLE_START_COL):
             value = values[idx].strip()
-            if idx == type_idx and meta.get("intensive"):
-                value = f"{value} [I]".strip()
+            marker = Tui.type_marker(meta) if idx == type_idx else ""
+            if marker:
+                value = f"{value} {marker}".strip()
 
             cell = ws.cell(row=row_num, column=col_num, value=value)
             cell.font = row_font

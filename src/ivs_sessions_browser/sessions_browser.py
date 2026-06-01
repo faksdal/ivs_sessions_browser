@@ -19,6 +19,7 @@ import json
 import os
 import time
 import webbrowser
+from datetime import datetime
 from importlib import resources
 from urllib.parse import urlsplit, urlunsplit
 from .pdf_export import write_ansi_lines_pdf
@@ -29,6 +30,7 @@ from .xlsx_export import write_sessions_xlsx
 from .                          import defs as D
 
 from .fetch_sessions    import FetchSessions
+from .manual_sessions   import append_manual_session, build_manual_session_row, delete_manual_session, format_station_tokens, load_manual_session_rows, normalize_station_tokens, validate_manual_session
 from .tui               import Tui
 from .tui_state         import UIState, TUITheme
 from .ivstypes          import PageData
@@ -150,6 +152,16 @@ class SessionsBrowser:
     STATION_PLOT_METRIC                 = "session_share_pct"   # initial / fallback
     _STATION_PLOT_METRICS               = ("session_share_pct", "hours", "weighted_hours")
     STATION_PLOT_OTHERS_BELOW_PCT       = 3.0
+    MANUAL_ADD_STATUS_SECONDS            = 2.5
+    MANUAL_ADD_FIELDS                    = (
+        ("type", "type", "Type"),
+        ("name", "code", "Code"),
+        ("start", "start", "Start"),
+        ("duration", "dur", "Dur"),
+        ("stations", "stations", "Stations"),
+        ("ops", "ops", "Ops"),
+        ("correlator", "corr", "Corr"),
+    )
 
     def __init__(self, _year: int | list[int], _scope: str, _mirrors: bool = False, _filters: str | None = None, _app_version: str = "0.0.0") -> None:
         """
@@ -222,6 +234,8 @@ class SessionsBrowser:
                                  _url               = url
                                  )
 
+        self.formatter.full_list.extend(load_manual_session_rows(self.years))
+
         # Applying filters and sorting to the full list of sessions, which is
         # stored in self.formatter.full_list. The filtered and sorted list is
         # stored in self.view_rows, which is what we render in the TUI.
@@ -241,6 +255,15 @@ class SessionsBrowser:
         self.state              = UIState()
         self.theme: TUITheme    = None  # <- initialized in self._curses_main()
         self._station_plot_metric_idx: int = 0  # index into _STATION_PLOT_METRICS
+        self._manual_add_active = False
+        self._manual_add_values: dict[str, str] = {}
+        self._manual_add_cursors: dict[str, int] = {}
+        self._manual_add_field_idx = 0
+        self._manual_add_touched: set[str] = set()
+        self._manual_add_message = ""
+        self._manual_add_message_expires_at: float | None = None
+        self._manual_add_previous_selected = 0
+        self._manual_add_previous_offset = 0
 
         # self.operators = load_operators()
         self.operator_bindings      = load_operator_bindings()
@@ -372,10 +395,10 @@ class SessionsBrowser:
             for c in selected_indices:
                 val = values[c]
                 w = D.WIDTHS[c]
-                if c == type_idx and meta.get("intensive"):
-                    # Reserve 3 chars for "[I]" at right edge
-                    base_w = max(0, w - 3)
-                    parts.append(f"{val:<{base_w}}[I]")
+                marker = Tui.type_marker(meta) if c == type_idx else ""
+                if marker:
+                    base_w = max(0, w - len(marker))
+                    parts.append(f"{val:<{base_w}}{marker}")
                 else:
                     parts.append(f"{val:<{w}}")
 
@@ -434,8 +457,10 @@ class SessionsBrowser:
         quit: bool = False
         while not quit:
             # Determine the view height of the current terminal screen
+            self._expire_manual_add_message()
             max_y, _                = _stdscr.getmaxyx()
-            self.state.view_height  = max(1, max_y - 3)
+            reserved_status_lines = 1 if self._manual_add_active or self._manual_add_message else 0
+            self.state.view_height  = max(1, max_y - 3 - reserved_status_lines)
 
             self.formatter.clear_screen(_stdscr)
             self.formatter.draw_header(_stdscr, self.theme, self.state)
@@ -446,9 +471,19 @@ class SessionsBrowser:
 
             # Draw a help-bar at the bottom of the screen
             self.formatter.draw_helpbar(_stdscr, self.view_rows, self.filters, self.theme, self.state)
+            self._draw_manual_add_overlay(_stdscr)
 
             # Get and parse user input
+            if self._manual_add_message and self._manual_add_message_expires_at is not None:
+                _stdscr.timeout(250)
+            else:
+                _stdscr.timeout(-1)
             key = _stdscr.getch()
+            if key == -1:
+                continue
+            if self._manual_add_active:
+                self._handle_manual_add_key(key)
+                continue
             match key:
                 # Navigation keys and Enter
                 case key if key in (curses.KEY_UP, curses.KEY_DOWN, curses.KEY_PPAGE, curses.KEY_NPAGE,
@@ -524,6 +559,14 @@ class SessionsBrowser:
                     self.formatter._addstr_clip(_stdscr, max_y - 2, 0, msg[: max_x - 1], attr)
                     _stdscr.refresh()
                     time.sleep(self.PDF_STATUS_MESSAGE_DELAY_SECONDS)
+
+                # Add manual session inline
+                case c if c in (ord('A'), ord('+')):
+                    self._start_manual_add()
+
+                # Delete selected manual session
+                case curses.KEY_DC:
+                    self._delete_selected_manual_session()
 
                 # Hide/show removed stations
                 # case c if c == ord('R'):
@@ -720,6 +763,410 @@ class SessionsBrowser:
             case _:
                 pass
     # ─── END OF _navigate() ───────────────────────────────────────────────────
+
+
+
+    def _start_manual_add(self) -> None:
+        if self._manual_add_active:
+            return
+
+        self._manual_add_previous_selected = self.state.selected
+        self._manual_add_previous_offset = self.state.offset
+        self._manual_add_active = True
+        today_start = datetime.now().strftime("%Y-%m-%d 00:00")
+        self._manual_add_values = {
+            "type": "",
+            "name": "",
+            "start": today_start,
+            "duration": "24:00",
+            "stations": "",
+            "ops": "",
+            "correlator": "",
+        }
+        self._manual_add_cursors = {
+            field_key: len(self._manual_add_values.get(field_key, ""))
+            for field_key, _field_name, _label in self.MANUAL_ADD_FIELDS
+        }
+        self._manual_add_field_idx = 0
+        self._manual_add_touched = set()
+        self._set_manual_add_message("Add: fill row, Enter saves")
+        setattr(self.state, "manual_add_active", True)
+
+        self.view_rows.append(self._manual_add_draft_row())
+        self.state.selected = len(self.view_rows) - 1
+        self.state.offset = max(0, len(self.view_rows) - max(1, self.state.view_height))
+    # ─── END OF _start_manual_add() ──────────────────────────────────────────
+
+
+
+    def _handle_manual_add_key(self, _key: int) -> None:
+        field_key, _field_name, _label = self.MANUAL_ADD_FIELDS[self._manual_add_field_idx]
+
+        match _key:
+            case 27:
+                self._cancel_manual_add()
+                return
+            case 9:
+                self._move_manual_add_field(1)
+            case curses.KEY_BTAB:
+                self._move_manual_add_field(-1)
+            case 10 | 13 | curses.KEY_ENTER:
+                self._finish_manual_add()
+                return
+            case curses.KEY_LEFT:
+                self._move_manual_add_cursor(field_key, -1)
+            case curses.KEY_RIGHT:
+                self._move_manual_add_cursor(field_key, 1)
+            case curses.KEY_HOME:
+                self._manual_add_cursors[field_key] = 0
+            case curses.KEY_END:
+                self._manual_add_cursors[field_key] = len(self._manual_add_values.get(field_key, ""))
+            case 8 | 127 | curses.KEY_BACKSPACE:
+                current = self._manual_add_values.get(field_key, "")
+                cursor = self._manual_add_cursor(field_key)
+                if cursor > 0:
+                    self._manual_add_values[field_key] = current[:cursor - 1] + current[cursor:]
+                    self._manual_add_cursors[field_key] = cursor - 1
+                    self._manual_add_touched.add(field_key)
+            case curses.KEY_DC:
+                current = self._manual_add_values.get(field_key, "")
+                cursor = self._manual_add_cursor(field_key)
+                if cursor < len(current):
+                    self._manual_add_values[field_key] = current[:cursor] + current[cursor + 1:]
+                    self._manual_add_touched.add(field_key)
+            case c if 32 <= c <= 126:
+                current = self._manual_add_values.get(field_key, "")
+                cursor = self._manual_add_cursor(field_key)
+                char = chr(c)
+                self._manual_add_values[field_key] = current[:cursor] + char + current[cursor:]
+                self._manual_add_cursors[field_key] = cursor + 1
+                self._manual_add_touched.add(field_key)
+            case _:
+                pass
+
+        _field_key, _field_name, current_label = self.MANUAL_ADD_FIELDS[self._manual_add_field_idx]
+        self._set_manual_add_message(f"Edit {current_label}")
+        self._replace_manual_add_draft_row()
+    # ─── END OF _handle_manual_add_key() ─────────────────────────────────────
+
+
+
+    def _move_manual_add_field(self, _delta: int) -> None:
+        self._normalize_manual_add_field_on_exit()
+        count = len(self.MANUAL_ADD_FIELDS)
+        self._manual_add_field_idx = (self._manual_add_field_idx + _delta) % count
+        self._clamp_manual_add_cursor(self.MANUAL_ADD_FIELDS[self._manual_add_field_idx][0])
+    # ─── END OF _move_manual_add_field() ─────────────────────────────────────
+
+
+
+    def _manual_add_cursor(self, _field_key: str) -> int:
+        value = self._manual_add_values.get(_field_key, "")
+        cursor = self._manual_add_cursors.get(_field_key, len(value))
+        cursor = max(0, min(cursor, len(value)))
+        self._manual_add_cursors[_field_key] = cursor
+        return cursor
+    # ─── END OF _manual_add_cursor() ─────────────────────────────────────────
+
+
+
+    def _move_manual_add_cursor(self, _field_key: str, _delta: int) -> None:
+        self._manual_add_cursors[_field_key] = self._manual_add_cursor(_field_key) + _delta
+        self._clamp_manual_add_cursor(_field_key)
+    # ─── END OF _move_manual_add_cursor() ────────────────────────────────────
+
+
+
+    def _clamp_manual_add_cursor(self, _field_key: str) -> None:
+        value = self._manual_add_values.get(_field_key, "")
+        self._manual_add_cursors[_field_key] = max(0, min(self._manual_add_cursors.get(_field_key, len(value)), len(value)))
+    # ─── END OF _clamp_manual_add_cursor() ───────────────────────────────────
+
+
+
+    def _normalize_manual_add_field_on_exit(self) -> None:
+        field_key, _field_name, _label = self.MANUAL_ADD_FIELDS[self._manual_add_field_idx]
+        if field_key in ("type", "name", "ops", "correlator"):
+            self._manual_add_values[field_key] = self._manual_add_values.get(field_key, "").strip().upper()
+            self._manual_add_cursors[field_key] = len(self._manual_add_values[field_key])
+            return
+
+        if field_key != "stations":
+            return
+
+        raw = self._manual_add_values.get("stations", "")
+        if not raw.strip():
+            return
+
+        stations, error = normalize_station_tokens(raw)
+        if error:
+            self._set_manual_add_message(error)
+            return
+
+        self._manual_add_values["stations"] = ", ".join(stations)
+        self._manual_add_cursors["stations"] = len(self._manual_add_values["stations"])
+        self._set_manual_add_message("Stations OK")
+    # ─── END OF _normalize_manual_add_field_on_exit() ────────────────────────
+
+
+
+    def _finish_manual_add(self) -> None:
+        existing_names = {
+            values[D.FIELD_INDEX.get("code", 2)].strip()
+            for values, _url, meta in self.formatter.full_list
+            if values and not meta.get("draft")
+        }
+        normalized, errors = validate_manual_session(
+            self._manual_add_values,
+            existing_names=existing_names,
+        )
+
+        if errors or normalized is None:
+            first_key, message = next(iter(errors.items()))
+            self._focus_manual_add_field(first_key)
+            self._set_manual_add_message(message)
+            self._replace_manual_add_draft_row()
+            return
+
+        try:
+            stored = append_manual_session(normalized)
+        except ValueError as exc:
+            self._set_manual_add_message(str(exc))
+            self._replace_manual_add_draft_row()
+            return
+        except OSError as exc:
+            self._set_manual_add_message(f"Could not save manual session: {exc}")
+            self._replace_manual_add_draft_row()
+            return
+
+        row = build_manual_session_row(stored, self.operator_assignments)
+        if row is not None:
+            self.formatter.full_list.append(row)
+
+        saved_name = stored["name"]
+        self._manual_add_active = False
+        setattr(self.state, "manual_add_active", False)
+        self._set_manual_add_message(f"Saved manual session {saved_name}", _temporary=True)
+        self._refresh_view_after_manual_add(saved_name)
+    # ─── END OF _finish_manual_add() ─────────────────────────────────────────
+
+
+
+    def _cancel_manual_add(self) -> None:
+        self._manual_add_active = False
+        setattr(self.state, "manual_add_active", False)
+        self._manual_add_values = {}
+        self._manual_add_cursors = {}
+        self._set_manual_add_message("Manual session add cancelled", _temporary=True)
+        self._refresh_view_after_manual_add(None, _restore_previous=True)
+    # ─── END OF _cancel_manual_add() ─────────────────────────────────────────
+
+
+
+    def _delete_selected_manual_session(self) -> None:
+        if not self.view_rows or not (0 <= self.state.selected < len(self.view_rows)):
+            return
+
+        values, _url, meta = self.view_rows[self.state.selected]
+        if not meta.get("manual"):
+            self._set_manual_add_message("Del only removes manual sessions", _temporary=True)
+            return
+
+        code_idx = D.FIELD_INDEX.get("code", 2)
+        session_code = values[code_idx].strip() if len(values) > code_idx else ""
+        if not session_code:
+            self._set_manual_add_message("Manual session has no code", _temporary=True)
+            return
+
+        try:
+            deleted = delete_manual_session(session_code)
+        except ValueError as exc:
+            self._set_manual_add_message(str(exc), _temporary=True)
+            return
+        except OSError as exc:
+            self._set_manual_add_message(f"Could not delete manual session: {exc}", _temporary=True)
+            return
+
+        if not deleted:
+            self._set_manual_add_message(f"Manual session not found: {session_code}", _temporary=True)
+            return
+
+        selected_before = self.state.selected
+        self.formatter.full_list = [
+            row for row in self.formatter.full_list
+            if not (row[2].get("manual") and row[0][code_idx].strip() == session_code)
+        ]
+        self.view_rows = self.formatter.apply_filters_and_sorting(
+            _query=self.filters,
+            _show_removed=self.state.show_removed,
+            _sort_key="start",
+            _ascending=True
+        )
+        self.highlight_tokens = self.formatter.filter_sort.extract_station_tokens(self.filters or "")
+        self.formatter.recompute_header_widths()
+        self.state.selected = min(selected_before, max(0, len(self.view_rows) - 1))
+        self.state.offset = min(self.state.offset, max(0, len(self.view_rows) - 1))
+        self._set_manual_add_message(f"Deleted manual session {session_code}", _temporary=True)
+    # ─── END OF _delete_selected_manual_session() ────────────────────────────
+
+
+
+    def _refresh_view_after_manual_add(self, _select_code: str | None, *, _restore_previous: bool = False) -> None:
+        self.view_rows = self.formatter.apply_filters_and_sorting(
+            _query=self.filters,
+            _show_removed=self.state.show_removed,
+            _sort_key="start",
+            _ascending=True
+        )
+        self.highlight_tokens = self.formatter.filter_sort.extract_station_tokens(self.filters or "")
+        self.formatter.recompute_header_widths()
+
+        if _restore_previous:
+            self.state.selected = min(self._manual_add_previous_selected, max(0, len(self.view_rows) - 1))
+            self.state.offset = min(self._manual_add_previous_offset, max(0, len(self.view_rows) - 1))
+            return
+
+        if _select_code:
+            code_idx = D.FIELD_INDEX.get("code", 2)
+            for i, (values, _url, _meta) in enumerate(self.view_rows):
+                if len(values) > code_idx and values[code_idx] == _select_code:
+                    self.state.selected = i
+                    self.state.offset = max(0, i - max(0, self.state.view_height - 1))
+                    return
+
+        self.state.selected = min(self.state.selected, max(0, len(self.view_rows) - 1))
+        self.state.offset = min(self.state.offset, max(0, len(self.view_rows) - 1))
+    # ─── END OF _refresh_view_after_manual_add() ─────────────────────────────
+
+
+
+    def _set_manual_add_message(self, _message: str, *, _temporary: bool = False) -> None:
+        self._manual_add_message = _message
+        if _temporary:
+            self._manual_add_message_expires_at = time.monotonic() + self.MANUAL_ADD_STATUS_SECONDS
+        else:
+            self._manual_add_message_expires_at = None
+    # ─── END OF _set_manual_add_message() ────────────────────────────────────
+
+
+
+    def _expire_manual_add_message(self) -> None:
+        if self._manual_add_active:
+            return
+        if self._manual_add_message_expires_at is None:
+            return
+        if time.monotonic() < self._manual_add_message_expires_at:
+            return
+
+        self._manual_add_message = ""
+        self._manual_add_message_expires_at = None
+    # ─── END OF _expire_manual_add_message() ─────────────────────────────────
+
+
+
+    def _focus_manual_add_field(self, _key: str) -> None:
+        aliases = {"duration": "duration", "dur": "duration", "corr": "correlator"}
+        wanted = aliases.get(_key, _key)
+        for i, (field_key, _field_name, _label) in enumerate(self.MANUAL_ADD_FIELDS):
+            if field_key == wanted:
+                self._manual_add_field_idx = i
+                self._clamp_manual_add_cursor(field_key)
+                return
+    # ─── END OF _focus_manual_add_field() ────────────────────────────────────
+
+
+
+    def _replace_manual_add_draft_row(self) -> None:
+        if not self.view_rows:
+            self.view_rows.append(self._manual_add_draft_row())
+            self.state.selected = 0
+            return
+
+        if self.state.selected < 0 or self.state.selected >= len(self.view_rows):
+            self.state.selected = len(self.view_rows) - 1
+
+        self.view_rows[self.state.selected] = self._manual_add_draft_row()
+    # ─── END OF _replace_manual_add_draft_row() ──────────────────────────────
+
+
+
+    def _manual_add_draft_row(self) -> D.Row:
+        values = [""] * len(D.HEADERS)
+        values[D.FIELD_INDEX["type"]] = self._manual_add_values.get("type", "Manual")
+        values[D.FIELD_INDEX["code"]] = self._manual_add_values.get("name", "")
+        values[D.FIELD_INDEX["start"]] = self._manual_add_values.get("start", "")
+        values[D.FIELD_INDEX["dur"]] = self._manual_add_values.get("duration", "")
+        values[D.FIELD_INDEX["stations"]] = self._manual_add_station_display_value()
+        values[D.FIELD_INDEX["ops"]] = self._manual_add_values.get("ops", "")
+        values[D.FIELD_INDEX["corr"]] = self._manual_add_values.get("correlator", "")
+        values[D.FIELD_INDEX["status"]] = "Manual"
+
+        stations = "".join(normalize_station_tokens(self._manual_add_values.get("stations", ""))[0])
+        meta = {
+            "intensive": False,
+            "manual": True,
+            "draft": True,
+            "code": self._manual_add_values.get("name", ""),
+            "active": stations,
+            "removed": "",
+        }
+        return (values, None, meta)
+    # ─── END OF _manual_add_draft_row() ──────────────────────────────────────
+
+
+
+    def _manual_add_station_display_value(self) -> str:
+        value = self._manual_add_values.get("stations", "")
+        if not self._manual_add_active:
+            return format_station_tokens(value)
+
+        field_key, _field_name, _label = self.MANUAL_ADD_FIELDS[self._manual_add_field_idx]
+        if field_key == "stations":
+            return value
+
+        return format_station_tokens(value)
+    # ─── END OF _manual_add_station_display_value() ─────────────────────────
+
+
+
+    def _draw_manual_add_overlay(self, _stdscr) -> None:
+        if not self._manual_add_active:
+            try:
+                curses.curs_set(0)
+            except Exception:
+                pass
+            if self._manual_add_message:
+                max_y, max_x = _stdscr.getmaxyx()
+                attr = self.theme.help_bar if self.state.has_colors else 0
+                self.formatter._addstr_clip(_stdscr, max_y - 2, 0, self._manual_add_message[: max_x - 1], attr)
+            return
+
+        max_y, max_x = _stdscr.getmaxyx()
+        if self._manual_add_message:
+            attr = self.theme.help_bar if self.state.has_colors else 0
+            self.formatter._addstr_clip(_stdscr, max_y - 2, 0, self._manual_add_message[: max_x - 1], attr)
+
+        if self.state.selected < self.state.offset:
+            return
+        if self.state.selected >= self.state.offset + self.state.view_height:
+            return
+
+        field_key, field_name, _label = self.MANUAL_ADD_FIELDS[self._manual_add_field_idx]
+        col_idx = D.FIELD_INDEX[field_name]
+        y = self.state.selected - self.state.offset + 2
+        x = self.formatter._col_start_x(col_idx) + 2
+        width = D.WIDTHS[col_idx]
+        value = self.view_rows[self.state.selected][0][col_idx]
+        text = f"{value:<{width}}"
+        attr = (self.theme.filtered | curses.A_REVERSE) if self.state.has_colors else curses.A_REVERSE
+        self.formatter._addstr_clip(_stdscr, y, x, text[: max(0, max_x - x - 1)], attr)
+        try:
+            cursor_x = min(x + self._manual_add_cursor(field_key), x + max(0, width - 1), max_x - 2)
+            _stdscr.move(y, max(0, cursor_x))
+            curses.curs_set(1)
+        except Exception:
+            pass
+    # ─── END OF _draw_manual_add_overlay() ───────────────────────────────────
 
 
 
@@ -974,6 +1421,7 @@ class SessionsBrowser:
         curses.curs_set(1)
         curses.noecho()
         _stdscr.keypad(True)
+        _stdscr.timeout(-1)
 
         max_y, max_x = _stdscr.getmaxyx()
 

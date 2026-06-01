@@ -100,6 +100,7 @@ Available options:
 - `--output FILE` - Write output to file and exit (use `-` for stdout)
 - `-p, --pretty-print [ALL|OP|TYPE|... ]` - Select output columns (pipe-delimited), default `ALL`
 - `--verbose-fetch` - Show fetch/progress output even when using `--output`
+- `--import-local` - Import local `.vex`/`.skd` session files from the current directory
 - `--format {text|pdf|xlsx}` - Output format flag (default: `text`)
 - `--append` - Append to output file instead of overwriting
 - `--version` - Show version and exit
@@ -177,6 +178,46 @@ Values only apply when the matching command-line option is omitted.
 Inside the TUI, press **D** to save the current filter as the startup default.
 If no filter is active, **D** clears the saved default filter.
 
+## Manual Sessions
+
+Manual sessions live in `~/.config/ivs-sessions-browser/manual_sessions.json`.
+The file is created automatically with an empty `sessions` list and an
+`_example` object showing the expected shape.
+
+Minimum fields are `start`, `duration`, `name`, `ops`, `correlator`, and
+`stations`:
+
+```json
+{
+  "sessions": [
+    {
+      "start": "2026-06-01 12:00",
+      "duration": "01:00",
+      "name": "manual-example",
+      "ops": "Ops Center",
+      "correlator": "Correlator",
+      "stations": ["Nn", "Wz"]
+    }
+  ]
+}
+```
+
+Manual sessions are shown for the selected year, sorted with fetched sessions,
+and included in normal filtering and exports. `stations` may be a string or a
+list. Optional fields include `type`, `status`, `db`, and `analysis`. Manual
+sessions are always marked as manual, not intensive.
+
+Inside the TUI, press **A** to add a manual session inline. A draft row is added
+at the bottom of the current view. Use **Tab** and **Shift+Tab** to move between
+fields, **Enter** to validate and save, and **Esc** to cancel. Select a manual
+session and press **Del** to remove it from `manual_sessions.json`.
+
+Use `--import-local` to scan the current directory for local session files and
+add any sessions not already present. VEX import reads `exper_name`,
+`exper_nominal_start`, `exper_nominal_stop`, `scheduler_name`,
+`target_correlator`, and scheduled station lines. SKD import reads the
+`$EXPER`, `SCHEDULER`, `CORRELATOR`, `START`, `END`, and `$STATIONS` entries.
+
 ## What's New Screen
 
 After an update, the TUI shows the bundled "what's new" notes once for the
@@ -213,6 +254,8 @@ Use **↑/↓**, **j/k**, or **PgUp/PgDn** to scroll the popup, and **q**,
 - **Home**: Jump to first session
 - **End**: Jump to last session
 - **T**: Jump to today's session (or nearest future session)
+- **A**: Add a manual session inline
+- **Del**: Delete the selected manual session
 
 ### Viewing Session Details
 

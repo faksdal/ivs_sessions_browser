@@ -63,9 +63,10 @@ ivs_sessions_browser/
 > **Note:** The project uses the **src/** layout. For development, install it with `pip install -e .`.
 > Inside PyCharm, mark `src/` as **Sources Root** or use the editable virtualenv interpreter.
 > User-editable settings are read from `~/.config/ivs-sessions-browser/`.
-> Missing `operators.json`, `pdf_columns`, and `startup_defaults.json` files are created there from defaults the first time `ivs-sessions-browser` runs.
+> Missing `operators.json`, `pdf_columns`, `startup_defaults.json`, and `manual_sessions.json` files are created there from defaults the first time `ivs-sessions-browser` runs.
 > Edit `~/.config/ivs-sessions-browser/operators.json` to replace the default `U1`-`U5` operator labels with your local operator names.
 > Edit `~/.config/ivs-sessions-browser/startup_defaults.json` to choose default startup `year`, `scope`, `filters`, and `mirrors` values.
+> Edit `~/.config/ivs-sessions-browser/manual_sessions.json` to add sessions that are not present in the IVS schedules.
 > The app also records the last displayed "what's new" version in `~/.config/ivs-sessions-browser/app_state.json`.
 
 ---
@@ -172,6 +173,7 @@ Most usage is interactive (TUI). Command-line flags typically include:
 --format xlsx                 # write an Excel workbook with spreadsheet cells
 --no-mirrors                  # disable startup default mirror checking for this run
 --verbose-fetch                # show fetch/progress output even with --output
+--import-local                 # import local .vex/.skd files from the current directory
 --init-config                  # create default user config files and exit. Usually done after install.
 --man                          # show the bundled manual page and exit
 ```
@@ -197,6 +199,8 @@ Once inside the TUI:
 - Press `/` to enter/edit a filter
 - Press `C` to clear filters
 - Press `D` to save the current filter as the startup default
+- Press `A` or `+` to add a manual session inline
+- Press `Del` to delete the selected manual session
 - Press `0-5` to assign an operator to the selected session (or clear with '0')
 - Press `Enter` to open the selected session in your browser
 - Press `P` to export visible rows to PDF
@@ -227,6 +231,11 @@ Filtering:
 Operator Assignment:
   0-5                      Assign operator to selected session
                           (operators configured in ~/.config/ivs-sessions-browser/operators.json)
+
+Manual Sessions:
+  A or +                   Add a manual session inline
+  Del                      Delete the selected manual session
+  --import-local           Import local .vex/.skd files into manual_sessions.json
 
 Other:
   P                        Export visible rows to PDF and open it

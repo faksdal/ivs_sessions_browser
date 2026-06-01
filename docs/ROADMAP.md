@@ -32,6 +32,12 @@
   - Persistent assignments (`operator_assignments.json`)
   - Filter by assigned operator
 
+- **Manual Sessions**
+  - Add sessions inline in the TUI (`A`/`+`)
+  - Delete selected manual sessions (`Del`)
+  - Load user-maintained sessions from `manual_sessions.json`
+  - Import local `.vex` and `.skd` session files with `--import-local`
+
 - **Visual Features**
   - Color-coded session status (Released/Processing/Cancelled)
   - Operator-based row coloring
@@ -54,6 +60,7 @@
   - Quiet-by-default export with optional progress override (`--verbose-fetch`)
   - Append mode (`--append`)
   - Output format selector (`--format text|pdf|xlsx`)
+  - Local VEX/SKD import (`--import-local`)
   - Config initialization (`--init-config`)
   - Startup defaults from `startup_defaults.json`
   - Bundled manual page (`--man`)

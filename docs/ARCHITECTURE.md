@@ -136,6 +136,7 @@ Type definitions and data classes:
 - **Filtering**: `/` to enter filter, `C` to clear, `D` to save the current filter as the startup default (including station filters: `stations`, `stations_removed`, `stations_all`)
 - **Operator assignment**: `0-5` keys assign configured operators to sessions
 - **Dynamic Op width**: the operator column expands to fit saved assignment labels from `operator_assignments.json`
+- **Manual sessions**: `A`/`+` adds a manual session inline, `Del` removes selected manual sessions, and `--import-local` imports local `.vex`/`.skd` files through the same normalized storage path
 - **Colors**: Status-based colors (green=released, yellow=processing/waiting, magenta=cancelled) and operator-specific colors
 - **Help**: `?` displays inline help with key bindings and examples
 - **Browser integration**: Enter opens selected session in default web browser
@@ -145,6 +146,7 @@ Type definitions and data classes:
 ## Configuration files
 - `~/.config/ivs-sessions-browser/operators.json` - operator bindings (key → label) and colors; created from the packaged default when missing
 - `~/.config/ivs-sessions-browser/operator_assignments.json` - session code → operator label mappings
+- `~/.config/ivs-sessions-browser/manual_sessions.json` - user-maintained sessions merged into the normal row list before filtering and sorting
 - `~/.config/ivs-sessions-browser/pdf_columns` - default PDF export columns; created as `op|start|code|stations|corr` when missing
 - `~/.config/ivs-sessions-browser/startup_defaults.json` - optional defaults for omitted `--year`, `--scope`, `--filters`, and `--mirrors`
 - `~/.config/ivs-sessions-browser/app_state.json` - internal UI state, including the last version whose "what's new" notes were shown

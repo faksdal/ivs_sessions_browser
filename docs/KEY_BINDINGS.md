@@ -17,6 +17,8 @@
 | Key | Action | Description |
 |-----|--------|-------------|
 | `Enter` | Open in browser | Open selected session page in default web browser |
+| `A` / `+` | Add manual session | Add a manual session inline; Tab/Shift+Tab move fields, Enter saves, Esc cancels |
+| `Del` | Delete manual session | Delete the selected manual session from `manual_sessions.json` |
 | `P` | Export PDF | Save visible rows to a timestamped PDF and open it |
 | `X` | Export XLSX | Save visible rows to a timestamped XLSX workbook and open it |
 | `S` | Show statistics | Open operational statistics (trend, network, reliability metrics) |

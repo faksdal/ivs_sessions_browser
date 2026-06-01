@@ -66,6 +66,8 @@ HELP_TEXT = [
     "  / : Enter filter (field:value[;field:value], supports AND/OR (&,|))",
     "  C : Clear filters",
     "  D : Save current filter as startup default",
+    "  A/+ : Add a manual session inline",
+    "  Del : Delete selected manual session",
     # "  R : Toggle show/hide removed stations",
     "",
     "Other:",
@@ -179,7 +181,7 @@ NAVIGATION_KEYS: dict[str, str] = {}
 
 # Help bar text displayed at bottom of TUI
 # HELP_BAR_TEXT = "↑↓-PgUp/PgDn-Home/End:Move Enter:Open /:Filter C:Clear T:Jump to today R:Hide/show removed ?:Help q/Q:Quit"
-HELP_BAR_TEXT = "↑↓-PgUp/PgDn-Home/End:Move Enter:Open /:Filters C:Clear D:Save default T:Today P:PDF X:XLSX S:Stats G:Station% ?:Help q/Q:Quit"
+HELP_BAR_TEXT = "↑↓-PgUp/PgDn-Home/End:Move Enter:Open /:Filters C:Clear D:Save default A/+:Add Del:Del-manual T:Today P:PDF X:XLSX S:Stats G:Station% ?:Help q/Q:Quit"
 
 
 # Configuration filenames and directory (shared constants)
@@ -189,6 +191,7 @@ OPERATORS_FILENAME      = "operators.json"
 ASSIGNMENTS_FILENAME    = "operator_assignments.json"
 STARTUP_DEFAULTS_FILENAME = "startup_defaults.json"
 APP_STATE_FILENAME      = "app_state.json"
+MANUAL_SESSIONS_FILENAME = "manual_sessions.json"
 PDF_COLUMNS_FILENAME    = "pdf_columns"
 PDF_COLUMNS_DEFAULT     = "op|start|code|stations|corr"
 PDF_COLUMNS_DEFAULT_LIST = ["OP", "START", "CODE", "STATIONS", "CORR"]

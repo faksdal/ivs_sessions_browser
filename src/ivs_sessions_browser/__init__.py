@@ -26,6 +26,7 @@ import sys
 
 from datetime import datetime
 from importlib import resources
+from pathlib import Path
 
 # Project defined imports
 from .defs              import (
@@ -36,9 +37,11 @@ from .defs              import (
     PRETTY_PRINT_ALLOWED_COLUMNS,
     STARTUP_DEFAULTS_FILENAME,
 )
+from .manual_sessions   import ensure_manual_sessions_file, load_manual_session_rows
 from .operators         import load_operator_bindings, load_operator_colors
 from .pdf_export        import write_ansi_lines_pdf
 from .sessions_browser  import SessionsBrowser, _load_pdf_default_columns
+from .session_file_import import existing_session_codes, import_local_session_files
 from .xlsx_export       import write_sessions_xlsx
 # ─── END OF Import section ────────────────────────────────────────────────────
 
@@ -255,6 +258,7 @@ def _ensure_user_config_files() -> None:
     load_operator_colors()
     _load_pdf_default_columns()
     _ensure_startup_defaults_file()
+    ensure_manual_sessions_file()
 
 
 def _show_man_page() -> None:
@@ -342,6 +346,9 @@ def main() -> None:
     arg_parser.add_argument('--verbose-fetch', action='store_true',
                             help='show fetch progress and source-status messages even when using --output')
 
+    arg_parser.add_argument('--import-local', action='store_true',
+                            help='import local .vex/.skd session files from the current directory into manual_sessions.json')
+
     arg_parser.add_argument('--init-config', action='store_true',
                             help='create default user config files in ~/.config/ivs-sessions-browser and exit')
 
@@ -385,6 +392,31 @@ def main() -> None:
                                           _app_version = __version__)
     # ─── END OF SessionsBrowser creation ──────────────────────────────────────
 
+    if args.import_local:
+        result = import_local_session_files(Path.cwd(), existing_session_codes(sb.formatter.full_list))
+        if result.imported:
+            imported_codes = set(result.imported)
+            sb.formatter.full_list.extend(
+                row for row in load_manual_session_rows(args.year)
+                if row[2].get("code", "").upper() in imported_codes
+            )
+            sb.view_rows = sb.formatter.apply_filters_and_sorting(
+                _query=sb.filters,
+                _show_removed=sb.state.show_removed,
+                _sort_key="start",
+                _ascending=True,
+            )
+            sb.highlight_tokens = sb.formatter.filter_sort.extract_station_tokens(sb.filters or "")
+            sb.formatter.recompute_header_widths()
+        if result.imported or result.skipped or result.errors:
+            print(
+                f"Local import: {len(result.imported)} imported, "
+                f"{len(result.skipped)} skipped, {len(result.errors)} errors",
+                file=sys.stderr,
+            )
+            for msg in result.errors:
+                print(f"  {msg}", file=sys.stderr)
+
 
     # If user requested output to file/stdout, produce textual output and exit
     if args.output:
@@ -397,7 +429,6 @@ def main() -> None:
             lines = sb.render_sessions_list(args.pretty_print)
 
             if args.output == '-':
-                import sys
                 out = sys.stdout.buffer
                 try:
                     write_ansi_lines_pdf(lines, out)
@@ -434,7 +465,6 @@ def main() -> None:
                 raise SystemExit(2)
 
             if args.output == '-':
-                import sys
                 out = sys.stdout.buffer
                 try:
                     write_sessions_xlsx(
@@ -481,7 +511,6 @@ def main() -> None:
 
         # Write to stdout
         if args.output == '-':
-            import sys
             out = sys.stdout
             try:
                 for ln in lines:

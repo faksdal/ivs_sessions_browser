@@ -162,7 +162,10 @@ class Tui:
         max_y, max_x = _stdscr.getmaxyx()
 
         # Main help text with keyboard shortcuts
-        help_text = D.HELP_BAR_TEXT
+        if getattr(_state, "manual_add_active", False):
+            help_text = "Manual add: Tab/Shift+Tab:Fields ←/→:Cursor Enter:Save Esc:Cancel"
+        else:
+            help_text = D.HELP_BAR_TEXT
 
         # Operator bindings (only show configured operators)
         ops_text = ""
@@ -240,16 +243,16 @@ class Tui:
                 vals[field_index]   = f"{active_only:<{D.WIDTHS[field_index]}}"
 
             # Construct full line with a special rule for the "Type" column:
-            # left-justify the type text in (width-3)
-            # put "[I]" flush-right if meta["intensive"] is true
+            # left-justify the type text and put a marker flush-right when
+            # the row needs one.
             parts       = []
             type_idx    = D.FIELD_INDEX.get("type", 0)
             for c, val in enumerate(vals):
                 w = D.WIDTHS[c]
-                if c == type_idx and meta.get("intensive"):
-                    # reserve 3 chars for "[I]" at the right edge
-                    base_w = max(0, w - 3)
-                    parts.append(f"{val:<{base_w}}[I]")
+                marker = self.type_marker(meta) if c == type_idx else ""
+                if marker:
+                    base_w = max(0, w - len(marker))
+                    parts.append(f"{val:<{base_w}}{marker}")
                 else:
                     parts.append(f"{val:<{w}}")
 
@@ -286,19 +289,12 @@ class Tui:
                 col_attr = row_color | bold_flag
                 self._addstr_clip(_stdscr, y, x_pos, part, col_attr)
 
-                # Highlight intensive marker in Type column if present
-                if idx == type_idx and "[I]" in part:
-                    i_pos = part.find("[I]")
-                    if i_pos != -1:
-                        # Draw intensives in theme color; will be overridden by chgat when selected
-                        # intensives_attr = _theme.intensivess if _state.has_colors else curses.A_BOLD
-
-                        # The [I] marker will be drawn in the current row color if
-                        # colors are supported, otherwise it will be bold. When
-                        # the row is selected, the entire row will be reversed, which
-                        # will override the color but keep the bold.
-                        intensives_attr = row_color if _state.has_colors else curses.A_BOLD
-                        self._addstr_clip(_stdscr, y, x_pos + i_pos, "[I]", intensives_attr)
+                marker = self.type_marker(meta) if idx == type_idx else ""
+                if marker and marker in part:
+                    marker_pos = part.find(marker)
+                    if marker_pos != -1:
+                        marker_attr = row_color if _state.has_colors else curses.A_BOLD
+                        self._addstr_clip(_stdscr, y, x_pos + marker_pos, marker, marker_attr)
 
                 x_pos += len(part)
 
@@ -352,6 +348,17 @@ class Tui:
             x += D.WIDTHS[i] + sep
         return x
     # ─── END OF _col_start_x() ────────────────────────────────────────────────
+
+
+
+    @staticmethod
+    def type_marker(_meta: dict) -> str:
+        if _meta.get("intensive"):
+            return "[I]"
+        if _meta.get("manual"):
+            return "[M]"
+        return ""
+    # ─── END OF type_marker() ────────────────────────────────────────────────
 
 
 
@@ -600,10 +607,11 @@ class Tui:
         name_lens = [len(t) for t in titles]
         widths = [max(mins[i], name_lens[i], obs[i]) for i in range(num)]
 
-        # Add extra space for "[I]" marker in Type column if any intensive sessions exist
+        # Add extra space for row markers in Type column if needed.
         type_idx = D.FIELD_INDEX.get("type", 1)
-        if any_intensive:
-            widths[type_idx] = max(widths[type_idx], name_lens[type_idx] + 3, mins[type_idx] + 3)
+        marker_width = max((len(self.type_marker(meta)) for _values, _url, meta in self.full_list), default=0)
+        if any_intensive or marker_width:
+            widths[type_idx] = max(widths[type_idx], name_lens[type_idx] + marker_width, mins[type_idx] + marker_width)
 
         # Update the global constants in defs module
         D.HEADERS = list(zip(titles, widths))

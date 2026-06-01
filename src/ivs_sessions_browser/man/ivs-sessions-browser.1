@@ -78,6 +78,15 @@ Disable mirror checking even if startup defaults enable it.
 .B --verbose-fetch
 Show fetch progress even when writing output to a file or stdout.
 .TP
+.B --import-local
+Import local
+.B .vex
+and
+.B .skd
+session files from the current directory into
+.IR ~/.config/ivs-sessions-browser/manual_sessions.json .
+Already-known session codes are skipped.
+.TP
 .B --init-config
 Create default user configuration files in
 .I ~/.config/ivs-sessions-browser/
@@ -129,6 +138,15 @@ Clear filters.
 Save the current filter as the startup default. If no filter is active, clear
 the saved default filter.
 .TP
+.B A, +
+Add a manual session inline. Use Tab and Shift+Tab to move between fields,
+Enter to save, and Esc to cancel.
+.TP
+.B Del
+Delete the selected manual session from
+.IR manual_sessions.json .
+Fetched IVS sessions are not removed.
+.TP
 .B 0
 Clear the selected session's operator assignment.
 .TP
@@ -165,6 +183,12 @@ missing. Keys 1-5 default to U1-U5 and should be edited for local use.
 .I ~/.config/ivs-sessions-browser/operator_assignments.json
 Persistent mapping of session code to assigned operator label.
 .TP
+.I ~/.config/ivs-sessions-browser/manual_sessions.json
+User-maintained sessions merged into the normal row list before filtering,
+sorting, and export. Created with an empty
+.B sessions
+list and an example object when missing.
+.TP
 .I ~/.config/ivs-sessions-browser/pdf_columns
 Default PDF export columns. Created as
 .B op|start|code|stations|corr
@@ -191,6 +215,9 @@ Browse master and intensive sessions for 2026.
 .TP
 .B ivs-sessions-browser --year 2026 --filters 'code:R1|R4; stations:Nn'
 Start the TUI with an initial filter.
+.TP
+.B ivs-sessions-browser --year 2026 --import-local
+Import local VEX/SKD session files, then show the selected year in the TUI.
 .TP
 .B ivs-sessions-browser --year 2026 --output sessions.pdf --format pdf -p OP|START|CODE|STATIONS|CORR
 Export selected columns to a PDF.
