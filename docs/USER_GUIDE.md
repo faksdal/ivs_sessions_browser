@@ -140,6 +140,9 @@ Command-line arguments always override the file.
 
 # Keep fetch progress visible while exporting
 ./run_browser --year 2025 --output sessions.txt --verbose-fetch
+
+# Import local .vex/.skd files before opening the TUI
+./run_browser --year 2026 --import-local
 ```
 
 ## Startup Defaults
@@ -207,16 +210,19 @@ and included in normal filtering and exports. `stations` may be a string or a
 list. Optional fields include `type`, `status`, `db`, and `analysis`. Manual
 sessions are always marked as manual, not intensive.
 
-Inside the TUI, press **A** to add a manual session inline. A draft row is added
-at the bottom of the current view. Use **Tab** and **Shift+Tab** to move between
-fields, **Enter** to validate and save, and **Esc** to cancel. Select a manual
-session and press **Del** to remove it from `manual_sessions.json`.
+Inside the TUI, press **A** or **+** to add a manual session inline. A draft row
+is added at the bottom of the current view. Use **Tab** and **Shift+Tab** to move
+between Type, Code, Start, Dur, Stations, Ops, and Corr fields. **Enter**
+validates and saves, and **Esc** cancels. Select a manual session and press
+**Del** to remove it from `manual_sessions.json`.
 
 Use `--import-local` to scan the current directory for local session files and
 add any sessions not already present. VEX import reads `exper_name`,
 `exper_nominal_start`, `exper_nominal_stop`, `scheduler_name`,
 `target_correlator`, and scheduled station lines. SKD import reads the
 `$EXPER`, `SCHEDULER`, `CORRELATOR`, `START`, `END`, and `$STATIONS` entries.
+Imported sessions are normalized and stored in `manual_sessions.json`, then
+merged with fetched sessions before filtering, sorting, and export.
 
 ## What's New Screen
 
@@ -501,7 +507,7 @@ PDF export reuses the same pretty-printed lines as text export and preserves the
 ./run_browser --year 2025 --output sessions.xlsx --format xlsx
 ```
 
-XLSX export writes spreadsheet cells with headers, filters, a frozen first row, code hyperlinks, and operator row colors. `--append` is not supported for XLSX output.
+XLSX export writes spreadsheet cells with headers, filters, a frozen first row, clickable code links, and operator row colors. Session code links follow the row color instead of using the spreadsheet application's default hyperlink color. `--append` is not supported for XLSX output.
 
 ### Append Mode
 ```bash

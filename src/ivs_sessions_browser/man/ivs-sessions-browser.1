@@ -1,4 +1,4 @@
-.TH IVS-SESSIONS-BROWSER 1 "2026-04-28" "ivs-sessions-browser" "User Commands"
+.TH IVS-SESSIONS-BROWSER 1 "2026-06-01" "ivs-sessions-browser" "User Commands"
 .SH NAME
 ivs-sessions-browser \- browse IVS session schedules in a terminal UI
 .SH SYNOPSIS
@@ -59,8 +59,8 @@ or pipe-delimited column names such as
 Select output format. Defaults to
 .BR text .
 PDF preserves row colors in a monospaced layout; XLSX writes spreadsheet cells
-with headers, filters, frozen first row, code hyperlinks, and operator row
-colors.
+with headers, filters, frozen first row, clickable code links, and operator row
+colors. Code links keep the same font color as the rest of the row.
 .TP
 .B -a, --append
 Append text output to the output file instead of overwriting it.
@@ -86,6 +86,8 @@ and
 session files from the current directory into
 .IR ~/.config/ivs-sessions-browser/manual_sessions.json .
 Already-known session codes are skipped.
+Imported sessions are merged into the current view before filtering, sorting,
+and export.
 .TP
 .B --init-config
 Create default user configuration files in
@@ -141,6 +143,7 @@ the saved default filter.
 .B A, +
 Add a manual session inline. Use Tab and Shift+Tab to move between fields,
 Enter to save, and Esc to cancel.
+Fields are Type, Code, Start, Dur, Stations, Ops, and Corr.
 .TP
 .B Del
 Delete the selected manual session from

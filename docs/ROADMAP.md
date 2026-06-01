@@ -68,7 +68,7 @@
 
 - **Exports and Reports**
   - Colored PDF output from CLI and TUI
-  - XLSX workbook output from CLI and TUI
+  - XLSX workbook output from CLI and TUI, including clickable session code links that preserve row colors
   - Statistics popup (`S`) with session, hour, network, reliability, and station contribution summaries
   - Station contribution plot (`G`) with session share, hours, and weighted-hours metrics
 

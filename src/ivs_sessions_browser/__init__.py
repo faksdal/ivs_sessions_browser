@@ -331,7 +331,7 @@ def main() -> None:
                             help='pretty print columns; use ALL (default) or pipe-delimited names (e.g. OP|TYPE|STATIONS). ANALYSIS is accepted as alias for ANALYS.')
 
     arg_parser.add_argument('--format', choices=('text', 'pdf', 'xlsx'),
-                            default='text', help='output format (default: text); pdf preserves row colors, xlsx writes spreadsheet cells')
+                            default='text', help='output format (default: text); pdf preserves row colors, xlsx writes spreadsheet cells with clickable code links and row colors')
 
     arg_parser.add_argument('-a', '--append', action='store_true',
                             help='append to output file instead of overwriting')

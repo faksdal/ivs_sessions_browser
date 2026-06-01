@@ -102,7 +102,7 @@ class Tui:
         win = curses.newwin(height, width, y, x)
         win.box()
 
-        for i, text in enumerate(D.HELP_TEXT, start=1):
+        for i, text in enumerate(D.HELP_TEXT[: max(0, height - 2)], start=1):
             # Keep help display simple: underline/bold title, highlight cyan lines
             if i == 1:  # title
                 attr = curses.A_UNDERLINE | curses.A_BOLD | (_theme.header if _theme.header else 0)

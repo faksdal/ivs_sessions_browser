@@ -17,7 +17,7 @@
 | Key | Action | Description |
 |-----|--------|-------------|
 | `Enter` | Open in browser | Open selected session page in default web browser |
-| `A` / `+` | Add manual session | Add a manual session inline; Tab/Shift+Tab move fields, Enter saves, Esc cancels |
+| `A` / `+` | Add manual session | Add a manual session inline; Tab/Shift+Tab move Type, Code, Start, Dur, Stations, Ops, Corr; Enter saves, Esc cancels |
 | `Del` | Delete manual session | Delete the selected manual session from `manual_sessions.json` |
 | `P` | Export PDF | Save visible rows to a timestamped PDF and open it |
 | `X` | Export XLSX | Save visible rows to a timestamped XLSX workbook and open it |
@@ -45,6 +45,13 @@
 | `5` | Assign operator 5 | Assign operator bound to key "5" to selected session |
 
 **Note**: Operator bindings and colors are configured in `~/.config/ivs-sessions-browser/operators.json`, which is created from packaged defaults when missing. Key `0` clears an assignment; keys `1`-`5` default to `U1`-`U5` and should be edited to local operator labels. Each operator can have a custom color for visual identification in the TUI.
+
+## Manual Sessions
+
+Manual sessions are stored in `~/.config/ivs-sessions-browser/manual_sessions.json`.
+Use `A` or `+` to add one from the TUI, `Del` to remove a selected manual
+session, or start with `--import-local` to import `.vex` and `.skd` files from
+the current directory.
 
 ## Application Control
 
@@ -98,3 +105,4 @@ The bottom status bar shows:
 7. **Removed stations view**: Use filters like `stations_removed:Ft|Ur` or `stations_all:Ft|Ur` to inspect removed stations
 8. **Stats popup navigation**: In statistics view, use `↑/↓`, `j/k`, or `PgUp/PgDn` to scroll, `q`, `Enter`, or `Esc` to close
 9. **Quick exports**: Use `P` or `X` after filtering to export exactly the visible rows
+10. **Local files**: Place VEX/SKD files in the current directory and launch with `--import-local` to add them as manual sessions

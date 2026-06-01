@@ -24,18 +24,19 @@ from .tui import Tui
 
 
 COLOR_TO_HEX = {
-    "black"     : "000000",
-    "blue"      : "1C7ED6",
-    "cyan"      : "0C8599",
-    "green"     : "2B8A3E",
-    "magenta"   : "AE3EC9",
-    "red"       : "E03131",
-    "white"     : "FFFFFF",
-    "yellow"    : "B7791F",
+    "black"     : "FF000000",
+    "blue"      : "FF1C7ED6",
+    "cyan"      : "FF0C8599",
+    "green"     : "FF2B8A3E",
+    "magenta"   : "FFAE3EC9",
+    "red"       : "FFE03131",
+    "white"     : "FFFFFFFF",
+    "yellow"    : "FFB7791F",
 }
+INVISIBLE_ON_WHITE = {"white"}
 
-HEADER_FILL    = PatternFill("solid", fgColor="D9EAF7")
-HEADER_FONT    = Font(bold=True, color="000000")
+HEADER_FILL    = PatternFill("solid", fgColor="FFD9EAF7")
+HEADER_FONT    = Font(bold=True, color="FF000000")
 HEADER_ALIGN   = Alignment(vertical="top", wrap_text=False)
 CELL_ALIGN     = Alignment(vertical="top", wrap_text=False)
 
@@ -64,9 +65,17 @@ def _row_font_color(
     op_label = values[D.FIELD_INDEX.get("op", 0)].strip()
     for op_key, label in operator_bindings.items():
         if label == op_label:
-            return COLOR_TO_HEX.get(operator_colors.get(op_key, "").lower(), "000000")
-    return "000000"
+            color_name = operator_colors.get(op_key, "").lower()
+            if color_name in INVISIBLE_ON_WHITE:
+                return "FF000000"
+            return COLOR_TO_HEX.get(color_name, "FF000000")
+    return "FF000000"
 # ─── END OF _row_font_color() ────────────────────────────────────────────────
+
+
+def _formula_string(value: str) -> str:
+    return value.replace('"', '""')
+# ─── END OF _formula_string() ────────────────────────────────────────────────
 
 
 def sessions_to_xlsx_bytes(
@@ -93,6 +102,7 @@ def sessions_to_xlsx_bytes(
         cell.alignment = HEADER_ALIGN
 
     type_idx = D.FIELD_INDEX.get("type", 1)
+    display_values: dict[tuple[int, int], str] = {}
     for row_num, (values, url, meta) in enumerate(rows, start=TABLE_START_ROW + 1):
         font_color = _row_font_color(values, operator_bindings, operator_colors)
         row_font = Font(color=font_color)
@@ -103,13 +113,13 @@ def sessions_to_xlsx_bytes(
             if marker:
                 value = f"{value} {marker}".strip()
 
+            display_values[(row_num, col_num)] = value
+            if idx == D.FIELD_INDEX.get("code") and url:
+                value = f'=HYPERLINK("{_formula_string(url)}","{_formula_string(value)}")'
+
             cell = ws.cell(row=row_num, column=col_num, value=value)
             cell.font = row_font
             cell.alignment = CELL_ALIGN
-
-            if idx == D.FIELD_INDEX.get("code") and url:
-                cell.hyperlink = url
-                cell.font = Font(color=font_color)
 
     filter_start = ws.cell(row=TABLE_START_ROW, column=TABLE_START_COL).coordinate
     filter_end = ws.cell(
@@ -121,7 +131,7 @@ def sessions_to_xlsx_bytes(
     for col_num, idx in enumerate(selected_indices, start=TABLE_START_COL):
         width = D.HEADERS[idx][1] + 2
         max_content_width = max(
-            len(str(ws.cell(row=row_num, column=col_num).value or ""))
+            len(display_values.get((row_num, col_num), str(ws.cell(row=row_num, column=col_num).value or "")))
             for row_num in range(TABLE_START_ROW, ws.max_row + 1)
         )
         ws.column_dimensions[get_column_letter(col_num)].width = min(

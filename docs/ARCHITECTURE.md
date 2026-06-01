@@ -6,12 +6,13 @@ This document explains how the CLI/TUI flow is wired together so contributors ca
 ## High-level flow
 1. User runs `ivs-sessions-browser`, `python -m ivs_sessions_browser`, or `./run_browser`.
 2. The selected entry point calls `ivs_sessions_browser.main()` from `__init__.py`.
-3. `main()` builds the CLI argument parser, parses arguments for `--year` (single, CSV, or range expression), `--scope`, `--filters`, `--mirrors`, output options, `--init-config`, `--man`, and `--version`.
+3. `main()` builds the CLI argument parser, parses arguments for `--year` (single, CSV, or range expression), `--scope`, `--filters`, `--mirrors`, `--import-local`, output options, `--init-config`, `--man`, and `--version`.
 4. Default user config files are initialized before network fetches; if `--init-config` was supplied, the program exits here.
 5. `SessionsBrowser` is constructed with parsed arguments and computes the URL list for the chosen scope and mirror preferences.
 6. `FetchSessions` retrieves HTML data from the most recently updated master/intensive pages (comparing timestamps when `--mirrors` is specified).
-7. The HTML is parsed into row data, filtered, and sorted by `Tui` class using helper methods from `FilterAndSort`.
-8. Either:
+7. Manual sessions from `manual_sessions.json` are merged into the row list. If `--import-local` is set, local VEX/SKD files are normalized into that same storage and the imported rows are added before filtering/export.
+8. The HTML and manual rows are parsed into row data, filtered, and sorted by `Tui` class using helper methods from `FilterAndSort`.
+9. Either:
    - Interactive TUI is launched (default) via curses, or
    - Text, PDF, or XLSX output is written to file/stdout and the program exits.
 
@@ -27,6 +28,7 @@ This document explains how the CLI/TUI flow is wired together so contributors ca
   - Initializes default user config files, or exits immediately for `--init-config`
   - Applies `startup_defaults.json` for omitted startup options
   - Creates `SessionsBrowser` instance
+  - Imports local `.vex`/`.skd` files when `--import-local` is present
   - Either launches TUI or produces text, PDF, or XLSX output
 
 ### Core components
@@ -42,7 +44,7 @@ The main orchestrator class that:
 - Loads operator configurations and session assignments
 - Runs the main curses event loop in `_curses_main()`
 - Shows bundled "what's new" notes once per installed version
-- Handles navigation, filtering, operator assignment, and browser launching
+- Handles navigation, filtering, manual add/delete, operator assignment, and browser launching
 - Handles in-TUI PDF/XLSX exports, statistics dialog, and station contribution plotting
 
 **Key methods**:
@@ -89,6 +91,27 @@ Manages operator configuration and session assignments:
 - `save_operator_assignments(data)` - persists session assignments to JSON
 - Configuration files are stored in `~/.config/ivs-sessions-browser/` by default (or configurable via `defs.CONFIG_DIR`)
 
+#### `manual_sessions.py`
+Manages user-maintained sessions:
+- Ensures `manual_sessions.json` exists with an empty `sessions` list and example object
+- Validates and normalizes manual session fields (`start`, `duration`, `name`, `ops`, `correlator`, `stations`)
+- Accepts station input as a list, delimited string, or concatenated 2-character station codes
+- Converts stored sessions into normal row tuples so filtering, sorting, exports, and operator assignments work the same as fetched sessions
+- Appends inline/imported sessions and deletes selected manual sessions by code
+
+#### `session_file_import.py`
+Imports local schedule files into manual session storage:
+- Scans the current directory for `*.vex` and `*.skd` when `--import-local` is used
+- Parses VEX experiment metadata, nominal start/stop, scheduler, target correlator, and station definitions/schedule lines
+- Parses SKD experiment metadata, scheduler, correlator, start/end, and station blocks
+- Skips session codes already present in fetched or manual rows
+
+#### `pdf_export.py` and `xlsx_export.py`
+Handle non-text exports:
+- PDF export renders the ANSI-colored pretty-print rows into a monospaced report
+- XLSX export writes headers, filters, frozen first data row, operator-colored rows, and clickable session code links
+- XLSX code links are written as spreadsheet `HYPERLINK()` formulas so the visible code follows the row color instead of default hyperlink styling
+
 #### `tui_state.py` and `TUITheme`
 - `UIState` - dataclass holding TUI state: selected row, offset, view height, colors availability
 - `TUITheme` - manages curses color pairs for different statuses (released, processing, cancelled, etc.) and operators
@@ -117,6 +140,7 @@ Type definitions and data classes:
   - `--verbose-fetch` - keep fetch/progress messages visible when using `--output`
   - `--format` (text|pdf|xlsx; default: text)
   - `--append` - append to output file instead of overwriting
+- `--import-local` - import local `.vex`/`.skd` files into `manual_sessions.json` before filtering/export
 - `--version` - reports package version from setuptools-scm
 - `--init-config` - creates default config files in `~/.config/ivs-sessions-browser/` and exits before fetching session data
 - `--man` - renders the bundled manual page and exits
@@ -136,11 +160,11 @@ Type definitions and data classes:
 - **Filtering**: `/` to enter filter, `C` to clear, `D` to save the current filter as the startup default (including station filters: `stations`, `stations_removed`, `stations_all`)
 - **Operator assignment**: `0-5` keys assign configured operators to sessions
 - **Dynamic Op width**: the operator column expands to fit saved assignment labels from `operator_assignments.json`
-- **Manual sessions**: `A`/`+` adds a manual session inline, `Del` removes selected manual sessions, and `--import-local` imports local `.vex`/`.skd` files through the same normalized storage path
+- **Manual sessions**: `A`/`+` adds a manual session inline with Type, Code, Start, Dur, Stations, Ops, and Corr fields; `Del` removes selected manual sessions; `--import-local` imports local `.vex`/`.skd` files through the same normalized storage path
 - **Colors**: Status-based colors (green=released, yellow=processing/waiting, magenta=cancelled) and operator-specific colors
 - **Help**: `?` displays inline help with key bindings and examples
 - **Browser integration**: Enter opens selected session in default web browser
-- **Exports**: `P` saves visible rows to PDF; `X` saves visible rows to XLSX
+- **Exports**: `P` saves visible rows to PDF; `X` saves visible rows to XLSX with clickable code links that keep row colors
 - **Statistics**: `S` opens a scrollable statistics popup; `G` saves station contribution plots for session share, hours, and weighted hours
 
 ## Configuration files
