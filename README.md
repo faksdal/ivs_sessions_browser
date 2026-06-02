@@ -203,6 +203,7 @@ Once inside the TUI:
 - Use arrow keys / PgUp / PgDn / Home / End to navigate
 - Press `T` to jump to today
 - Press `/` to enter/edit a filter
+- Press `F1`-`F12` to toggle a start-month filter from January to December
 - Press `C` to clear filters
 - Press `D` to save the current filter as the startup default
 - Press `A` or `+` to add a manual session inline
@@ -227,6 +228,7 @@ Navigation:
 
 Filtering:
   /                        Enter a filter expression
+  F1-F12                   Toggle start month Jan-Dec
   C                        Clear current filters
   D                        Save current filter as startup default
   Examples:
@@ -257,6 +259,7 @@ Notes:
 - Other fields are **case-insensitive**
 - Clauses separated by `;` are AND
 - Tokens separated by space, `,`, `+`, or `|` are OR
+- `start:` accepts month names like `jun` or `june`
 ```
 
 Full details:

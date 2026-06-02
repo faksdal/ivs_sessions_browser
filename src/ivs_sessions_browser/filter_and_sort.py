@@ -35,6 +35,83 @@ class FilterAndSort:
       - helpers like 'index_on_or_after_today'
     """
 
+    MONTH_ABBRS: tuple[str, ...] = (
+        "jan", "feb", "mar", "apr", "may", "jun",
+        "jul", "aug", "sep", "oct", "nov", "dec",
+    )
+    MONTH_NAMES: dict[str, int] = {
+        "jan": 1, "january": 1,
+        "feb": 2, "february": 2,
+        "mar": 3, "march": 3,
+        "apr": 4, "april": 4,
+        "may": 5,
+        "jun": 6, "june": 6,
+        "jul": 7, "july": 7,
+        "aug": 8, "august": 8,
+        "sep": 9, "sept": 9, "september": 9,
+        "oct": 10, "october": 10,
+        "nov": 11, "november": 11,
+        "dec": 12, "december": 12,
+    }
+
+    def start_month_label(self, _month: int) -> str:
+        if not 1 <= _month <= 12:
+            raise ValueError(f"month must be 1-12, got {_month}")
+        return self.MONTH_ABBRS[_month - 1]
+    # ─── END OF start_month_label() ──────────────────────────────────────────
+
+
+
+    def toggle_start_month_filter(self, _query: str, _month: int) -> str:
+        """
+        Add, replace, or remove a start-month clause.
+
+        F-key shortcuts use this so month filtering stays compatible with the
+        normal filter language: e.g. `code:R1; start: jun`.
+        """
+
+        label = self.start_month_label(_month)
+        clauses = self._split_clauses(_query or "")
+        new_clauses: list[str] = []
+        found_start = False
+
+        for clause in clauses:
+            if ":" not in clause:
+                new_clauses.append(clause)
+                continue
+
+            field, value = [p.strip() for p in clause.split(":", 1)]
+            if field.lower() != "start":
+                new_clauses.append(clause)
+                continue
+
+            if found_start:
+                continue
+
+            found_start = True
+            if self._is_exact_start_month(value, _month):
+                continue
+            new_clauses.append(f"start: {label}")
+
+        if not found_start:
+            new_clauses.append(f"start: {label}")
+
+        return "; ".join(new_clauses)
+    # ─── END OF toggle_start_month_filter() ──────────────────────────────────
+
+
+
+    def has_exact_start_month_filter(self, _query: str, _month: int) -> bool:
+        for clause in self._split_clauses(_query or ""):
+            if ":" not in clause:
+                continue
+
+            field, value = [p.strip() for p in clause.split(":", 1)]
+            if field.lower() == "start" and self._is_exact_start_month(value, _month):
+                return True
+        return False
+    # ─── END OF has_exact_start_month_filter() ───────────────────────────────
+
     def apply(self,
               _rows: list[D.Row],
               _query: str           = "",
@@ -149,8 +226,39 @@ class FilterAndSort:
             return lambda _r: False
         # tokens separated by space/comma/plus/pipe are OR
         tokens = [t.lower() for t in re.split(r"[ ,+|]+", _value) if t]
+        if _fld == "start":
+            return self._predicate_start_tokens_or(tokens)
         return lambda r: any(tok in r[0][idx].lower() for tok in tokens)
     # ─── END OF _predicate_field_tokens_or() ──────────────────────────────────
+
+
+
+    def _predicate_start_tokens_or(self, _tokens: list[str]) -> Callable[[D.Row], bool]:
+        idx = D.FIELD_INDEX["start"]
+        month_tokens = [self.MONTH_NAMES[tok] for tok in _tokens if tok in self.MONTH_NAMES]
+        text_tokens = [tok for tok in _tokens if tok not in self.MONTH_NAMES]
+
+        def pred(_r: D.Row) -> bool:
+            start_text = _r[0][idx].lower()
+            if any(tok in start_text for tok in text_tokens):
+                return True
+
+            if month_tokens:
+                start_dt = self._parse_start(_r)
+                if start_dt != datetime.min and start_dt.month in month_tokens:
+                    return True
+
+            return False
+
+        return pred
+    # ─── END OF _predicate_start_tokens_or() ─────────────────────────────────
+
+
+
+    def _is_exact_start_month(self, _value: str, _month: int) -> bool:
+        tokens = [t.lower() for t in re.split(r"[ ,+|]+", _value) if t]
+        return len(tokens) == 1 and self.MONTH_NAMES.get(tokens[0]) == _month
+    # ─── END OF _is_exact_start_month() ──────────────────────────────────────
 
 
 

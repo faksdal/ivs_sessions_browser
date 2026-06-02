@@ -10,6 +10,9 @@
   skipped when the session code is already known.
 - XLSX exports keep session code links clickable while matching the row/operator
   text color.
+- Quick month filters are available with `F1`-`F12` for January through
+  December. The same month filter can also be typed as `start: jun` or
+  `start: june`.
 - Startup default filters can still be stored in `startup_defaults.json`.
 - Press `D` in the TUI to save the current filter as the startup default.
 - Use `--no-mirrors` to override a startup default that enables mirror checks.

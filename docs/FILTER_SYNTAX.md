@@ -29,7 +29,7 @@ The following fields can be used in filters (match column headers):
 |-------|-------------|----------------|
 | `type` | Session type | `VLBA`, `IVS`, `IDS` |
 | `code` | Session code | `R1`, `R4`, `CRF`, `T2` |
-| `start` | Start date | `2025-02-06`, `2025-02` (partial match) |
+| `start` | Start date | `2025-02-06`, `2025-02`, `jun`, `june` |
 | `doy` | Day of year | `037`, `100` |
 | `dur` | Duration | `24`, `1` |
 | `stations` | Active stations | `Nn`, `Ns`, `Ft` |
@@ -144,6 +144,15 @@ start: 2025-02-06; status: released
 ```
 Matches released sessions starting on February 6, 2025.
 
+```
+start: jun
+start: june
+```
+Matches sessions starting in June, regardless of year. All month names and
+3-letter abbreviations are accepted. Numeric month-only filters such as
+`start: 06` are intentionally not special-cased; use `start: 2025-06` when you
+want a year/month date prefix.
+
 ### Operator Filtering
 ```
 op: Alice
@@ -200,8 +209,9 @@ Matches processing sessions assigned to Alice **OR** Bob.
 1. Press `/` to enter filter mode
 2. Type your filter expression (e.g., `code: R1|R4; stations: Nn&Ns`)
 3. Press Enter to apply
-4. Press `C` to clear filters
-5. Current filter is displayed in the status bar at the bottom
+4. Press `F1`-`F12` to toggle `start: jan` through `start: dec`
+5. Press `C` to clear filters
+6. Current filter is displayed in the status bar at the bottom
 
 ### CLI Mode
 Use the `--filters` flag:

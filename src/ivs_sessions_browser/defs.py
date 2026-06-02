@@ -40,6 +40,7 @@ ARGUMENT_EPILOG             = ("Filters:\n"
                                "   ─ Added as key:value pair, several key:value pair are separated by ';'\n"
                                "   ─ Valid keys equals to the column headers (case-sensitive only for stations).\n"
                                "   ─ Non-stations fields: tokens split by space/comma/plus/pipe are OR (e.g. code: r1|r4)\n"
+                               "   ─ Start accepts month names/abbreviations (e.g. start: jun or start: june)\n"
                                "   ─ Stations: 'stations: Nn&Ns'  or  'stations: Nn|Ns'\n"
                                "   ─ Filters must be escaped with \" or \'\n"
                                "   ─ | (pipe) means OR, & (ampersand) means AND\n"
@@ -64,6 +65,7 @@ HELP_TEXT = [
     "Filtering:",
     "  Filter by headers; type, code, start, etc.",
     "  / : Enter filter (field:value[;field:value], supports AND/OR (&,|))",
+    "  F1-F12 : Toggle start month Jan-Dec",
     "  C : Clear filters",
     "  D : Save current filter as startup default",
     # "  R : Toggle show/hide removed stations",

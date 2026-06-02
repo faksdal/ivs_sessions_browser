@@ -120,6 +120,10 @@ Show sessions with both Nn and Ns active.
 .B stations_removed:Ft|Ur
 Show sessions where Ft or Ur appears in the removed station set.
 .TP
+.B start:jun
+Show sessions starting in June, regardless of year. Month names and 3-letter
+abbreviations are accepted for the start field.
+.TP
 .B op:Alice|Bob
 Show sessions assigned to Alice or Bob.
 .SH KEY BINDINGS
@@ -132,6 +136,10 @@ Jump to today's session.
 .TP
 .B /
 Enter or edit a filter expression.
+.TP
+.B F1-F12
+Toggle a start-month filter from January through December. Other filter clauses
+are preserved.
 .TP
 .B C
 Clear filters.

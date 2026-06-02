@@ -30,6 +30,7 @@
 | Key | Action | Description |
 |-----|--------|-------------|
 | `/` | Enter filter | Enter filter mode to type a filter expression |
+| `F1`-`F12` | Toggle month filter | Toggle `start: jan` through `start: dec`, preserving other filter clauses |
 | `C` | Clear filters | Clear all active filters and show all sessions |
 | `D` | Save default filter | Save the current filter to startup defaults; with no active filter, clear the saved default |
 
@@ -68,6 +69,7 @@ When you press `/` to enter a filter:
 - **OR within field**: Use `|`, space, `,`, or `+` (non-stations fields)
 - **Station AND**: `stations: Nn&Ns`
 - **Station OR**: `stations: Nn|Ns`
+- **Start month**: `start: jun` or `start: june`
 - **Station variants**:
   - `stations:` - active stations (default)
   - `stations_active:` - active stations (explicit)
@@ -106,3 +108,4 @@ The bottom status bar shows:
 8. **Stats popup navigation**: In statistics view, use `↑/↓`, `j/k`, or `PgUp/PgDn` to scroll, `q`, `Enter`, or `Esc` to close
 9. **Quick exports**: Use `P` or `X` after filtering to export exactly the visible rows
 10. **Local files**: Place VEX/SKD files in the current directory and launch with `--import-local` to add them as manual sessions
+11. **Month filters**: Use `F1`-`F12` for quick January-December filters; press the same key again to remove that month filter

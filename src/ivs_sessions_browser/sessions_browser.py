@@ -514,6 +514,12 @@ class SessionsBrowser:
                     idx = self.formatter.filter_sort.index_on_or_after_today(self.view_rows)
                     self.state.selected = self.state.offset = idx
 
+                # Quick month filters: F1-F12 map to Jan-Dec
+                case c if self._function_key_month(c) is not None:
+                    month = self._function_key_month(c)
+                    if month is not None:
+                        self._toggle_start_month_filter(month)
+
                 # Apply user filter
                 case c if c == ord('/'):
                     # Prefill prompt with current filter
@@ -1524,6 +1530,48 @@ class SessionsBrowser:
         )
         self.highlight_tokens = []
     # ─── END OF _clear_filters() ──────────────────────────────────────────────
+
+
+
+    def _function_key_month(self, _key: int) -> int | None:
+        key_f = getattr(curses, "KEY_F", None)
+        if callable(key_f):
+            for month in range(1, 13):
+                if _key == key_f(month):
+                    return month
+
+        key_f0 = getattr(curses, "KEY_F0", None)
+        if key_f0 is not None and key_f0 < _key <= key_f0 + 12:
+            return _key - key_f0
+
+        for month in range(1, 13):
+            if _key == getattr(curses, f"KEY_F{month}", None):
+                return month
+        return None
+    # ─── END OF _function_key_month() ────────────────────────────────────────
+
+
+
+    def _toggle_start_month_filter(self, _month: int) -> None:
+        previous_filters = self.filters or ""
+        month_was_active = self.formatter.filter_sort.has_exact_start_month_filter(previous_filters, _month)
+
+        self.filters = self.formatter.filter_sort.toggle_start_month_filter(previous_filters, _month)
+        self.view_rows = self.formatter.apply_filters_and_sorting(
+            _query=self.filters,
+            _show_removed=self.state.show_removed,
+            _sort_key="start",
+            _ascending=True
+        )
+        self.highlight_tokens = self.formatter.filter_sort.extract_station_tokens(self.filters or "")
+
+        if month_was_active:
+            idx = self.formatter.filter_sort.index_on_or_after_today(self.view_rows)
+            self.state.selected = self.state.offset = idx
+        else:
+            self.state.selected = 0
+            self.state.offset = 0
+    # ─── END OF _toggle_start_month_filter() ─────────────────────────────────
 
 
 

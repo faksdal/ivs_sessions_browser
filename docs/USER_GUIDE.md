@@ -260,6 +260,7 @@ Use **↑/↓**, **j/k**, or **PgUp/PgDn** to scroll the popup, and **q**,
 - **Home**: Jump to first session
 - **End**: Jump to last session
 - **T**: Jump to today's session (or nearest future session)
+- **F1-F12**: Toggle a start-month filter from January to December
 - **A**: Add a manual session inline
 - **Del**: Delete the selected manual session
 
@@ -336,10 +337,15 @@ status: released
 status: processing|waiting
 ```
 
-**Date range:**
+**Date/month filters:**
 ```
 start: 2025-02
+start: jun
+start: june
 ```
+Month names and 3-letter abbreviations match that month across all selected
+years. Numeric month-only filters like `start: 06` are not special-cased; use a
+date prefix such as `start: 2025-06` when you want a specific year/month.
 
 **Correlator:**
 ```
